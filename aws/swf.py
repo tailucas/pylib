@@ -14,6 +14,7 @@ from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutErr
     WorkflowFailedError, WorkflowTimedOutError
 
 global sentry
+# FIXME: globalize
 URL_WORKER_EVENT_PROCESSOR = 'inproc://event-processor'
 
 
