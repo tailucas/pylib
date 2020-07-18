@@ -1,11 +1,8 @@
-import logging
 import dateutil.parser
 import pytz
 
 from datetime import datetime, timedelta
 from dateutil import tz
-
-log = logging.getLogger(__name__)
 
 
 def is_list(value):

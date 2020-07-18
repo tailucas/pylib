@@ -1,5 +1,3 @@
-import logging
-
 import zmq
 from threading import Thread
 from traceback import StackSummary
@@ -12,13 +10,6 @@ from botoflow.options import activity_options
 from botoflow.constants import SECONDS, MINUTES
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
-
-global sentry
-# FIXME: globalize
-URL_WORKER_EVENT_PROCESSOR = 'inproc://event-processor'
-
-
-log = logging.getLogger(__name__)
 
 
 class SWFActivityWaiter(Thread):

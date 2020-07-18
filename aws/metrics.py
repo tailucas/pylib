@@ -1,5 +1,4 @@
 def post_count_metric(metric_name, count=1):
-    global app_metrics
     try:
         app_metrics.put_metric_data(
             Namespace='automation',

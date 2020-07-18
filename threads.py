@@ -1,10 +1,8 @@
-import logging
 import signal
 import sys
 import threading
 
-
-log = logging.getLogger(__name__)
+from .aws.metrics import post_count_metric
 
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
