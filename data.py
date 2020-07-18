@@ -1,5 +1,9 @@
+import logging
 import simplejson as json
 import umsgpack
+
+
+log = logging.getLogger(__name__)
 
 
 def make_payload(timestamp=None, data=None):

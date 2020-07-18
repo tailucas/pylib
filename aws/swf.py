@@ -1,6 +1,28 @@
+import logging
+
+import zmq
+from threading import Thread
+from traceback import StackSummary
+from botoflow import activity, \
+    activities, \
+    execute, \
+    return_, \
+    WorkflowDefinition
+from botoflow.options import activity_options
+from botoflow.constants import SECONDS, MINUTES
+from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
+    WorkflowFailedError, WorkflowTimedOutError
+
+global sentry
+URL_WORKER_EVENT_PROCESSOR = 'inproc://event-processor'
+
+
+log = logging.getLogger(__name__)
+
+
 class SWFActivityWaiter(Thread):
 
-    def __init__(self, event_source, output_type, workflow_starter, workflow_instance):
+    def __init__(self, zmq_context, event_source, output_type, workflow_starter, workflow_instance):
         super(SWFActivityWaiter, self).__init__(name=self.__class__.__name__)
         self.daemon = True
         self._event_source = event_source

@@ -1,3 +1,7 @@
+import logging
+import signal
+
+log = logging.getLogger(__name__)
 
 # noinspection PyUnusedLocal
 class SignalHandler:
