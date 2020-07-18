@@ -1,7 +1,8 @@
-import datetime
 import signal
 import sys
 import threading
+
+from datetime import datetime
 
 from .aws.metrics import post_count_metric
 
