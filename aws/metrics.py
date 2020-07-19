@@ -13,7 +13,7 @@ def post_count_metric(metric_name, count=1):
                         },
                         {
                             'Name': 'Device',
-                            'Value': config.get('app', 'device_name')
+                            'Value': DEVICE_NAME
                         },
                     ],
                     'Timestamp': make_timestamp(),
