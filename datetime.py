@@ -1,9 +1,11 @@
+import builtins
 import dateutil.parser
 import pytz
 
 from datetime import datetime, timedelta
 from dateutil import tz
 
+builtins.ISO_ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 def is_list(value):
     return isinstance(value, list)
@@ -17,7 +19,7 @@ def make_timestamp(timestamp=None, make_string=False):
     elif isinstance(timestamp, str):
         timestamp = dateutil.parser.parse(timestamp)
     if make_string:
-        return timestamp.strftime(DATE_FORMAT)
+        return timestamp.strftime(ISO_DATE_FORMAT)
     # not naive datetime
     return timestamp.replace(tzinfo=pytz.utc)
 

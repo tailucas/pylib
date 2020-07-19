@@ -8,8 +8,6 @@ from .aws.metrics import post_count_metric
 
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
-    global shutting_down
-    global threads_tracked
     sleep_seconds = 60
     while True:
         if signal_handler.last_signal == signal.SIGTERM:

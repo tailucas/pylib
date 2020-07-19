@@ -1,4 +1,5 @@
 import zmq
+from sentry_sdk import capture_exception
 from threading import Thread
 from traceback import StackSummary
 from botoflow import activity, \
@@ -29,7 +30,7 @@ class SWFActivityWaiter(Thread):
             return
         execution_result = None
         try:
-            self.socket.connect(URL_WORKER_EVENT_PROCESSOR)
+            self.socket.connect(URL_WORKER_APP)
             try:
                 log.info("Awaiting {} execution result: {}".format(
                     self._output_type,
@@ -41,7 +42,7 @@ class SWFActivityWaiter(Thread):
                 self.socket.send_pyobj({self._event_source: execution_result})
         except Exception:
             log.exception(self._name)
-            sentry.captureException()
+            capture_exception()
         finally:
             self.socket.close()
         log.info('{} is done for {} with result {}'.format(self._name, self._output_type, execution_result))
