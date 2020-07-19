@@ -1,7 +1,7 @@
 import simplejson as json
 import umsgpack
 
-from ..datetime import make_timestamp
+from .datetime import make_timestamp
 
 def make_payload(timestamp=None, data=None):
     payload = {'timestamp': make_timestamp(timestamp, True)}
