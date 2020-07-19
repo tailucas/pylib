@@ -1,3 +1,5 @@
+from ..datetime import make_timestamp
+
 def post_count_metric(metric_name, count=1):
     try:
         app_metrics.put_metric_data(
