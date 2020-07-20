@@ -1,7 +1,10 @@
+import logging
 import simplejson as json
 import umsgpack
 
 from .datetime import make_timestamp
+
+log = logging.getLogger(APP)
 
 def make_payload(timestamp=None, data=None):
     payload = {'timestamp': make_timestamp(timestamp, True)}

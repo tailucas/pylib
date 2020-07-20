@@ -1,3 +1,4 @@
+import logging
 import zmq
 from sentry_sdk import capture_exception
 from threading import Thread
@@ -12,6 +13,7 @@ from botoflow.constants import SECONDS, MINUTES
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
 
+log = logging.getLogger(APP)
 
 class SWFActivityWaiter(Thread):
 
@@ -36,8 +38,10 @@ class SWFActivityWaiter(Thread):
                     self._output_type,
                     self._workflow_instance.workflow_execution))
                 execution_result = self._workflow_starter.wait_for_completion(self._workflow_instance, 1)
-            except (WorkflowTimedOutError, WorkflowFailedError):
-                log.exception(self._name)
+            except (WorkflowTimedOutError, WorkflowFailedError) as e:
+                log.warning(
+                    "Workflow {} has failed.".format(self._workflow_instance.workflow_execution),
+                    exc_info=e)
             if execution_result is not None:
                 self.socket.send_pyobj({self._event_source: execution_result})
         except Exception:

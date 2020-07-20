@@ -1,4 +1,7 @@
+import logging
 from ..datetime import make_timestamp
+
+log = logging.getLogger(APP)
 
 def post_count_metric(metric_name, count=1):
     try:
