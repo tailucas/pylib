@@ -5,7 +5,7 @@ import pytz
 from datetime import datetime, timedelta
 from dateutil import tz
 
-builtins.ISO_ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
+builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 def is_list(value):
     return isinstance(value, list)
