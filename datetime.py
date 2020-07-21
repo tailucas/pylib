@@ -1,3 +1,4 @@
+import logging
 import builtins
 import dateutil.parser
 import pytz
@@ -6,6 +7,8 @@ from datetime import datetime, timedelta
 from dateutil import tz
 
 builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
+
+log = logging.getLogger(APP)
 
 def is_list(value):
     return isinstance(value, list)
