@@ -8,7 +8,7 @@ from datetime import datetime
 
 from .aws.metrics import post_count_metric
 
-log = logging.getLogger(APP)
+log = logging.getLogger(APP_NAME)
 
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):

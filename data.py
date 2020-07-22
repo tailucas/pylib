@@ -4,7 +4,7 @@ import umsgpack
 
 from .datetime import make_timestamp
 
-log = logging.getLogger(APP)
+log = logging.getLogger(APP_NAME)
 
 def make_payload(timestamp=None, data=None):
     payload = {'timestamp': make_timestamp(timestamp, True)}

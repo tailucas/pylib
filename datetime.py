@@ -8,7 +8,7 @@ from dateutil import tz
 
 builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
-log = logging.getLogger(APP)
+log = logging.getLogger(APP_NAME)
 
 def is_list(value):
     return isinstance(value, list)

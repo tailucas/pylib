@@ -1,7 +1,7 @@
 import logging
 from ..datetime import make_timestamp
 
-log = logging.getLogger(APP)
+log = logging.getLogger(APP_NAME)
 
 def post_count_metric(metric_name, count=1):
     try:
@@ -14,7 +14,7 @@ def post_count_metric(metric_name, count=1):
                     'Dimensions': [
                         {
                             'Name': 'Application',
-                            'Value': APP
+                            'Value': APP_NAME
                         },
                         {
                             'Name': 'Device',

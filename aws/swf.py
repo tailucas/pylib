@@ -13,17 +13,18 @@ from botoflow.constants import SECONDS, MINUTES
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
 
-log = logging.getLogger(APP)
+log = logging.getLogger(APP_NAME)
 
 class SWFActivityWaiter(Thread):
 
-    def __init__(self, zmq_context, event_source, output_type, workflow_starter, workflow_instance):
+    def __init__(self, zmq_ipc_url, zmq_context, event_source, output_type, workflow_starter, workflow_instance):
         super(SWFActivityWaiter, self).__init__(name=self.__class__.__name__)
         self.daemon = True
         self._event_source = event_source
         self._output_type = output_type
         self._workflow_starter = workflow_starter
         self._workflow_instance = workflow_instance
+        self._zmq_url = zmq_ipc_url
         self.socket = zmq_context.socket(zmq.PUSH)
 
     def run(self):
@@ -32,7 +33,7 @@ class SWFActivityWaiter(Thread):
             return
         execution_result = None
         try:
-            self.socket.connect(URL_WORKER_APP)
+            self.socket.connect(self._zmq_url)
             try:
                 log.info("Awaiting {} execution result: {}".format(
                     self._output_type,
@@ -64,7 +65,7 @@ class HelloWorldActivities(object):
 
     @activity(version='1.0', start_to_close_timeout=5*SECONDS)
     def get_name(self):
-        return APP
+        return APP_NAME
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def print_greeting(self, greeting, name):
@@ -90,7 +91,7 @@ class BluetoothActivity(object):
 
     @activity(version='1.0', start_to_close_timeout=20*SECONDS)
     def ping_bluetooth(self, owner_device_list):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP))
+        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -99,7 +100,7 @@ class IOBoardActivity(object):
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def trigger_output(self, device_key, delay):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP))
+        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -108,7 +109,7 @@ class TTSActivity(object):
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def say(self, message):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP))
+        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -117,7 +118,7 @@ class SnapshotActivity(object):
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def snapshot_camera(self, device_key, camera_command):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP))
+        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -126,7 +127,7 @@ class DeviceInfoActivity(object):
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def get_ip_address(self):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP))
+        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
 
 
 class DeviceWorkflow(WorkflowDefinition):
