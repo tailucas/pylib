@@ -1,6 +1,8 @@
 import logging
 import zmq
 from sentry_sdk import capture_exception
+from threading import Thread
+
 
 log = logging.getLogger(APP_NAME)
 

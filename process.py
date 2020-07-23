@@ -1,5 +1,6 @@
 import logging
 import signal
+import subprocess
 
 log = logging.getLogger(APP_NAME)
 
