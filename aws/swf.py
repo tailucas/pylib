@@ -1,4 +1,5 @@
 import logging
+import netifaces
 import zmq
 from sentry_sdk import capture_exception
 from threading import Thread
@@ -12,6 +13,10 @@ from botoflow.options import activity_options
 from botoflow.constants import SECONDS, MINUTES
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
+
+from ..bluetooth import ping_bluetooth_devices
+from ..data import make_payload
+
 
 log = logging.getLogger(APP_NAME)
 
@@ -89,9 +94,35 @@ class HelloWorldWorkflow(WorkflowDefinition):
             start_to_close_timeout=1*MINUTES)
 class BluetoothActivity(object):
 
+    def __init__(self, device_key, device_type, device_location):
+        super().__init__()
+        self.device_key = device_key
+        self.device_type = device_type
+        self.device_location = device_location
+
     @activity(version='1.0', start_to_close_timeout=20*SECONDS)
     def ping_bluetooth(self, owner_device_list):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
+        ping_responses = ping_bluetooth_devices(owner_device_list)
+        if ping_responses is None:
+            return None
+        active_devices = []
+        for owner, ping_response in list(ping_responses.items()):
+            device_label = '{} is here.'.format(owner)
+            log.info('{} {} in {}: [{}] => ({})'.format(
+                self.device_type,
+                owner,
+                self.device_location,
+                ping_response,
+                device_label))
+            active_devices.append({
+                    'device_key': self.device_key,
+                    'device_type': self.device_type,
+                    'device_location': self.device_location,
+                    'device_label': device_label})
+        return make_payload(
+            timestamp=None,
+            data={'active_devices': active_devices},
+            msgpack=False)
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -127,7 +158,32 @@ class DeviceInfoActivity(object):
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def get_ip_address(self):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
+        ipv4_address = None
+        lan_iface = None
+        default_gateway_ipv4_iface = None
+        # use the gateway data to find the LAN device from which IP is determined
+        default_gateway_ipv4 = netifaces.gateways()['default'][netifaces.AF_INET]
+        if default_gateway_ipv4 is not None and len(default_gateway_ipv4) > 0:
+            default_gateway_ipv4_address = default_gateway_ipv4[0]
+            default_gateway_ipv4_iface = default_gateway_ipv4[1]
+            log.info('Gateway address is {} on {}'.format(default_gateway_ipv4_address, default_gateway_ipv4_iface))
+            lan_iface = default_gateway_ipv4_iface
+        else:
+            # go old-skool
+            ifaces = netifaces.interfaces()
+            # put wlan at the end
+            ifaces.sort()
+            for iface in ifaces:
+                if iface.lower().startswith(("et", "en", "wlan")):
+                    try:
+                        netifaces.ifaddresses(iface)[netifaces.AF_INET]
+                    except KeyError:
+                        next
+                    lan_iface = iface
+                    break
+        ipv4_address = netifaces.ifaddresses(lan_iface)[netifaces.AF_INET][0]['addr']
+        log.info('Using IPv4 address {} on {}'.format(ipv4_address, lan_iface))
+        return ipv4_address
 
 
 class DeviceWorkflow(WorkflowDefinition):

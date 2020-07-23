@@ -3,6 +3,13 @@ import signal
 
 log = logging.getLogger(APP_NAME)
 
+
+def exec_cmd(cmd):
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    out, err = p.communicate()
+    return out, err, p.returncode
+
+
 # noinspection PyUnusedLocal
 class SignalHandler:
 
