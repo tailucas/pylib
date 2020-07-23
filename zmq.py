@@ -2,6 +2,7 @@ import logging
 import zmq
 from sentry_sdk import capture_exception
 from threading import Thread
+from time import sleep
 from zmq.error import ZMQError, ContextTerminated, Again
 
 from .data import make_payload
