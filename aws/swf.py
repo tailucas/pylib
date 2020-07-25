@@ -204,7 +204,7 @@ class SnapshotWorkflow(WorkflowDefinition):
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
     def execute(self, device_key, camera_command):
         response = None
-        with activity_options(task_list=config.get('swf_tasklist', OUTPUT_TYPE_SNAPSHOT)):
+        with activity_options(task_list=APP_CONFIG.get('swf_tasklist', OUTPUT_TYPE_SNAPSHOT)):
             response = yield SnapshotActivity.snapshot_camera(device_key, camera_command)
         return_(response)
 
@@ -214,7 +214,7 @@ class TTSWorkflow(WorkflowDefinition):
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
     def execute(self, message):
         response = None
-        with activity_options(task_list=config.get('swf_tasklist', OUTPUT_TYPE_TTS)):
+        with activity_options(task_list=APP_CONFIG.get('swf_tasklist', OUTPUT_TYPE_TTS)):
             response = yield TTSActivity.say(message)
         return_(response)
 
@@ -224,7 +224,7 @@ class IOBoardWorkflow(WorkflowDefinition):
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
     def execute(self, device_key, delay):
         response = None
-        with activity_options(task_list=config.get('swf_tasklist', OUTPUT_TYPE_SWITCH)):
+        with activity_options(task_list=APP_CONFIG.get('swf_tasklist', OUTPUT_TYPE_SWITCH)):
             response = yield IOBoardActivity.trigger_output(device_key, delay)
         return_(response)
 
@@ -234,6 +234,6 @@ class BluetoothWorkflow(WorkflowDefinition):
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
     def execute(self, owner_device_list):
         response = None
-        with activity_options(task_list=config.get('swf_tasklist', OUTPUT_TYPE_BLUETOOTH)):
+        with activity_options(task_list=APP_CONFIG.get('swf_tasklist', OUTPUT_TYPE_BLUETOOTH)):
             response = yield BluetoothActivity.ping_bluetooth(owner_device_list)
         return_(response)

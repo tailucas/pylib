@@ -5,7 +5,7 @@ log = logging.getLogger(APP_NAME)
 
 def post_count_metric(metric_name, count=1):
     try:
-        app_metrics.put_metric_data(
+        APP_METRICS.put_metric_data(
             Namespace='automation',
             MetricData=[
                 {
