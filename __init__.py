@@ -27,7 +27,7 @@ builtins.DEVICE_NAME = config.get('app', 'device_name')
 
 sentry_sdk.init(
     dsn=config.get('sentry', 'dsn'),
-    integrations=[FlaskIntegration()]
+    integrations=SENTRY_EXTRAS
 )
 builtins.zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
