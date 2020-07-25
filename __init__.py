@@ -9,20 +9,20 @@ import sys
 import zmq
 
 from configparser import ConfigParser
+from pathlib import Path
 
 
-builtins.APP_NAME = os.path.basename(__file__)
 if sys.stdout.isatty() and os.system('systemctl status app') == 0:
     print("{} is already running. Use 'systemctl stop app' to stop first.".format(APP_NAME))
     sys.exit(1)
 
+app_path = Path(os.path.abspath(os.path.dirname(__file__)))
 # set the working directory for libraries that assume this (such as PyDrive)
-DIR = os.path.abspath(os.path.dirname(__file__))
-os.chdir(DIR)
+os.chdir(app_path.parent)
 
 config = ConfigParser()
 config.optionxform = str
-config.read([os.path.join(DIR, '{}.conf'.format(APP_NAME))])
+config.read([os.path.join(app_path.parent, '{}.conf'.format(APP_NAME))])
 builtins.DEVICE_NAME = config.get('app', 'device_name')
 
 sentry_sdk.init(
