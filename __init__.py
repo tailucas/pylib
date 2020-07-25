@@ -6,6 +6,7 @@ import os
 import os.path
 import sentry_sdk
 import sys
+import threading
 import zmq
 
 from configparser import ConfigParser
@@ -20,13 +21,13 @@ app_path = Path(os.path.abspath(os.path.dirname(__file__)))
 # set the working directory for libraries that assume this (such as PyDrive)
 os.chdir(app_path.parent)
 
-config = ConfigParser()
-config.optionxform = str
-config.read([os.path.join(app_path.parent, '{}.conf'.format(APP_NAME))])
-builtins.DEVICE_NAME = config.get('app', 'device_name')
+builtins.APP_CONFIG = ConfigParser()
+APP_CONFIG.optionxform = str
+APP_CONFIG.read([os.path.join(app_path.parent, '{}.conf'.format(APP_NAME))])
+builtins.DEVICE_NAME = APP_CONFIG.get('app', 'device_name')
 
 sentry_sdk.init(
-    dsn=config.get('sentry', 'dsn'),
+    dsn=APP_CONFIG.get('sentry', 'dsn'),
     integrations=SENTRY_EXTRAS
 )
 builtins.zmq_context = zmq.Context()
@@ -55,14 +56,4 @@ if sys.stdout.isatty():
     log.addHandler(stream_handler)
 # set up application metrics
 builtins.boto3_session = boto3.Session()
-builtins.app_metrics = boto3_session.client('cloudwatch')
-
-from pylib.datetime import is_list, make_timestamp, parse_datetime
-from pylib.data import make_payload
-from pylib.aws.metrics import post_count_metric
-from pylib.aws.swf import SWFActivityWaiter, \
-    swf_exception_handler, \
-    DeviceInfoActivity, \
-    DeviceWorkflow
-from pylib.process import SignalHandler
-from pylib.threads import thread_nanny
+builtins.APP_METRICS = boto3_session.client('cloudwatch')
