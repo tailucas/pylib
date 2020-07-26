@@ -39,9 +39,9 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
         new_timestamp = timestamp.astimezone(tz=as_tz)
         log.debug('{} adjusted to {} ({} to {})'.format(timestamp, new_timestamp, timestamp.tzinfo, as_tz))
         timestamp = new_timestamp
+    log.debug('Using timestamp {}'.format(timestamp))
     if make_string:
         return timestamp.strftime(ISO_DATE_FORMAT)
-    log.debug('Using timestamp {}'.format(timestamp))
     return timestamp
 
 
