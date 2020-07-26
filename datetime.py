@@ -31,18 +31,17 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
                 raise RuntimeError("Unknown date/time type: '{}'".format(timestamp))
     if timestamp.tzinfo is None:
         local_tz = tz.tzlocal()
-        #TODO: fixme
-        log.info('{}: fixed to local time {}'.format(timestamp, local_tz))
+        log.debug('{}: fixed to local time {}'.format(timestamp, local_tz))
         # we use the default specific to the physical locality of the devices
         timestamp = timestamp.replace(tzinfo=local_tz)
     if timestamp.tzinfo != as_tz:
         # now adjust to requested TZ
         new_timestamp = timestamp.astimezone(tz=as_tz)
-        #TODO: fixme
-        log.info('DEBUG: {} adjusted to {} ({} to {})'.format(timestamp, new_timestamp, timestamp.tzinfo, as_tz))
+        log.debug('{} adjusted to {} ({} to {})'.format(timestamp, new_timestamp, timestamp.tzinfo, as_tz))
         timestamp = new_timestamp
     if make_string:
         return timestamp.strftime(ISO_DATE_FORMAT)
+    log.debug('Using timestamp {}'.format(timestamp))
     return timestamp
 
 
