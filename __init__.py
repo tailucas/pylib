@@ -57,3 +57,6 @@ if sys.stdout.isatty():
 # set up application metrics
 builtins.boto3_session = boto3.Session()
 builtins.APP_METRICS = boto3_session.client('cloudwatch')
+builtins.boto_session = botocore.session.Session(profile=APP_CONFIG.get('botoflow', 'profile'))
+builtins.swf_region = APP_CONFIG.get('botoflow', 'region')
+builtins.swf_domain = APP_CONFIG.get('botoflow', 'domain')

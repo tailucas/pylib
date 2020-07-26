@@ -14,17 +14,36 @@ def is_list(value):
     return isinstance(value, list)
 
 
-def make_timestamp(timestamp=None, make_string=False):
+def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
     if timestamp is None:
-        timestamp = datetime.utcnow()
+        timestamp = datetime.utcnow().replace(tzinfo=pytz.utc)
     elif isinstance(timestamp, float) or isinstance(timestamp, int):
-        timestamp = datetime.utcfromtimestamp(timestamp)
+        timestamp = datetime.utcfromtimestamp(timestamp).replace(tzinfo=pytz.utc)
     elif isinstance(timestamp, str):
-        timestamp = dateutil.parser.parse(timestamp)
+        try:
+            timestamp = dateutil.parser.parse(timestamp)
+            log.debug('Parsed timestamp is {}'.format(timestamp))
+        except ValueError:
+            try:
+                timestamp = datetime.utcfromtimestamp(int(timestamp)).replace(tzinfo=pytz.utc)
+                log.debug('Parsed integer timestamp is {}'.format(timestamp))
+            except ValueError:
+                raise RuntimeError("Unknown date/time type: '{}'".format(timestamp))
+    if timestamp.tzinfo is None:
+        local_tz = tz.tzlocal()
+        #TODO: fixme
+        log.info('{}: fixed to local time {}'.format(timestamp, local_tz))
+        # we use the default specific to the physical locality of the devices
+        timestamp = timestamp.replace(tzinfo=local_tz)
+    if timestamp.tzinfo != as_tz:
+        # now adjust to requested TZ
+        new_timestamp = timestamp.astimezone(tz=as_tz)
+        #TODO: fixme
+        log.info('DEBUG: {} adjusted to {} ({} to {})'.format(timestamp, new_timestamp, timestamp.tzinfo, as_tz))
+        timestamp = new_timestamp
     if make_string:
         return timestamp.strftime(ISO_DATE_FORMAT)
-    # not naive datetime
-    return timestamp.replace(tzinfo=pytz.utc)
+    return timestamp
 
 
 def parse_datetime(value=None, as_tz=pytz.utc):

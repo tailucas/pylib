@@ -129,27 +129,81 @@ class BluetoothActivity(object):
             start_to_close_timeout=1*MINUTES)
 class IOBoardActivity(object):
 
+    def __init__(self, zmq_url):
+        self._zmq_url = zmq_url
+        self._zmq_worker = None
+
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def trigger_output(self, device_key, delay):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
+        try:
+            # create ZMQ socket and use on the correct thread
+            if (self._zmq_worker is None):
+                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker.connect(self._zmq_url)
+            self._zmq_worker.send_pyobj((device_key, delay))
+        except Exception:
+            log.exception(self.__class__.__name__)
+            capture_exception()
+            raise
+
+    def stop(self):
+        # create ZMQ socket and use on the correct thread
+        if (self._zmq_worker is not None):
+            self._zmq_worker.close()
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
             start_to_close_timeout=1*MINUTES)
 class TTSActivity(object):
 
+    def __init__(self, zmq_url):
+        self._zmq_url = zmq_url
+        self._zmq_worker = None
+
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def say(self, message):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
+        try:
+            # create ZMQ socket and use on the correct thread
+            if (self._zmq_worker is None):
+                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker.connect(self._zmq_url)
+            self._zmq_worker.send_pyobj(message)
+        except Exception:
+            log.exception(self.__class__.__name__)
+            capture_exception()
+            raise
+
+    def stop(self):
+        # create ZMQ socket and use on the correct thread
+        if (self._zmq_worker is not None):
+            self._zmq_worker.close()
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
             start_to_close_timeout=1*MINUTES)
 class SnapshotActivity(object):
 
+    def __init__(self, zmq_url):
+        self._zmq_url = zmq_url
+        self._zmq_worker = None
+
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def snapshot_camera(self, device_key, camera_command):
-        raise RuntimeError('{} not implemented on {}'.format(self.__class__.__name__, APP_NAME))
+        try:
+            # create ZMQ socket and use on the correct thread
+            if (self._zmq_worker is None):
+                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker.connect(self._zmq_url)
+            self._zmq_worker.send_pyobj((device_key, camera_command))
+        except Exception:
+            log.exception(self.__class__.__name__)
+            capture_exception()
+            raise
+
+    def stop(self):
+        # create ZMQ socket and use on the correct thread
+        if (self._zmq_worker is not None):
+            self._zmq_worker.close()
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
