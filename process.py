@@ -1,3 +1,4 @@
+import builtins
 import logging
 import signal
 import subprocess
@@ -30,4 +31,5 @@ class SignalHandler:
     def terminate(self, signum, frame):
         log.warning('Signal {} received.'.format(signum))
         self.last_signal = signum
-        interruptable_sleep.set()
+        builtins.shutting_down = True
+        builtins.interruptable_sleep.set()
