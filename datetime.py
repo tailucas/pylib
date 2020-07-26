@@ -15,20 +15,18 @@ def is_list(value):
 
 
 def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
-    if timestamp is None:
-        timestamp = datetime.utcnow().replace(tzinfo=pytz.utc)
-    elif isinstance(timestamp, float) or isinstance(timestamp, int):
+    if isinstance(timestamp, float) or isinstance(timestamp, int):
         timestamp = datetime.utcfromtimestamp(timestamp).replace(tzinfo=pytz.utc)
     elif isinstance(timestamp, str):
         try:
+            log.debug('Attempting to parse timestamp {}'.format(timestamp))
             timestamp = dateutil.parser.parse(timestamp)
             log.debug('Parsed timestamp is {}'.format(timestamp))
         except ValueError:
-            try:
-                timestamp = datetime.utcfromtimestamp(int(timestamp)).replace(tzinfo=pytz.utc)
-                log.debug('Parsed integer timestamp is {}'.format(timestamp))
-            except ValueError:
-                raise RuntimeError("Unknown date/time type: '{}'".format(timestamp))
+            log.exception("Unable to parse {}. Using 'now'.".format(timestamp))
+            timestamp = None
+    if timestamp is None:
+        timestamp = datetime.utcnow().replace(tzinfo=pytz.utc)
     if timestamp.tzinfo is None:
         local_tz = tz.tzlocal()
         log.debug('{}: fixed to local time {}'.format(timestamp, local_tz))
