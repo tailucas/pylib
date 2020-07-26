@@ -1,6 +1,8 @@
 import builtins
 import logging
+import umsgpack
 import zmq
+
 from sentry_sdk import capture_exception
 from threading import Thread
 from time import sleep
@@ -46,10 +48,9 @@ class DeviceActivator(Thread):
                 event = umsgpack.unpackb(self.listener.recv())
                 if 'timestamp' in event:
                     log.debug('Received timestamp {}'.format(event['timestamp']))
-                    timestamp = make_timestamp(timestamp=event['timestamp'], as_tz=tz.tzlocal())
-                    log.debug('Local timestamp {}'.format(timestamp))
+                    timestamp = make_timestamp(timestamp=event['timestamp'])
                 else:
-                    timestamp = make_timestamp(as_tz=tz.tzlocal())
+                    timestamp = make_timestamp()
                 if 'data' not in event:
                     log.warning('Unknown event data: {}'.format(event))
                     continue
