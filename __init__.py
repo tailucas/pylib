@@ -1,4 +1,5 @@
 import boto3
+import botocore
 import builtins
 import logging
 import logging.handlers
