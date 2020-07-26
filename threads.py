@@ -2,6 +2,7 @@ import logging
 import signal
 import sys
 import threading
+import time
 import traceback
 
 from datetime import datetime
@@ -47,4 +48,5 @@ def thread_nanny(signal_handler):
         else:
             # interrupt any other sleepers
             interruptable_sleep.set()
-        interruptable_sleep.wait(sleep_seconds)
+        # never spin
+        time.sleep(sleep_seconds)
