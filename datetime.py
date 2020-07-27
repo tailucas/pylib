@@ -5,10 +5,13 @@ import pytz
 
 from datetime import datetime, timedelta
 from dateutil import tz
+from pathlib import Path
 
 builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(Path(__file__).stem)
+
 
 def is_list(value):
     return isinstance(value, list)

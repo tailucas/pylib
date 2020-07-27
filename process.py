@@ -1,9 +1,14 @@
-import builtins
 import logging
 import signal
 import subprocess
 
-log = logging.getLogger(APP_NAME)
+from pathlib import Path
+
+log = logging.getLogger(Path(__file__).stem)
+
+
+# shutdown flag
+shutting_down = False
 
 
 def exec_cmd(cmd):
@@ -29,7 +34,8 @@ class SignalHandler:
             log.setLevel(logging.INFO)
 
     def terminate(self, signum, frame):
+        global shutting_down
         log.warning('Signal {} received.'.format(signum))
         self.last_signal = signum
-        builtins.shutting_down = True
-        builtins.interruptable_sleep.set()
+        shutting_down = True
+        threads.interruptable_sleep.set()

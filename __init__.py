@@ -34,14 +34,8 @@ sentry_sdk.init(
 builtins.zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
 
-# shutdown flag
-builtins.shutting_down = False
-# threads to interrupt
-builtins.interruptable_sleep = threading.Event()
-# threads to nanny
-builtins.threads_tracked = set()
+log = logging.getLogger(Path(__file__).stem)
 
-builtins.log = logging.getLogger(APP_NAME)
 # do not propagate to console logging
 log.propagate = False
 # DEBUG logging until startup complete

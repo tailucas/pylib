@@ -1,7 +1,10 @@
 import logging
+from pathlib import Path
 from ..datetime import make_timestamp
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(Path(__file__).stem)
+
 
 def post_count_metric(metric_name, count=1):
     try:

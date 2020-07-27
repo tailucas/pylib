@@ -1,6 +1,7 @@
 import logging
 import netifaces
 import zmq
+from pathlib import Path
 from sentry_sdk import capture_exception
 from threading import Thread
 from traceback import StackSummary
@@ -14,11 +15,14 @@ from botoflow.constants import SECONDS, MINUTES
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
 
+from .. import process
+from .. import threads
 from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload
 
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(Path(__file__).stem)
+
 
 class SWFActivityWaiter(Thread):
 
@@ -61,7 +65,8 @@ class SWFActivityWaiter(Thread):
 def swf_exception_handler(err: Exception, tb_list: StackSummary):
     log.fatal('SWF processing exception: {} {}'.format(err, tb_list.format()))
     post_count_metric('Fatals')
-    interruptable_sleep.set()
+    process.shutting_down = True
+    threads.interruptable_sleep.set()
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,

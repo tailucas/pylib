@@ -3,6 +3,7 @@ import logging
 import umsgpack
 import zmq
 
+from pathlib import Path
 from sentry_sdk import capture_exception
 from threading import Thread
 from time import sleep
@@ -11,7 +12,8 @@ from zmq.error import ZMQError, ContextTerminated, Again
 from .data import make_payload
 from .datetime import make_timestamp
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(Path(__file__).stem)
 
 builtins.URL_WORKER_UPLOADER = 'inproc://uploader'
 builtins.URL_WORKER_APP = 'inproc://app'

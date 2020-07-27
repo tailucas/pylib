@@ -2,9 +2,12 @@ import logging
 import simplejson as json
 import umsgpack
 
+from pathlib import Path
 from .datetime import make_timestamp
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(Path(__file__).stem)
+
 
 def make_payload(timestamp=None, data=None):
     payload = {'timestamp': make_timestamp(timestamp=timestamp, make_string=True)}
