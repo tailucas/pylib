@@ -4,11 +4,9 @@ import subprocess
 
 from pathlib import Path
 
+from . import threads
+
 log = logging.getLogger(Path(__file__).stem)
-
-
-# shutdown flag
-shutting_down = False
 
 
 def exec_cmd(cmd):
@@ -37,5 +35,5 @@ class SignalHandler:
         global shutting_down
         log.warning('Signal {} received.'.format(signum))
         self.last_signal = signum
-        shutting_down = True
+        threads.shutting_down = True
         threads.interruptable_sleep.set()

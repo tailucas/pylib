@@ -8,7 +8,6 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from . import process
 from .aws.metrics import post_count_metric
 
 
@@ -18,21 +17,24 @@ log = logging.getLogger(Path(__file__).stem)
 interruptable_sleep = threading.Event()
 # threads to nanny
 threads_tracked = set()
+# shutdown flag
+shutting_down = False
 
 
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
     global interruptable_sleep
     global threads_tracked
+    global shutting_down
     sleep_seconds = 60
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
-            process.shutting_down = True
+            shutting_down = True
         threads_alive = set()
         for thread_info in threading.enumerate():
             if thread_info.is_alive():
                 threads_alive.add(thread_info.getName())
-                if process.shutting_down and not thread_info.daemon:
+                if shutting_down and not thread_info.daemon:
                     # show detail about lingering non-daemon threads more often
                     sleep_seconds = 2
                     code = []
@@ -43,7 +45,7 @@ def thread_nanny(signal_handler):
                             code.append("  %s" % (line.strip()))
                     for line in code:
                         log.debug(line)
-        if not process.shutting_down:
+        if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
             if len(thread_deficit) > 0:
                 error_msg = 'A thread has died. Expected threads are [{}], ' \
