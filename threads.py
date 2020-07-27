@@ -1,5 +1,4 @@
 import logging
-import process
 import signal
 import sys
 import threading
@@ -9,6 +8,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
+from . import process
 from .aws.metrics import post_count_metric
 
 
