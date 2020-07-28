@@ -5,5 +5,5 @@ import botocore
 boto3_session = boto3.Session()
 boto_session = botocore.session.Session()
 
-from .metrics import app_metrics
-from .swf import swf_region, swf_domain
+swf_region = APP_CONFIG.get('botoflow', 'region')
+swf_domain = APP_CONFIG.get('botoflow', 'domain')

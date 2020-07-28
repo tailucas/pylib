@@ -23,10 +23,6 @@ from ..data import make_payload
 log = logging.getLogger(APP_NAME)
 
 
-swf_region = APP_CONFIG.get('botoflow', 'region')
-swf_domain = APP_CONFIG.get('botoflow', 'domain')
-
-
 class SWFActivityWaiter(Thread):
 
     def __init__(self, zmq_ipc_url, zmq_context, event_source, output_type, workflow_starter, workflow_instance):
