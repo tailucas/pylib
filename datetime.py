@@ -25,8 +25,13 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
             timestamp = dateutil.parser.parse(timestamp)
             log.debug('Parsed timestamp is {}'.format(timestamp))
         except ValueError:
-            log.exception("Unable to parse {}. Using 'now'.".format(timestamp))
-            timestamp = None
+            # try integer representation
+            try:
+                timestamp = datetime.utcfromtimestamp(int(timestamp)).replace(tzinfo=pytz.utc)
+                log.debug('Parsed integer timestamp is {}'.format(timestamp))
+            except ValueError:
+                log.exception("Unable to parse {}. Using 'now'.".format(timestamp))
+                timestamp = None
     if timestamp is None:
         timestamp = datetime.utcnow().replace(tzinfo=pytz.utc)
     if timestamp.tzinfo is None:
