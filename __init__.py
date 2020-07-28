@@ -1,5 +1,3 @@
-import boto3
-import botocore
 import builtins
 import logging
 import logging.handlers
@@ -18,23 +16,23 @@ if sys.stdout.isatty() and os.system('systemctl status app') == 0:
     print("{} is already running. Use 'systemctl stop app' to stop first.".format(APP_NAME))
     sys.exit(1)
 
-app_path = Path(os.path.abspath(os.path.dirname(__file__)))
+# use parent of this module's top-level __init__.py
+app_path = Path(os.path.abspath(os.path.dirname(__file__))).parent
 # set the working directory for libraries that assume this (such as PyDrive)
-os.chdir(app_path.parent)
-
-builtins.APP_CONFIG = ConfigParser()
-APP_CONFIG.optionxform = str
-APP_CONFIG.read([os.path.join(app_path.parent, '{}.conf'.format(APP_NAME))])
-builtins.DEVICE_NAME = APP_CONFIG.get('app', 'device_name')
+os.chdir(app_path)
+app_config = ConfigParser()
+app_config.optionxform = str
+app_config.read([os.path.join(app_path, '{}.conf'.format(APP_NAME))])
 
 sentry_sdk.init(
-    dsn=APP_CONFIG.get('sentry', 'dsn'),
+    dsn=app_config.get('sentry', 'dsn'),
     integrations=SENTRY_EXTRAS
 )
-builtins.zmq_context = zmq.Context()
+
+zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
 
-builtins.log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME)
 
 # do not propagate to console logging
 log.propagate = False
@@ -49,9 +47,9 @@ if sys.stdout.isatty():
     stream_handler = logging.StreamHandler(stream=sys.stdout)
     stream_handler.setFormatter(formatter)
     log.addHandler(stream_handler)
-# set up application metrics
-builtins.boto3_session = boto3.Session()
-builtins.APP_METRICS = boto3_session.client('cloudwatch')
-builtins.boto_session = botocore.session.Session(profile=APP_CONFIG.get('botoflow', 'profile'))
-builtins.swf_region = APP_CONFIG.get('botoflow', 'region')
-builtins.swf_domain = APP_CONFIG.get('botoflow', 'domain')
+
+# update builtins
+builtins.APP_CONFIG = app_config
+builtins.DEVICE_NAME = app_config.get('app', 'device_name')
+builtins.log = log
+builtins.zmq_context = zmq_context

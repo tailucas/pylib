@@ -1,13 +1,18 @@
 import logging
+from . import boto3_session
 from ..datetime import make_timestamp
 
 
 log = logging.getLogger(APP_NAME)
 
 
-def post_count_metric(metric_name, count=1):
+app_metrics = boto3_session.client('cloudwatch')
+
+
+def post_count_metric(metric_name, count=1, unit='Count'):
+    global app_metrics
     try:
-        APP_METRICS.put_metric_data(
+        app_metrics.put_metric_data(
             Namespace='automation',
             MetricData=[
                 {
@@ -24,7 +29,7 @@ def post_count_metric(metric_name, count=1):
                         },
                     ],
                     'Timestamp': make_timestamp(),
-                    'Unit': 'Count'
+                    'Unit': unit
                 },
             ]
         )
