@@ -34,7 +34,7 @@ sentry_sdk.init(
 builtins.zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
 
-builtins.log = logging.getLogger(Path(__file__).stem)
+builtins.log = logging.getLogger(APP_NAME)
 
 # do not propagate to console logging
 log.propagate = False

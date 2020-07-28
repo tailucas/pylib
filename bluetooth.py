@@ -1,9 +1,8 @@
 import logging
-from pathlib import Path
 from .process import exec_cmd
 
 
-log = logging.getLogger(Path(__file__).stem)
+log = logging.getLogger(APP_NAME)
 
 
 def bluetooth_init():

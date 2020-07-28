@@ -1,7 +1,6 @@
 import logging
 import netifaces
 import zmq
-from pathlib import Path
 from sentry_sdk import capture_exception
 from threading import Thread
 from traceback import StackSummary
@@ -21,7 +20,7 @@ from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload
 
 
-log = logging.getLogger(Path(__file__).stem)
+log = logging.getLogger(APP_NAME)
 
 
 class SWFActivityWaiter(Thread):

@@ -2,11 +2,9 @@ import logging
 import signal
 import subprocess
 
-from pathlib import Path
-
 from . import threads
 
-log = logging.getLogger(Path(__file__).stem)
+log = logging.getLogger(APP_NAME)
 
 
 def exec_cmd(cmd):

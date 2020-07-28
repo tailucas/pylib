@@ -6,12 +6,11 @@ import time
 import traceback
 
 from datetime import datetime
-from pathlib import Path
 
 from .aws.metrics import post_count_metric
 
 
-log = logging.getLogger(Path(__file__).stem)
+log = logging.getLogger(APP_NAME)
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
