@@ -1,5 +1,7 @@
 botoflow
+boto3
 netifaces
+pathtools
 python-dateutil
 pytz
 pyzmq
