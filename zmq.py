@@ -115,17 +115,23 @@ class Uploader(Thread):
         self.inproc_pull.bind(self._zmq_url)
         # Socket to talk to the outside world
         publisher = self._zmq_context.socket(zmq.PUB)
+        pub_url = 'tcp://{ip}:{port}'.format(ip=self._pub_ip, port=self._pub_port)
         try:
-            publisher.bind('tcp://{ip}:{port}'.format(ip=self._pub_ip, port=self._pub_port))
+            publisher.bind(pub_url)
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
 
         while True:
             try:
-                publisher.send(make_payload(
+                data = self.inproc_pull.recv_pyobj()
+                payload = make_payload(
                     timestamp=None,
-                    data=self.inproc_pull.recv_pyobj()))
+                    data=data)
+                # do not info on heartbeats
+                if 'device_info' not in data:
+                    log.info('Publishing {} bytes on {}'.format(len(payload), pub_url))
+                publisher.send(payload)
             except ContextTerminated:
                 self.inproc_pull.close()
                 publisher.close()
