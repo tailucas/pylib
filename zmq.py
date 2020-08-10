@@ -14,7 +14,7 @@ from .datetime import make_timestamp
 
 log = logging.getLogger(APP_NAME)
 
-builtins.URL_WORKER_UPLOADER = 'inproc://uploader'
+builtins.URL_WORKER_PUBLISHER = 'inproc://publisher'
 builtins.URL_WORKER_APP = 'inproc://app'
 
 
@@ -99,10 +99,10 @@ class DeviceActivator(Thread):
                 continue
 
 
-class Uploader(Thread):
+class Publisher(Thread):
 
     def __init__(self, zmq_context, zmq_ipc_url, pub_ip, pub_port):
-        super(Uploader, self).__init__()
+        super(Publisher, self).__init__()
         self.daemon = True
         self._zmq_context = zmq_context
         # Socket to talk to accept samples
