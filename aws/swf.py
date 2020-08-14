@@ -18,6 +18,7 @@ from .. import process
 from .. import threads
 from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload
+from .metrics import post_count_metric
 
 
 log = logging.getLogger(APP_NAME)
