@@ -1,2 +1,1 @@
-# pylib
-Common Python modules
+Common and partially related Python functions organized into various modules that align with high-level functions.
