@@ -65,7 +65,7 @@ class SWFActivityWaiter(Thread):
 def swf_exception_handler(err: Exception, tb_list: StackSummary):
     log.fatal('SWF processing exception: {} {}'.format(err, tb_list.format()))
     post_count_metric('Fatals')
-    process.shutting_down = True
+    threads.shutting_down = True
     threads.interruptable_sleep.set()
 
 
