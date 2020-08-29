@@ -33,5 +33,5 @@ def post_count_metric(metric_name, count=1, unit='Count'):
                 },
             ]
         )
-    except Exception:
-        log.exception('Problem posting metric [{}={}]'.format(metric_name, count))
+    except Exception as e:
+        log.warning('Problem posting metric [{}={}]: {}'.format(metric_name, count, repr(e)))
