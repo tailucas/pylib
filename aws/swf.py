@@ -112,6 +112,11 @@ class BluetoothActivity(object):
     @activity(version='1.0', start_to_close_timeout=20*SECONDS)
     def ping_bluetooth(self, owner_device_list):
         ping_responses = ping_bluetooth_devices(owner_device_list)
+        log.info('{} {} in {} returns {}...'.format(
+            self.device_type,
+            str(owner_device_list),
+            self.device_location,
+            str(ping_responses)))
         if ping_responses is None:
             return None
         active_devices = []
