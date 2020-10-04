@@ -130,7 +130,7 @@ class Publisher(Thread):
                     data=data)
                 # do not info on heartbeats
                 if 'device_info' not in data:
-                    log.info('Publishing {} bytes on {}'.format(len(payload), pub_url))
+                    log.debug('Publishing {} bytes on {}'.format(len(payload), pub_url))
                 publisher.send(payload)
             except ContextTerminated:
                 self.inproc_pull.close()
