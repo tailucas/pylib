@@ -1,3 +1,4 @@
+import builtins
 import logging
 import signal
 import sys
@@ -29,10 +30,12 @@ def thread_nanny(signal_handler):
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
+        # take stock of running threads
         threads_alive = set()
         for thread_info in threading.enumerate():
             if thread_info.is_alive():
                 threads_alive.add(thread_info.getName())
+                # print non-daemon threads that linger
                 if shutting_down and not thread_info.daemon:
                     # show detail about lingering non-daemon threads more often
                     sleep_seconds = 2
@@ -44,6 +47,11 @@ def thread_nanny(signal_handler):
                             code.append("  %s" % (line.strip()))
                     for line in code:
                         log.debug(line)
+        # print zmq sockets that are still alive (and blocking shutdown)
+        if shutting_down:
+            for s in zmq_context._sockets:
+                if s and not s.closed:
+                    log.debug(vars(s))
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
             if len(thread_deficit) > 0:
