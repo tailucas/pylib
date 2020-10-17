@@ -27,6 +27,8 @@ def thread_nanny(signal_handler):
     global interruptable_sleep
     global threads_tracked
     global shutting_down
+    shutting_down_grace_secs = 30
+    shutting_down_time = None
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -60,6 +62,13 @@ def thread_nanny(signal_handler):
             # don't block on the long sleep
             interruptable_sleep.wait(58)
         else:
+            now = int(time.time())
+            if shutting_down_time is None:
+                shutting_down_time = now
+            elif (now - shutting_down_time > shutting_down_grace_secs):
+                if log.level != logging.DEBUG:
+                    log.warning("Shutting-down duration has exceeded {}s. Switching to debug logging...".format(shutting_down_grace_secs))
+                    log.setLevel(logging.DEBUG)
             # interrupt any other sleepers now
             interruptable_sleep.set()
             # print zmq sockets that are still alive (and blocking shutdown)
