@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import traceback
+import zmq
 
 from datetime import datetime
 
@@ -51,7 +52,7 @@ def thread_nanny(signal_handler):
         if shutting_down:
             for s in zmq_context._sockets:
                 if s and not s.closed:
-                    log.debug(vars(s))
+                    log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
             if len(thread_deficit) > 0:
@@ -68,4 +69,4 @@ def thread_nanny(signal_handler):
             # interrupt any other sleepers
             interruptable_sleep.set()
         # never spin
-        time.sleep(sleep_seconds)
+        interruptable_sleep.wait(sleep_seconds)
