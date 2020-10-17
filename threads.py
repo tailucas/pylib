@@ -27,7 +27,6 @@ def thread_nanny(signal_handler):
     global interruptable_sleep
     global threads_tracked
     global shutting_down
-    sleep_seconds = 60
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -38,8 +37,6 @@ def thread_nanny(signal_handler):
                 threads_alive.add(thread_info.getName())
                 # print non-daemon threads that linger
                 if shutting_down and not thread_info.daemon:
-                    # show detail about lingering non-daemon threads more often
-                    sleep_seconds = 2
                     code = []
                     stack = sys._current_frames()[thread_info.ident]
                     for filename, lineno, name, line in traceback.extract_stack(stack):
@@ -48,11 +45,6 @@ def thread_nanny(signal_handler):
                             code.append("  %s" % (line.strip()))
                     for line in code:
                         log.debug(line)
-        # print zmq sockets that are still alive (and blocking shutdown)
-        if shutting_down:
-            for s in zmq_context._sockets:
-                if s and not s.closed:
-                    log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
             if len(thread_deficit) > 0:
@@ -65,8 +57,14 @@ def thread_nanny(signal_handler):
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
                 post_count_metric('Fatals', 0)
+            # don't block on the long sleep
+            interruptable_sleep.wait(58)
         else:
-            # interrupt any other sleepers
+            # interrupt any other sleepers now
             interruptable_sleep.set()
+            # print zmq sockets that are still alive (and blocking shutdown)
+            for s in zmq_context._sockets:
+                if s and not s.closed:
+                    log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
         # never spin
-        interruptable_sleep.wait(sleep_seconds)
+        time.sleep(2)
