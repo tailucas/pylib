@@ -1,6 +1,8 @@
 import logging
 import netifaces
 import zmq
+from zmq import ContextTerminated
+
 from sentry_sdk import capture_exception
 from threading import Thread
 from traceback import StackSummary
@@ -209,6 +211,8 @@ class SnapshotActivity(object):
                 self._zmq_worker = zmq_context.socket(zmq.PUSH)
                 self._zmq_worker.connect(self._zmq_url)
             self._zmq_worker.send_pyobj((device_key, camera_command))
+        except ContextTerminated:
+            self.stop()
         except Exception:
             log.exception(self.__class__.__name__)
             capture_exception()
