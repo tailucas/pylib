@@ -72,8 +72,12 @@ def thread_nanny(signal_handler):
             # interrupt any other sleepers now
             interruptable_sleep.set()
             # print zmq sockets that are still alive (and blocking shutdown)
-            for s in zmq_context._sockets:
-                if s and not s.closed:
-                    log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
+            try:
+                for s in zmq_context._sockets:
+                    if s and not s.closed:
+                        log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
+            except RuntimeError:
+                # protect against "Set changed size during iteration", try again later
+                pass
         # never spin
         time.sleep(2)
