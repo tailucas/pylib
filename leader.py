@@ -123,9 +123,9 @@ class Leader(Thread):
                 # other exceptions.
                 if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                     raise
-            if not self._update_leadership(unix_timestamp):
-                self._handle_election_failure()
-                continue
+                if not self._update_leadership(unix_timestamp):
+                    self._handle_election_failure()
+                    continue
             # success
             log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
             break
