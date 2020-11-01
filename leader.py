@@ -25,7 +25,7 @@ log = logging.getLogger(APP_NAME)
 TABLE_NAME = 'app_leader'
 ELECTION_RETRY_INTERVAL_SECS = 10
 ELECTION_UPDATE_INTERVAL_SECS = 20
-LEADERSHIP_GRACE_PERIOD_SECS = 60
+LEADERSHIP_GRACE_PERIOD_SECS = 300
 
 
 class Leader(Thread):
@@ -77,7 +77,7 @@ class Leader(Thread):
                     ':d': self._device_name,
                     ':t': unix_timestamp
                 },
-                ConditionExpression=Attr("unix_timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
+                ConditionExpression=Attr("device_name").eq(self._device_name) | Attr("unix_timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
                 ReturnValues='UPDATED_NEW'
             )
             success = True
