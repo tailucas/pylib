@@ -4,6 +4,7 @@ import boto3
 import botocore
 import threading
 
+from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime, timedelta
 from dateutil import tz
@@ -22,6 +23,7 @@ log = logging.getLogger(APP_NAME)
 
 
 TABLE_NAME = 'app_leader'
+ELECTION_RETRY_INTERVAL_SECS = 10
 LEADERSHIP_GRACE_PERIOD_SECS = 60
 
 
@@ -37,70 +39,72 @@ class Leader(Thread):
         self._app_name = app_name
         self._device_name = device_name
 
+    def _handle_election_failure(self):
+        if datetime.now().minute % 5 == 0:
+            try:
+                response = self._ddb_table.get_item(
+                    Key={
+                        'app_name': self._app_name,
+                    }
+                )
+                log.info('Elected leader is currently {}.'.format(response['Item']['device_name']))
+            except (ClientError, KeyError):
+                pass
+        # try to re-aquire leadership
+        threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
+
     def yield_to_leader(self):
         log.info('Attempting leadership of {} as {}...'.format(self._app_name, self._device_name))
         while True:
-            put_conflict = False
             timestamp = make_timestamp()
             unix_timestamp = int((timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds())
             try:
-                response = self._ddb_table.put_item(
+                self._ddb_table.put_item(
                     Item={
                         'app_name': self._app_name,
-                        'timestamp': unix_timestamp,
+                        'unix_timestamp': unix_timestamp,
                         'device_name': self._device_name,
                     },
-                    ConditionExpression=Attr("app_name").not_exists() & Attr("device_name").not_exists(),
-                    # ensure that the permitted leader is known
-                    ReturnValues='ALL_OLD'
+                    ConditionExpression=Attr("app_name").not_exists() & Attr("device_name").not_exists()
                 )
-                log.info('DEBUG: DDB put response is {}'.format(response))
-                log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
-                # break
-            except botocore.exceptions.ClientError as e:
+            except ClientError as e:
                 # Ignore the ConditionalCheckFailedException, bubble up
                 # other exceptions.
                 if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                     raise
-                log.info('DEBUG: put failed {}'.format(str(e)))
-                put_conflict = True
-
-            #FIXME: remove
-            put_conflict = True
-            if put_conflict:
-                try:
-                    response = self._ddb_table.update_item(
-                        Key={
-                            'app_name': self._app_name,
-                            'timestamp': unix_timestamp,
-                            'device_name': self._device_name,
-                        },
-                        UpdateExpression=Attr("timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
-                        # ensure that the permitted leader is known
-                        ReturnValues='UPDATED_NEW'
-                    )
-                    log.info('DEBUG: DDB update response is {}'.format(response))
-                    #log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
-                    # break
-                except botocore.exceptions.ClientError as e:
-                    # Ignore the ConditionalCheckFailedException, bubble up
-                    # other exceptions.
-                    if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
-                        raise
-                    log.info('DEBUG: {}'.format(str(e)))
-                    put_failed = True
-
-            # TODO: remove
-            sleep(5)
+                self._handle_election_failure()
+                continue
+            try:
+                self._ddb_table.update_item(
+                    Key={
+                        'app_name': self._app_name,
+                        'device_name': self._device_name
+                    },
+                    UpdateExpression='SET unix_timestamp = :t',
+                    ExpressionAttributeValues={
+                        ':t': unix_timestamp
+                    },
+                    ConditionExpression=Attr("unix_timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
+                    ReturnValues='UPDATED_NEW'
+                )
+            except ClientError as e:
+                # Ignore the ConditionalCheckFailedException, bubble up
+                # other exceptions.
+                if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
+                    raise
+                self._handle_election_failure()
+                continue
+            # success
+            log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
             break
-            # never spin
-            # threads.interruptable_sleep.wait(10)
 
     # noinspection PyBroadException
     def run(self):
         while True:
             try:
-                sleep(60)
+                if threads.shutting_down:
+                    break
+                threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
             except Exception:
                 log.exception(self.__class__.__name__)
                 capture_exception()
