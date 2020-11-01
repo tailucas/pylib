@@ -13,7 +13,7 @@ from threading import Thread
 from time import sleep
 
 # from .aws.ddb import get_item, put_item, update_item
-from .datetime import make_timestamp
+from .datetime import make_timestamp, make_unix_timestamp
 from .aws.metrics import post_count_metric
 
 from . import threads
@@ -24,6 +24,7 @@ log = logging.getLogger(APP_NAME)
 
 TABLE_NAME = 'app_leader'
 ELECTION_RETRY_INTERVAL_SECS = 10
+ELECTION_UPDATE_INTERVAL_SECS = 20
 LEADERSHIP_GRACE_PERIOD_SECS = 60
 
 
@@ -39,25 +40,75 @@ class Leader(Thread):
         self._app_name = app_name
         self._device_name = device_name
 
+    def _get_leader(self):
+        response_item = None
+        try:
+            response = self._ddb_table.get_item(
+                Key={
+                    'app_name': self._app_name
+                }
+            )
+            response_item = response['Item']
+        except (ClientError, KeyError):
+            pass
+        return response_item
+
+    def _log_leader(self):
+        response = self._get_leader()
+        if response is not None:
+            log.info('Elected leader is currently {} at {}.'.format(
+                response['device_name'],
+                make_timestamp(int(response['unix_timestamp']))))
+
     def _handle_election_failure(self):
         if datetime.now().minute % 5 == 0:
-            try:
-                response = self._ddb_table.get_item(
-                    Key={
-                        'app_name': self._app_name,
-                    }
-                )
-                log.info('Elected leader is currently {}.'.format(response['Item']['device_name']))
-            except (ClientError, KeyError):
-                pass
-        # try to re-aquire leadership
+            self._log_leader()
         threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
 
+    def _update_leadership(self, unix_timestamp, raise_on_conditional=False):
+        success = False
+        try:
+            self._ddb_table.update_item(
+                Key={
+                    'app_name': self._app_name
+                },
+                UpdateExpression='SET device_name = :d, unix_timestamp = :t',
+                ExpressionAttributeValues={
+                    ':d': self._device_name,
+                    ':t': unix_timestamp
+                },
+                ConditionExpression=Attr("unix_timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
+                ReturnValues='UPDATED_NEW'
+            )
+            success = True
+        except ClientError as e:
+            # Ignore the ConditionalCheckFailedException, bubble up
+            # other exceptions.
+            if e.response['Error']['Code'] != 'ConditionalCheckFailedException' and not raise_on_conditional:
+                raise
+        return success
+
+    def surrender_leadership(self):
+        try:
+            self._ddb_table.delete_item(
+                Key={
+                    'app_name': self._app_name
+                },
+                ConditionExpression="device_name IN (:d)",
+                ExpressionAttributeValues={
+                    ":d": self._device_name
+                }
+            )
+            log.info('Surrendered leadership of {} as {}.'.format(self._app_name, self._device_name))
+        except ClientError as e:
+            if e.response['Error']['Code'] != "ConditionalCheckFailedException":
+                raise
+
     def yield_to_leader(self):
+        self._log_leader()
         log.info('Attempting leadership of {} as {}...'.format(self._app_name, self._device_name))
         while True:
-            timestamp = make_timestamp()
-            unix_timestamp = int((timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds())
+            unix_timestamp = make_unix_timestamp()
             try:
                 self._ddb_table.put_item(
                     Item={
@@ -65,46 +116,36 @@ class Leader(Thread):
                         'unix_timestamp': unix_timestamp,
                         'device_name': self._device_name,
                     },
-                    ConditionExpression=Attr("app_name").not_exists() & Attr("device_name").not_exists()
+                    ConditionExpression=Attr("app_name").not_exists()
                 )
             except ClientError as e:
                 # Ignore the ConditionalCheckFailedException, bubble up
                 # other exceptions.
                 if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                     raise
-                self._handle_election_failure()
-                continue
-            try:
-                self._ddb_table.update_item(
-                    Key={
-                        'app_name': self._app_name,
-                        'device_name': self._device_name
-                    },
-                    UpdateExpression='SET unix_timestamp = :t',
-                    ExpressionAttributeValues={
-                        ':t': unix_timestamp
-                    },
-                    ConditionExpression=Attr("unix_timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
-                    ReturnValues='UPDATED_NEW'
-                )
-            except ClientError as e:
-                # Ignore the ConditionalCheckFailedException, bubble up
-                # other exceptions.
-                if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
-                    raise
+            if not self._update_leadership(unix_timestamp):
                 self._handle_election_failure()
                 continue
             # success
             log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
             break
 
-    # noinspection PyBroadException
     def run(self):
         while True:
             try:
                 if threads.shutting_down:
                     break
-                threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
+                try:
+                    self._update_leadership(
+                        make_unix_timestamp(),
+                        raise_on_conditional=True)
+                except ClientError:
+                    # we've lost leadership
+                    log.warning('Failure to refresh leadership of {} by {}.'.format(
+                        self._app_name,
+                        self._device_name))
+                    break
+                threads.interruptable_sleep.wait(ELECTION_UPDATE_INTERVAL_SECS)
             except Exception:
                 log.exception(self.__class__.__name__)
                 capture_exception()

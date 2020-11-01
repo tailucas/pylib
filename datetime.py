@@ -50,6 +50,10 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
     return timestamp
 
 
+def make_unix_timestamp(timestamp=None):
+    return int((make_timestamp(timestamp=timestamp).replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds())
+
+
 def parse_datetime(value=None, as_tz=pytz.utc):
     timestamp = datetime.utcnow().replace(tzinfo=as_tz)
     if value is None:
