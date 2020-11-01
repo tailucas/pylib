@@ -13,7 +13,7 @@ from time import sleep
 
 # from .aws.ddb import get_item, put_item, update_item
 from .datetime import make_timestamp
-from .metrics import post_count_metric
+from .aws.metrics import post_count_metric
 
 from . import threads
 
@@ -50,11 +50,11 @@ class Leader(Thread):
                         'timestamp': unix_timestamp,
                         'device_name': self._device_name,
                     },
-                    ConditionExpression=Attr("app_name").not_exists(),
+                    ConditionExpression=Attr("app_name").not_exists() & Attr("device_name").not_exists(),
                     # ensure that the permitted leader is known
-                    ReturnValues='ALL_NEW'
+                    ReturnValues='ALL_OLD'
                 )
-                log.info('DEBUG: DDB response is {}'.format(vars(response)))
+                log.info('DEBUG: DDB put response is {}'.format(response))
                 log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
                 # break
             except botocore.exceptions.ClientError as e:
@@ -70,16 +70,16 @@ class Leader(Thread):
             if put_conflict:
                 try:
                     response = self._ddb_table.update_item(
-                        Item={
+                        Key={
                             'app_name': self._app_name,
                             'timestamp': unix_timestamp,
                             'device_name': self._device_name,
                         },
-                        ConditionExpression=Attr("timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
+                        UpdateExpression=Attr("timestamp").lt(unix_timestamp - LEADERSHIP_GRACE_PERIOD_SECS),
                         # ensure that the permitted leader is known
-                        ReturnValues='ALL_NEW'
+                        ReturnValues='UPDATED_NEW'
                     )
-                    log.info('DEBUG: DDB response is {}'.format(vars(response)))
+                    log.info('DEBUG: DDB update response is {}'.format(response))
                     #log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
                     # break
                 except botocore.exceptions.ClientError as e:
