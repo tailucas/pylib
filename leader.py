@@ -134,6 +134,7 @@ class Leader(Thread):
         while True:
             try:
                 if threads.shutting_down:
+                    log.warn('No longer re-electing leadership due to shutdown.')
                     break
                 try:
                     self._update_leadership(
