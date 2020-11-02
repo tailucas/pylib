@@ -131,6 +131,7 @@ class Leader(Thread):
             break
 
     def run(self):
+        log.info('Maintaining leadership of {} as {}'.format(self._app_name, self._device_name))
         while True:
             try:
                 if threads.shutting_down:
