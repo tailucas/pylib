@@ -31,7 +31,7 @@ LEADERSHIP_GRACE_PERIOD_SECS = 300
 class Leader(Thread):
 
     def __init__(self, app_name=APP_NAME, device_name=DEVICE_NAME):
-        super(Leader, self).__init__()
+        super(Leader, self).__init__(name=self.__class__.__name__)
         self.daemon = True
 
         self._ddb = boto3.resource('dynamodb')
