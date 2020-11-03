@@ -61,7 +61,7 @@ class Leader(Thread):
                 make_timestamp(int(response['unix_timestamp']))))
 
     def _handle_election_failure(self):
-        if datetime.now().minute % 5 == 0:
+        if datetime.now().minute % 5 == 0 and datetime.now().second < 10:
             self._log_leader()
         threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
 
