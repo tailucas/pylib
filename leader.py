@@ -65,7 +65,7 @@ class Leader(Thread):
             self._log_leader()
         threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
 
-    def _update_leadership(self, unix_timestamp, raise_on_conditional=False):
+    def _update_leadership(self, unix_timestamp):
         success = False
         try:
             self._ddb_table.update_item(
@@ -84,7 +84,7 @@ class Leader(Thread):
         except ClientError as e:
             # Ignore the ConditionalCheckFailedException, bubble up
             # other exceptions.
-            if e.response['Error']['Code'] != 'ConditionalCheckFailedException' and not raise_on_conditional:
+            if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
                 raise
         return success
 
@@ -137,15 +137,12 @@ class Leader(Thread):
                 if threads.shutting_down:
                     log.warn('No longer re-electing leadership due to shutdown.')
                     break
-                try:
-                    self._update_leadership(
-                        make_unix_timestamp(),
-                        raise_on_conditional=True)
-                except ClientError:
+                if not self._update_leadership(make_unix_timestamp()):
                     # we've lost leadership
                     log.warning('Failure to refresh leadership of {} by {}.'.format(
                         self._app_name,
                         self._device_name))
+                    # FIXME: terminate application
                     break
                 threads.interruptable_sleep.wait(ELECTION_UPDATE_INTERVAL_SECS)
             except Exception:
