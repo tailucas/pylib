@@ -13,6 +13,11 @@ def exec_cmd(cmd):
     return out, err, p.returncode
 
 
+def exec_cmd_log(cmd):
+    o,e,c = exec_cmd(cmd)
+    log.info('{} (exit {}): {}{}'.format(cmd, c, o, e))
+
+
 # noinspection PyUnusedLocal
 class SignalHandler:
 
