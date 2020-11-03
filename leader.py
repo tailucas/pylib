@@ -142,11 +142,14 @@ class Leader(Thread):
                     log.warning('Failure to refresh leadership of {} by {}.'.format(
                         self._app_name,
                         self._device_name))
-                    # FIXME: terminate application
+                    # kill the applicatoin
+                    threads.shutting_down = True
+                    threads.interruptable_sleep.set()
+                    # kill the thread
                     break
                 threads.interruptable_sleep.wait(ELECTION_UPDATE_INTERVAL_SECS)
             except Exception:
                 log.exception(self.__class__.__name__)
                 capture_exception()
-                sleep(1)
+                sleep(ELECTION_RETRY_INTERVAL_SECS)
                 continue
