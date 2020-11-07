@@ -22,7 +22,7 @@ from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload
 from .metrics import post_count_metric
 
-
+# pylint: disable=undefined-variable
 log = logging.getLogger(APP_NAME)
 
 

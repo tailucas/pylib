@@ -6,13 +6,15 @@ import zmq
 from sentry_sdk import capture_exception
 from threading import Thread
 from time import sleep
+# pylint: disable=no-name-in-module
 from zmq.error import ZMQError, ContextTerminated, Again
 
+# pylint: disable=relative-beyond-top-level
 from .data import make_payload
 from .datetime import make_timestamp
 
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # pylint: disable=undefined-variable
 
 URL_WORKER_PUBLISHER = 'inproc://publisher'
 builtins.URL_WORKER_APP = 'inproc://app'
@@ -29,9 +31,9 @@ class DeviceActivator(Thread):
         self._pub_ip = pub_ip
         self._pub_port = pub_port
 
-        self.listener = zmq_context.socket(zmq.PULL)
+        self.listener = zmq_context.socket(zmq.PULL) # pylint: disable=no-member
         # what to do with notifications
-        self.application = zmq_context.socket(zmq.PUSH)
+        self.application = zmq_context.socket(zmq.PUSH) # pylint: disable=no-member
 
     def run(self):
         # outputs
@@ -72,7 +74,7 @@ class DeviceActivator(Thread):
                         self.application.send_pyobj(notification_message)
                     elif output_type.lower() == 'l2ping':
                         if 'device_params' not in event_data['trigger_output']:
-                            log.error('Output type requires parameters to be saved.'.format(output_type))
+                            log.error('Output type {} requires parameters to be saved.'.format(output_type))
                             continue
                         self.application.send_pyobj(event_data['trigger_output']['device_params'])
                     elif output_type.lower() == 'camera':
@@ -106,7 +108,7 @@ class Publisher(Thread):
         self.daemon = True
         self._zmq_context = zmq_context
         # Socket to talk to accept samples
-        self.inproc_pull = self._zmq_context.socket(zmq.PULL)
+        self.inproc_pull = self._zmq_context.socket(zmq.PULL) # pylint: disable=no-member
         self._zmq_url = zmq_ipc_url
         self._pub_ip = pub_ip
         self._pub_port = pub_port
@@ -114,7 +116,7 @@ class Publisher(Thread):
     def run(self):
         self.inproc_pull.bind(self._zmq_url)
         # Socket to talk to the outside world
-        publisher = self._zmq_context.socket(zmq.PUB)
+        publisher = self._zmq_context.socket(zmq.PUB) # pylint: disable=no-member
         pub_url = 'tcp://{ip}:{port}'.format(ip=self._pub_ip, port=self._pub_port)
         try:
             publisher.bind(pub_url)
