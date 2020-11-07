@@ -150,13 +150,13 @@ class IOBoardActivity(object):
         self._zmq_worker = None
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
-    def trigger_output(self, device_key, delay):
+    def trigger_output(self, device_key, duration):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
                 self._zmq_worker = zmq_context.socket(zmq.PUSH)
                 self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj((device_key, delay))
+            self._zmq_worker.send_pyobj((device_key, duration))
         except Exception:
             log.exception(self.__class__.__name__)
             capture_exception()
@@ -294,10 +294,10 @@ class TTSWorkflow(WorkflowDefinition):
 class IOBoardWorkflow(WorkflowDefinition):
 
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
-    def execute(self, app, device_key, delay):
+    def execute(self, app, device_key, duration=None):
         response = None
         with activity_options(task_list=app):
-            response = yield IOBoardActivity.trigger_output(device_key, delay)
+            response = yield IOBoardActivity.trigger_output(device_key, duration)
         return_(response)
 
 
