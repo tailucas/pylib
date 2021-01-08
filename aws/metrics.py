@@ -11,6 +11,13 @@ app_metrics = boto3_session.client('cloudwatch')
 
 def post_count_metric(metric_name, count=1, unit='Count', dimensions=None):
     global app_metrics
+    # post using device name base
+    device_name_base = DEVICE_NAME
+    device_name_parts = device_name_base.split('-')
+    if len(device_name_parts) > 2:
+        # throw away any suffixes
+        device_name_base = '-'.join(device_name_parts[0:2])
+    # define default dimensions
     metric_dimensions = [
         {
             'Name': 'Application',
@@ -18,7 +25,7 @@ def post_count_metric(metric_name, count=1, unit='Count', dimensions=None):
         },
         {
             'Name': 'Device',
-            'Value': DEVICE_NAME
+            'Value': device_name_base
         },
     ]
     if isinstance(dimensions, dict):
