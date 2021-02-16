@@ -204,13 +204,13 @@ class SnapshotActivity(object):
         self._zmq_worker = None
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
-    def snapshot_camera(self, device_key, device_label):
+    def snapshot_camera(self, device_key, device_label, camera_config):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
                 self._zmq_worker = zmq_context.socket(zmq.PUSH)
                 self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj((device_key, device_label))
+            self._zmq_worker.send_pyobj((device_key, device_label, camera_config))
         except ContextTerminated:
             self.stop()
         except Exception:
@@ -274,10 +274,10 @@ class DeviceWorkflow(WorkflowDefinition):
 class SnapshotWorkflow(WorkflowDefinition):
 
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
-    def execute(self, app, device_key, device_label):
+    def execute(self, app, device_key, device_label, camera_config):
         response = None
         with activity_options(task_list=app):
-            response = yield SnapshotActivity.snapshot_camera(device_key, device_label)
+            response = yield SnapshotActivity.snapshot_camera(device_key, device_label, camera_config)
         return_(response)
 
 
