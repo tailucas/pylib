@@ -233,13 +233,13 @@ class ImageProcessActivity(object):
         self._zmq_worker = None
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
-    def image_process_camera(self, device_key, device_label, camera_config):
+    def image_process_camera(self, device_key, device_label, camera_config, snapshot_processor_ip):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
                 self._zmq_worker = zmq_context.socket(zmq.PUSH)
                 self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj((device_key, device_label, camera_config))
+            self._zmq_worker.send_pyobj((device_key, device_label, camera_config, snapshot_processor_ip))
         except ContextTerminated:
             self.stop()
         except Exception:
@@ -303,10 +303,10 @@ class DeviceWorkflow(WorkflowDefinition):
 class ImageProcessWorkflow(WorkflowDefinition):
 
     @execute(version='1.0', execution_start_to_close_timeout=1*MINUTES)
-    def execute(self, app, device_key, device_label, camera_config):
+    def execute(self, app, device_key, device_label, camera_config, snapshot_processor_ip):
         response = None
         with activity_options(task_list=app):
-            response = yield ImageProcessActivity.image_process_camera(device_key, device_label, camera_config)
+            response = yield ImageProcessActivity.image_process_camera(device_key, device_label, camera_config, snapshot_processor_ip)
         return_(response)
 
 
