@@ -35,14 +35,18 @@ class AppPuller(Thread):
     def run(self):
         # outputs
         self.application.connect(URL_WORKER_APP) # pylint: disable=undefined-variable
+        pull_address = 'tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port)
         try:
-            self.listener.bind('tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port))
+            self.listener.bind(pull_address)
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
+        log.info('Application PULL socket listening on {}'.format(pull_address))
         while True:
             try:
-                self.application.send(self.listener.recv())
+                self.application.send_pyobj(
+                    umsgpack.unpackb(
+                        self.listener.recv()))
             except ContextTerminated:
                 self.listener.close()
                 self.application.close()
