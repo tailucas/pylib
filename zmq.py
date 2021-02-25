@@ -19,33 +19,27 @@ log = logging.getLogger(APP_NAME) # pylint: disable=undefined-variable
 URL_WORKER_PUBLISHER = 'inproc://publisher'
 builtins.URL_WORKER_APP = 'inproc://app'
 
+class AppPuller(Thread):
 
-class Puller(Thread):
-
-    def __init__(self, zmq_context, zmq_ipc_url, push_ip, push_port):
-        super(Puller, self).__init__(name=self.__class__.__name__)
+    def __init__(self, push_ip, push_port):
+        super(AppPuller, self).__init__(name=self.__class__.__name__)
         self.daemon = True
 
-        self._zmq_context = zmq_context
-        self._zmq_url = zmq_ipc_url
         self._push_ip = push_ip
         self._push_port = push_port
 
-        self.listener = zmq_context.socket(zmq.PULL) # pylint: disable=no-member
+        self.listener = zmq_context.socket(zmq.PULL) # pylint: disable=no-member,undefined-variable
         # what to do with notifications
-        self.application = zmq_context.socket(zmq.PUSH) # pylint: disable=no-member
+        self.application = zmq_context.socket(zmq.PUSH) # pylint: disable=no-member,undefined-variable
 
     def run(self):
         # outputs
-        self.application.connect(self._zmq_url)
-
-        # Socket to talk to the outside world
+        self.application.connect(URL_WORKER_APP) # pylint: disable=undefined-variable
         try:
             self.listener.bind('tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port))
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
-
         while True:
             try:
                 self.application.send(self.listener.recv())
