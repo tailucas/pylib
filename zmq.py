@@ -16,8 +16,6 @@ from .datetime import make_timestamp
 
 log = logging.getLogger(APP_NAME) # pylint: disable=undefined-variable
 
-URL_WORKER_PUBLISHER = 'inproc://publisher'
-builtins.URL_WORKER_APP = 'inproc://app'
 
 class AppPuller(Thread):
 
