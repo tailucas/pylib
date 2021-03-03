@@ -35,11 +35,12 @@ class AppPuller(Thread):
         self.application.connect(URL_WORKER_APP) # pylint: disable=undefined-variable
         pull_address = 'tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port)
         try:
+            log.info('Binding PULL socket on {}'.format(pull_address))
             self.listener.bind(pull_address)
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
-        log.info('Application PULL socket listening on {}'.format(pull_address))
+        log.info('Bound PULL socket on {}'.format(pull_address))
         while True:
             try:
                 self.application.send_pyobj(
@@ -140,8 +141,9 @@ class DeviceActivator(Thread):
 class Publisher(Thread):
 
     def __init__(self, zmq_context, zmq_ipc_url, pub_ip, pub_port):
-        super(Publisher, self).__init__()
+        super(Publisher, self).__init__(name=self.__class__.__name__)
         self.daemon = True
+
         self._zmq_context = zmq_context
         # Socket to talk to accept samples
         self.inproc_pull = self._zmq_context.socket(zmq.PULL) # pylint: disable=no-member
@@ -155,11 +157,12 @@ class Publisher(Thread):
         publisher = self._zmq_context.socket(zmq.PUB) # pylint: disable=no-member
         pub_url = 'tcp://{ip}:{port}'.format(ip=self._pub_ip, port=self._pub_port)
         try:
+            log.info('Binding application PUB socket on {}'.format(pub_url))
             publisher.bind(pub_url)
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
-
+        log.info('Bound application PUB socket on {}'.format(pub_url))
         while True:
             try:
                 data = self.inproc_pull.recv_pyobj()
