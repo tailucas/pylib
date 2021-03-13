@@ -1,5 +1,6 @@
 import builtins
 import logging
+import numpy
 import umsgpack
 import zmq
 
@@ -30,7 +31,17 @@ class AppPuller(Thread):
         # what to do with notifications
         self.application = zmq_context.socket(zmq.PUSH) # pylint: disable=no-member,undefined-variable
 
+    def process_message(self):
+        raise NotImplementedError
+
+    def startup(self):
+        raise NotImplementedError
+
+    def shutdown(self):
+        raise NotImplementedError
+
     def run(self):
+        self.startup()
         # outputs
         self.application.connect(URL_WORKER_APP) # pylint: disable=undefined-variable
         pull_address = 'tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port)
@@ -43,12 +54,11 @@ class AppPuller(Thread):
         log.info('Bound PULL socket on {}'.format(pull_address))
         while True:
             try:
-                self.application.send_pyobj(
-                    umsgpack.unpackb(
-                        self.listener.recv()))
+                self.process_message()
             except ContextTerminated:
                 self.listener.close()
                 self.application.close()
+                self.shutdown()
                 break
             except Exception:
                 log.exception(self.__class__.__name__)
