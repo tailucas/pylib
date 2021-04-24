@@ -59,6 +59,7 @@ builtins.APP_CONFIG = app_config
 builtins.DEVICE_NAME = app_config.get('app', 'device_name')
 builtins.log = log
 builtins.creds = creds_client
+builtins.creds_vault_id = app_config.get('app', 'creds_vault_id')
 builtins.zmq_context = zmq_context
 builtins.URL_WORKER_APP = 'inproc://app'
 builtins.URL_WORKER_PUBLISHER = 'inproc://publisher'
