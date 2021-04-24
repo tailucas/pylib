@@ -10,7 +10,10 @@ import zmq
 
 from configparser import ConfigParser
 from pathlib import Path
-
+from onepasswordconnectsdk.client import (
+    Client,
+    new_client_from_environment
+)
 
 if sys.stdout.isatty() and os.system('systemctl status app') == 0:
     print("{} is already running. Use 'systemctl stop app' to stop first.".format(APP_NAME))
@@ -48,10 +51,14 @@ if sys.stdout.isatty():
     stream_handler.setFormatter(formatter)
     log.addHandler(stream_handler)
 
+# credential server
+creds_client: Client = new_client_from_environment(url=app_config.get('app', 'creds_server'))
+
 # update builtins
 builtins.APP_CONFIG = app_config
 builtins.DEVICE_NAME = app_config.get('app', 'device_name')
 builtins.log = log
+builtins.creds = creds_client
 builtins.zmq_context = zmq_context
 builtins.URL_WORKER_APP = 'inproc://app'
 builtins.URL_WORKER_PUBLISHER = 'inproc://publisher'

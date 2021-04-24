@@ -1,6 +1,7 @@
 botoflow
 boto3
 netifaces
+onepasswordconnectsdk
 pathtools
 python-dateutil
 pytz
