@@ -56,6 +56,7 @@ creds_client: Client = new_client_from_environment(url=app_config.get('app', 'cr
 
 # update builtins
 builtins.APP_CONFIG = app_config
+builtins.BALENA_APP_NAME = app_config.get('resin', 'app_name')
 builtins.DEVICE_NAME = app_config.get('app', 'device_name')
 builtins.log = log
 builtins.creds = creds_client
