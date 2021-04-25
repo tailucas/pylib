@@ -1,6 +1,7 @@
 import builtins
 import logging
 import logging.handlers
+import onepasswordconnectsdk
 import os
 import os.path
 import sentry_sdk
@@ -15,6 +16,9 @@ from onepasswordconnectsdk.client import (
     new_client_from_environment
 )
 
+# expose builtins for lint-friendly
+APP_NAME = builtins.APP_NAME # pylint: disable=no-member
+
 if sys.stdout.isatty() and os.system('systemctl status app') == 0:
     print("{} is already running. Use 'systemctl stop app' to stop first.".format(APP_NAME))
     sys.exit(1)
@@ -27,15 +31,9 @@ app_config = ConfigParser()
 app_config.optionxform = str
 app_config.read([os.path.join(app_path, '{}.conf'.format(APP_NAME))])
 
-sentry_sdk.init(
-    dsn=app_config.get('sentry', 'dsn'),
-    integrations=SENTRY_EXTRAS
-)
-
-zmq_context = zmq.Context()
-zmq_context.setsockopt(zmq.LINGER, 0)
 
 log = logging.getLogger(APP_NAME)
+
 
 # do not propagate to console logging
 log.propagate = False
@@ -51,16 +49,29 @@ if sys.stdout.isatty():
     stream_handler.setFormatter(formatter)
     log.addHandler(stream_handler)
 
-# credential server
+
+# credentials
 creds_client: Client = new_client_from_environment(url=app_config.get('app', 'creds_server'))
+creds_vaults = creds_client.get_vaults()
+for vault in creds_vaults:
+    log.info("Credential vault {} contains {} credentials.".format(vault['name'], vault['items']))
+creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config) # pylint: disable=no-member
+
+
+sentry_sdk.init(
+    dsn=app_config.get('sentry', 'dsn'),
+    integrations=builtins.SENTRY_EXTRAS # pylint: disable=no-member
+)
+
+zmq_context = zmq.Context()
+zmq_context.setsockopt(zmq.LINGER, 0)
+
 
 # update builtins
 builtins.APP_CONFIG = app_config
-builtins.BALENA_APP_NAME = app_config.get('resin', 'app_name')
 builtins.DEVICE_NAME = app_config.get('app', 'device_name')
 builtins.log = log
-builtins.creds = creds_client
-builtins.creds_vault_id = app_config.get('app', 'creds_vault_id')
+builtins.creds_config = creds
 builtins.zmq_context = zmq_context
 builtins.URL_WORKER_APP = 'inproc://app'
 builtins.URL_WORKER_PUBLISHER = 'inproc://publisher'
