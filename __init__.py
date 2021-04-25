@@ -54,14 +54,15 @@ if sys.stdout.isatty():
 creds_client: Client = new_client_from_environment(url=app_config.get('app', 'creds_server'))
 creds_vaults = creds_client.get_vaults()
 for vault in creds_vaults:
-    log.info("Credential vault {} contains {} credentials.".format(vault['name'], vault['items']))
+    log.info("Credential vault {} contains {} credentials.".format(vault.name, vault.items))
 creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config) # pylint: disable=no-member
 
 
 sentry_sdk.init(
-    dsn=app_config.get('sentry', 'dsn'),
+    dsn=creds.sentry_dsn,
     integrations=builtins.SENTRY_EXTRAS # pylint: disable=no-member
 )
+
 
 zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
