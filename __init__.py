@@ -51,7 +51,7 @@ if sys.stdout.isatty():
 
 
 # credentials
-creds_client: Client = new_client_from_environment(url=app_config.get('app', 'creds_server'))
+creds_client: Client = new_client_from_environment(url=os.environ['OP_CONNECT_SERVER'])
 creds_vaults = creds_client.get_vaults()
 for vault in creds_vaults:
     log.info("Credential vault {} contains {} credentials.".format(vault.name, vault.items))
