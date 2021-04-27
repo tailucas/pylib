@@ -1,6 +1,5 @@
 import builtins
 import logging
-import numpy
 import umsgpack
 import zmq
 
