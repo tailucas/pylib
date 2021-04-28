@@ -9,10 +9,9 @@ log = logging.getLogger(APP_NAME)
 app_metrics = boto3_session.client('cloudwatch')
 
 
-def post_count_metric(metric_name, count=1, unit='Count', dimensions=None):
+def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name_base=DEVICE_NAME):
     global app_metrics
     # post using device name base
-    device_name_base = DEVICE_NAME
     device_name_parts = device_name_base.split('-')
     if len(device_name_parts) > 2:
         # throw away any suffixes
