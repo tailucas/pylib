@@ -10,7 +10,7 @@ try:
     os.environ['AWS_ACCESS_KEY_ID']
     os.environ['AWS_SECRET_ACCESS_KEY']
 except KeyError:
-    log.debug('AWS environmnent variables unset. Setting in Python from credential provider.')
+    log.debug('AWS environment variables unset. Setting in Python from credential provider.')
     os.environ['AWS_ACCESS_KEY_ID'] = creds_config.aws_akid # pylint: disable=undefined-variable
     os.environ['AWS_SECRET_ACCESS_KEY'] = creds_config.aws_sak # pylint: disable=undefined-variable
 
