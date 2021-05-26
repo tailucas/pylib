@@ -4,7 +4,7 @@ import subprocess
 
 from . import threads
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 def exec_cmd(cmd):

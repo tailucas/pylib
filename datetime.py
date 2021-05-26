@@ -9,7 +9,7 @@ from dateutil import tz
 builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 def is_list(value):
@@ -46,7 +46,7 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
         timestamp = new_timestamp
     log.debug('Using timestamp {}'.format(timestamp))
     if make_string:
-        return timestamp.strftime(ISO_DATE_FORMAT)
+        return timestamp.strftime(ISO_DATE_FORMAT) # type: ignore
     return timestamp
 
 

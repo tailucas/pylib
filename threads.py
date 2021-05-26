@@ -12,7 +12,7 @@ from datetime import datetime
 from .aws.metrics import post_count_metric
 
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
@@ -73,7 +73,7 @@ def thread_nanny(signal_handler):
             interruptable_sleep.set()
             # print zmq sockets that are still alive (and blocking shutdown)
             try:
-                for s in zmq_context._sockets:
+                for s in zmq_context._sockets: # type: ignore
                     if s and not s.closed:
                         log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
             except RuntimeError:

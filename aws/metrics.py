@@ -3,13 +3,13 @@ from . import boto3_session
 from ..datetime import make_timestamp
 
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 app_metrics = boto3_session.client('cloudwatch')
 
 
-def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name_base=DEVICE_NAME):
+def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name_base=DEVICE_NAME): # type: ignore
     global app_metrics
     # post using device name base
     device_name_parts = device_name_base.split('-')
@@ -20,7 +20,7 @@ def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, devic
     metric_dimensions = [
         {
             'Name': 'Application',
-            'Value': APP_NAME
+            'Value': APP_NAME # type: ignore
         },
         {
             'Name': 'Device',

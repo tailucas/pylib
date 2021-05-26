@@ -14,7 +14,7 @@ from .data import make_payload
 from .datetime import make_timestamp
 
 
-log = logging.getLogger(APP_NAME) # pylint: disable=undefined-variable
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 class AppPuller(Thread):
@@ -26,9 +26,9 @@ class AppPuller(Thread):
         self._push_ip = push_ip
         self._push_port = push_port
 
-        self.listener = zmq_context.socket(zmq.PULL) # pylint: disable=no-member,undefined-variable
+        self.listener = zmq_context.socket(zmq.PULL) # type: ignore
         # what to do with notifications
-        self.application = zmq_context.socket(zmq.PUSH) # pylint: disable=no-member,undefined-variable
+        self.application = zmq_context.socket(zmq.PUSH) # type: ignore
 
     def process_message(self):
         raise NotImplementedError
@@ -42,7 +42,7 @@ class AppPuller(Thread):
     def run(self):
         self.startup()
         # outputs
-        self.application.connect(URL_WORKER_APP) # pylint: disable=undefined-variable
+        self.application.connect(URL_WORKER_APP) # type: ignore
         pull_address = 'tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port)
         try:
             log.info('Binding PULL socket on {}'.format(pull_address))

@@ -1,8 +1,10 @@
 import logging
 from .process import exec_cmd
 
+from sentry_sdk import capture_exception
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 def bluetooth_init():

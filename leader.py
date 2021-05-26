@@ -19,7 +19,7 @@ from .aws.metrics import post_count_metric
 from . import threads
 
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 TABLE_NAME = 'app_leader'
@@ -30,7 +30,7 @@ LEADERSHIP_GRACE_PERIOD_SECS = 300
 
 class Leader(Thread):
 
-    def __init__(self, app_name=APP_NAME, device_name=DEVICE_NAME):
+    def __init__(self, app_name=APP_NAME, device_name=DEVICE_NAME): # type: ignore
         super(Leader, self).__init__(name=self.__class__.__name__)
         self.daemon = True
 

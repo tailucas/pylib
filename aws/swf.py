@@ -23,7 +23,7 @@ from ..data import make_payload
 from .metrics import post_count_metric
 
 # pylint: disable=undefined-variable
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 class SWFActivityWaiter(Thread):
@@ -81,7 +81,7 @@ class HelloWorldActivities(object):
 
     @activity(version='1.0', start_to_close_timeout=5*SECONDS)
     def get_name(self):
-        return APP_NAME
+        return APP_NAME # type: ignore
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def print_greeting(self, greeting, name):
@@ -154,7 +154,7 @@ class IOBoardActivity(object):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
-                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker = zmq_context.socket(zmq.PUSH) # type: ignore
                 self._zmq_worker.connect(self._zmq_url)
             self._zmq_worker.send_pyobj((device_key, duration))
         except Exception:
@@ -181,7 +181,7 @@ class TTSActivity(object):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
-                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker = zmq_context.socket(zmq.PUSH) # type: ignore
                 self._zmq_worker.connect(self._zmq_url)
             self._zmq_worker.send_pyobj(message)
         except Exception:
@@ -208,7 +208,7 @@ class SnapshotActivity(object):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
-                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker = zmq_context.socket(zmq.PUSH) # type: ignore
                 self._zmq_worker.connect(self._zmq_url)
             self._zmq_worker.send_pyobj((device_key, device_label, camera_config))
         except ContextTerminated:
@@ -237,7 +237,7 @@ class ImageProcessActivity(object):
         try:
             # create ZMQ socket and use on the correct thread
             if (self._zmq_worker is None):
-                self._zmq_worker = zmq_context.socket(zmq.PUSH)
+                self._zmq_worker = zmq_context.socket(zmq.PUSH) # type: ignore
                 self._zmq_worker.connect(self._zmq_url)
             self._zmq_worker.send_pyobj((device_key, device_label, camera_config, snapshot_processor_address))
         except ContextTerminated:
