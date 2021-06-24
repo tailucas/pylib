@@ -20,7 +20,7 @@ from onepasswordconnectsdk.client import (
 APP_NAME = builtins.APP_NAME # pylint: disable=no-member
 
 if sys.stdout.isatty() and os.system('systemctl status app') == 0:
-    print("{} is already running. Use 'systemctl stop app' to stop first.".format(APP_NAME))
+    print(f"{APP_NAME} is already running. Use 'systemctl stop app' to stop first.")
     sys.exit(1)
 
 # use parent of this module's top-level __init__.py
@@ -29,7 +29,7 @@ app_path = Path(os.path.abspath(os.path.dirname(__file__))).parent
 os.chdir(app_path)
 app_config = ConfigParser()
 app_config.optionxform = str
-app_config.read([os.path.join(app_path, '{}.conf'.format(APP_NAME))])
+app_config.read([os.path.join(app_path, f'{APP_NAME}.conf')])
 
 
 log = logging.getLogger(APP_NAME)
@@ -54,7 +54,7 @@ if sys.stdout.isatty():
 creds_client: Client = new_client_from_environment(url=os.environ['OP_CONNECT_SERVER'])
 creds_vaults = creds_client.get_vaults()
 for vault in creds_vaults:
-    log.info("Credential vault {} contains {} credentials.".format(vault.name, vault.items))
+    log.info(f"Credential vault {vault.name} contains {vault.items} credentials.")
 creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config) # pylint: disable=no-member
 
 

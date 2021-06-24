@@ -40,19 +40,17 @@ class SWFActivityWaiter(Thread):
 
     def run(self):
         if self._workflow_instance is None:
-            log.warning('No workflow instance for {} @ {}'.format(self._output_type, self._event_source))
+            log.warning(f'No workflow instance for {self._output_type} @ {self._event_source}')
             return
         execution_result = None
         try:
             self.socket.connect(self._zmq_url)
             try:
-                log.info("Awaiting {} execution result: {}".format(
-                    self._output_type,
-                    self._workflow_instance.workflow_execution))
+                log.info(f"Awaiting {self._output_type} execution result: {self._workflow_instance.workflow_execution}")
                 execution_result = self._workflow_starter.wait_for_completion(self._workflow_instance, 1)
             except (WorkflowTimedOutError, WorkflowFailedError) as e:
                 log.warning(
-                    "Workflow {} has failed.".format(self._workflow_instance.workflow_execution),
+                    f"Workflow {self._workflow_instance.workflow_execution} has failed.",
                     exc_info=e)
             if execution_result is not None:
                 self.socket.send_pyobj({self._event_source: execution_result})
@@ -61,14 +59,14 @@ class SWFActivityWaiter(Thread):
             capture_exception()
         finally:
             self.socket.close()
-        log.info('{} is done for {} with result {}'.format(self._name, self._output_type, execution_result))
+        log.info(f'{self._name} is done for {self._output_type} with result {execution_result}')
 
 
 def swf_exception_handler(err: Exception, tb_list: StackSummary):
     stack_summary = ''
     if (log.level == logging.DEBUG):
-        stack_summary = ' {}'.format(tb_list.format())
-    message = 'SWF processing exception: {}{}'.format(repr(err), stack_summary)
+        stack_summary = f' {tb_list.format()}'
+    message = f'SWF processing exception: {err!r}{stack_summary}'
     log.fatal(message)
     post_count_metric('Fatals')
     threads.shutting_down = True
@@ -85,7 +83,7 @@ class HelloWorldActivities(object):
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def print_greeting(self, greeting, name):
-        message = "{} {}!".format(greeting, name)
+        message = f"{greeting} {name}!"
         log.info(message)
         return message
 
@@ -96,7 +94,7 @@ class HelloWorldWorkflow(WorkflowDefinition):
     def execute(self, greeting):
         name = yield HelloWorldActivities.get_name()
         with activity_options(task_list='notifier'):
-            yield TTSActivity.say("Testing {}".format(name))
+            yield TTSActivity.say(f"Testing {name}")
         response = yield HelloWorldActivities.print_greeting(greeting, name)
         return_(response)
 
@@ -114,22 +112,13 @@ class BluetoothActivity(object):
     @activity(version='1.0', start_to_close_timeout=20*SECONDS)
     def ping_bluetooth(self, owner_device_list):
         ping_responses = ping_bluetooth_devices(owner_device_list)
-        log.info('{} {} in {} returns {}...'.format(
-            self.device_type,
-            str(owner_device_list),
-            self.device_location,
-            str(ping_responses)))
+        log.info(f'{self.device_type} {owner_device_list!s} in {self.device_location} returns {ping_responses!s}...')
         if ping_responses is None:
             return None
         active_devices = []
         for owner, ping_response in list(ping_responses.items()):
-            device_label = '{} is here.'.format(owner)
-            log.info('{} {} in {}: [{}] => ({})'.format(
-                self.device_type,
-                owner,
-                self.device_location,
-                ping_response,
-                device_label))
+            device_label = f'{owner} is here.'
+            log.info(f'{self.device_type} {owner} in {self.device_location}: [{ping_response}] => ({device_label})')
             active_devices.append({
                     'device_key': self.device_key,
                     'device_type': self.device_type,
@@ -267,7 +256,7 @@ class DeviceInfoActivity(object):
         if default_gateway_ipv4 is not None and len(default_gateway_ipv4) > 0:
             default_gateway_ipv4_address = default_gateway_ipv4[0]
             default_gateway_ipv4_iface = default_gateway_ipv4[1]
-            log.info('Gateway address is {} on {}'.format(default_gateway_ipv4_address, default_gateway_ipv4_iface))
+            log.info(f'Gateway address is {default_gateway_ipv4_address} on {default_gateway_ipv4_iface}')
             lan_iface = default_gateway_ipv4_iface
         else:
             # go old-skool
@@ -283,7 +272,7 @@ class DeviceInfoActivity(object):
                     lan_iface = iface
                     break
         ipv4_address = netifaces.ifaddresses(lan_iface)[netifaces.AF_INET][0]['addr']
-        log.info('Using IPv4 address {} on {}'.format(ipv4_address, lan_iface))
+        log.info(f'Using IPv4 address {ipv4_address} on {lan_iface}')
         return ipv4_address
 
 

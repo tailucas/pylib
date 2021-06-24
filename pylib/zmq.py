@@ -43,14 +43,14 @@ class AppPuller(Thread):
         self.startup()
         # outputs
         self.application.connect(URL_WORKER_APP) # type: ignore
-        pull_address = 'tcp://{ip}:{port}'.format(ip=self._push_ip, port=self._push_port)
+        pull_address = f'tcp://{self._push_ip}:{self._push_port}'
         try:
-            log.info('Binding PULL socket on {}'.format(pull_address))
+            log.info(f'Binding PULL socket on {pull_address}')
             self.listener.bind(pull_address)
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
-        log.info('Bound PULL socket on {}'.format(pull_address))
+        log.info(f'Bound PULL socket on {pull_address}')
         while True:
             try:
                 self.process_message()
@@ -87,7 +87,7 @@ class DeviceActivator(Thread):
 
         # Socket to talk to the outside world
         try:
-            self.listener.bind('tcp://{ip}:{port}'.format(ip=self._pub_ip, port=self._pub_port))
+            self.listener.bind(f'tcp://{self._pub_ip}:{self._pub_port}')
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
@@ -96,12 +96,13 @@ class DeviceActivator(Thread):
             try:
                 event = umsgpack.unpackb(self.listener.recv())
                 if 'timestamp' in event:
-                    log.debug('Received timestamp {}'.format(event['timestamp']))
+                    timestamp = event['timestamp']
+                    log.debug(f'Received timestamp {timestamp}')
                     timestamp = make_timestamp(timestamp=event['timestamp'])
                 else:
                     timestamp = make_timestamp()
                 if 'data' not in event:
-                    log.warning('Unknown event data: {}'.format(event))
+                    log.warning(f'Unknown event data: {event}')
                     continue
                 event_data = event['data']
                 if 'trigger_output' in event_data:
@@ -109,22 +110,24 @@ class DeviceActivator(Thread):
                     output_type = trigger_output['type']
                     if output_type.lower() == 'tts':
                         if 'input_context' not in event_data:
-                            log.warning('{} requested without context, ignoring.'.format(output_type))
+                            log.warning(f'{output_type} requested without context, ignoring.')
                             continue
                         input_device_label = event_data['input_context']['device_label']
                         event_detail = ""
                         if 'event_detail' in event_data['input_context']:
-                            event_detail = ' {}'.format(event_data['input_context']['event_detail'])
-                        notification_message = '{}{}'.format(input_device_label, event_detail)
-                        log.info("TTS '{}'".format(notification_message))
+                            input_context_detail = event_data['input_context']['event_detail']
+                            event_detail = f' {input_context_detail}'
+                        notification_message = '{input_device_label}{event_detail}'
+                        log.info(f"TTS '{notification_message}'")
                         self.application.send_pyobj(notification_message)
                     elif output_type.lower() == 'l2ping':
                         if 'device_params' not in event_data['trigger_output']:
-                            log.error('Output type {} requires parameters to be saved.'.format(output_type))
+                            log.error(f'Output type {output_type} requires parameters to be saved.')
                             continue
                         self.application.send_pyobj(event_data['trigger_output']['device_params'])
                     elif output_type.lower() == 'camera':
-                        log.info("Camera snapshot '{}'".format(trigger_output['device_label']))
+                        device_label = trigger_output['device_label']
+                        log.info(f"Camera snapshot '{device_label}'")
                         trigger_output.update({'timestamp': timestamp})
                         self.application.send_pyobj(trigger_output)
                     elif output_type.lower() == 'ioboard':
@@ -134,7 +137,7 @@ class DeviceActivator(Thread):
                         # send all output activations to the relay control, which will filter accordingly
                         self.application.send_pyobj((event_data['trigger_output']['device_key'], delay))
                     else:
-                        log.error('Unconfigured output type {} for input context {}'.format(output_type, event_data))
+                        log.error(f'Unconfigured output type {output_type} for input context {event_data}')
                         continue
             except ContextTerminated:
                 self.listener.close()
@@ -164,14 +167,14 @@ class Publisher(Thread):
         self.inproc_pull.bind(self._zmq_url)
         # Socket to talk to the outside world
         publisher = self._zmq_context.socket(zmq.PUB) # pylint: disable=no-member
-        pub_url = 'tcp://{ip}:{port}'.format(ip=self._pub_ip, port=self._pub_port)
+        pub_url = f'tcp://{self._pub_ip}:{self._pub_port}'
         try:
-            log.info('Binding application PUB socket on {}'.format(pub_url))
+            log.info(f'Binding application PUB socket on {pub_url}')
             publisher.bind(pub_url)
         except ZMQError:
             log.exception(self.__class__.__name__)
             raise
-        log.info('Bound application PUB socket on {}'.format(pub_url))
+        log.info(f'Bound application PUB socket on {pub_url}')
         while True:
             try:
                 data = self.inproc_pull.recv_pyobj()
@@ -180,7 +183,7 @@ class Publisher(Thread):
                     data=data)
                 # do not info on heartbeats
                 if 'device_info' not in data:
-                    log.debug('Publishing {} bytes on {}'.format(len(payload), pub_url))
+                    log.debug(f'Publishing {len(payload)} bytes on {pub_url}')
                 publisher.send(payload)
             except ContextTerminated:
                 self.inproc_pull.close()

@@ -50,8 +50,8 @@ def thread_nanny(signal_handler):
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
             if len(thread_deficit) > 0:
-                error_msg = 'A thread has died. Expected threads are [{}], ' \
-                            'missing is [{}].'.format(threads_tracked, thread_deficit)
+                error_msg = f'A thread has died. Expected threads are [{threads_tracked}], ' \
+                            'missing is [{thread_deficit}].'
                 log.fatal(error_msg)
                 post_count_metric('Fatals')
                 shutting_down = True
@@ -67,7 +67,7 @@ def thread_nanny(signal_handler):
                 shutting_down_time = now
             elif (now - shutting_down_time > shutting_down_grace_secs):
                 if log.level != logging.DEBUG:
-                    log.warning("Shutting-down duration has exceeded {}s. Switching to debug logging...".format(shutting_down_grace_secs))
+                    log.warning(f"Shutting-down duration has exceeded {shutting_down_grace_secs}s. Switching to debug logging...")
                     log.setLevel(logging.DEBUG)
             # interrupt any other sleepers now
             interruptable_sleep.set()
@@ -75,7 +75,7 @@ def thread_nanny(signal_handler):
             try:
                 for s in zmq_context._sockets: # type: ignore
                     if s and not s.closed:
-                        log.debug("Lingering socket type {} (push is {}, pull is {}) for endpoint {}.".format(s.TYPE, zmq.PUSH, zmq.PULL, s.LAST_ENDPOINT))
+                        log.debug(f"Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.")
             except RuntimeError:
                 # protect against "Set changed size during iteration", try again later
                 pass

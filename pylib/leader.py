@@ -56,9 +56,9 @@ class Leader(Thread):
     def _log_leader(self):
         response = self._get_leader()
         if response is not None:
-            log.info('Elected leader is currently {} at {}.'.format(
-                response['device_name'],
-                make_timestamp(int(response['unix_timestamp']))))
+            device_name = response['device_name']
+            timestamp = make_timestamp(int(response['unix_timestamp']))
+            log.info(f'Elected leader is currently {device_name} at {timestamp}.')
 
     def _handle_election_failure(self):
         if datetime.now().minute % 5 == 0 and datetime.now().second < 10:
@@ -99,14 +99,14 @@ class Leader(Thread):
                     ":d": self._device_name
                 }
             )
-            log.info('Surrendered leadership of {} as {}.'.format(self._app_name, self._device_name))
+            log.info(f'Surrendered leadership of {self._app_name} as {self._device_name}.')
         except ClientError as e:
             if e.response['Error']['Code'] != "ConditionalCheckFailedException":
                 raise
 
     def yield_to_leader(self):
         self._log_leader()
-        log.info('Attempting leadership of {} as {}...'.format(self._app_name, self._device_name))
+        log.info(f'Attempting leadership of {self._app_name} as {self._device_name}...')
         while True:
             unix_timestamp = make_unix_timestamp()
             try:
@@ -127,11 +127,11 @@ class Leader(Thread):
                     self._handle_election_failure()
                     continue
             # success
-            log.info('Acquired leadership of {} as {}.'.format(self._app_name, self._device_name))
+            log.info(f'Acquired leadership of {self._app_name} as {self._device_name}.')
             break
 
     def run(self):
-        log.info('Maintaining leadership of {} as {}'.format(self._app_name, self._device_name))
+        log.info(f'Maintaining leadership of {self._app_name} as {self._device_name}')
         while True:
             try:
                 if threads.shutting_down:
@@ -139,9 +139,7 @@ class Leader(Thread):
                     break
                 if not self._update_leadership(make_unix_timestamp()):
                     # we've lost leadership
-                    log.warning('Failure to refresh leadership of {} by {}.'.format(
-                        self._app_name,
-                        self._device_name))
+                    log.warning(f'Failure to refresh leadership of {self._app_name} by {self._device_name}.')
                     # kill the applicatoin
                     threads.shutting_down = True
                     threads.interruptable_sleep.set()

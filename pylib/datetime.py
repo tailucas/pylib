@@ -21,30 +21,30 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
         timestamp = datetime.utcfromtimestamp(timestamp).replace(tzinfo=pytz.utc)
     elif isinstance(timestamp, str):
         try:
-            log.debug('Attempting to parse timestamp {}'.format(timestamp))
+            log.debug(f'Attempting to parse timestamp {timestamp}')
             timestamp = dateutil.parser.parse(timestamp)
-            log.debug('Parsed timestamp is {}'.format(timestamp))
+            log.debug(f'Parsed timestamp is {timestamp}')
         except ValueError:
             # try integer representation
             try:
                 timestamp = datetime.utcfromtimestamp(int(timestamp)).replace(tzinfo=pytz.utc)
-                log.debug('Parsed integer timestamp is {}'.format(timestamp))
+                log.debug(f'Parsed integer timestamp is {timestamp}')
             except ValueError:
-                log.exception("Unable to parse {}. Using 'now'.".format(timestamp))
+                log.exception(f"Unable to parse {timestamp}. Using 'now'.")
                 timestamp = None
     if timestamp is None:
         timestamp = datetime.utcnow().replace(tzinfo=pytz.utc)
     if timestamp.tzinfo is None:
         local_tz = tz.tzlocal()
-        log.debug('{}: fixed to local time {}'.format(timestamp, local_tz))
+        log.debug(f'{timestamp}: fixed to local time {local_tz}')
         # we use the default specific to the physical locality of the devices
         timestamp = timestamp.replace(tzinfo=local_tz)
     if timestamp.tzinfo != as_tz:
         # now adjust to requested TZ
         new_timestamp = timestamp.astimezone(tz=as_tz)
-        log.debug('{} adjusted to {} ({} to {})'.format(timestamp, new_timestamp, timestamp.tzinfo, as_tz))
+        log.debug(f'{timestamp} adjusted to {new_timestamp} ({timestamp.tzinfo} to {as_tz})')
         timestamp = new_timestamp
-    log.debug('Using timestamp {}'.format(timestamp))
+    log.debug(f'Using timestamp {timestamp}')
     if make_string:
         return timestamp.strftime(ISO_DATE_FORMAT) # type: ignore
     return timestamp
@@ -61,21 +61,21 @@ def parse_datetime(value=None, as_tz=pytz.utc):
     if isinstance(value, str):
         try:
             timestamp = dateutil.parser.parse(value)
-            log.debug('Parsed timestamp is {}'.format(timestamp))
+            log.debug(f'Parsed timestamp is {timestamp}')
         except ValueError:
-            log.exception("Cannot parse date-like string {}. Defaulting to '{}'.".format(value, timestamp))
+            log.exception(f"Cannot parse date-like string {value}. Defaulting to '{timestamp}'.")
     elif isinstance(value, datetime):
         timestamp = value
     else:
-        raise RuntimeError("Unknown date/time type: '{}'".format(value))
+        raise RuntimeError(f"Unknown date/time type: '{value}'")
     # ensure that some timezone information is present
     if timestamp.tzinfo is None:
         local_tz = tz.tzlocal()
-        log.debug('{}: setting to local time {}'.format(timestamp, local_tz))
+        log.debug(f'{timestamp}: setting to local time {local_tz}')
         # we use the default specific to the physical locality of the devices
         timestamp = timestamp.replace(tzinfo=local_tz)
     if timestamp.tzinfo != as_tz:
         # now adjust to requested TZ
-        log.debug('{}: setting to {} from {}'.format(timestamp, as_tz, timestamp.tzinfo))
+        log.debug(f'{timestamp}: setting to {as_tz} from {timestamp.tzinfo}')
         timestamp = timestamp.astimezone(tz=as_tz)
     return timestamp
