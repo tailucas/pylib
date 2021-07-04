@@ -70,7 +70,14 @@ zmq_context.setsockopt(zmq.LINGER, 0)
 
 # update builtins
 builtins.APP_CONFIG = app_config
-builtins.DEVICE_NAME = app_config.get('app', 'device_name')
+device_name = app_config.get('app', 'device_name')
+builtins.DEVICE_NAME = device_name
+device_name_base = device_name
+device_name_parts = device_name.split('-')
+if len(device_name_parts) > 2:
+    # throw away any suffixes
+    device_name_base = '-'.join(device_name_parts[0:2])
+builtins.DEVICE_NAME_BASE = device_name_base
 builtins.log = log
 builtins.creds_config = creds
 builtins.zmq_context = zmq_context

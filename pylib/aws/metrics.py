@@ -9,13 +9,8 @@ log = logging.getLogger(APP_NAME) # type: ignore
 app_metrics = boto3_session.client('cloudwatch')
 
 
-def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name_base=DEVICE_NAME): # type: ignore
+def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name=DEVICE_NAME_BASE): # type: ignore
     global app_metrics
-    # post using device name base
-    device_name_parts = device_name_base.split('-')
-    if len(device_name_parts) > 2:
-        # throw away any suffixes
-        device_name_base = '-'.join(device_name_parts[0:2])
     # define default dimensions
     metric_dimensions = [
         {
@@ -24,7 +19,7 @@ def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, devic
         },
         {
             'Name': 'Device',
-            'Value': device_name_base
+            'Value': device_name
         },
     ]
     if isinstance(dimensions, dict):
