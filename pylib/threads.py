@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import traceback
+import zmq
 
 from datetime import datetime
 
