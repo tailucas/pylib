@@ -29,7 +29,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 class SWFActivityWaiter(Thread):
 
-    def __init__(self, zmq_ipc_url, zmq_context, event_source, output_type, workflow_starter, workflow_instance):
+    def __init__(self, zmq_ipc_url, event_source, output_type, workflow_starter, workflow_instance):
         super(SWFActivityWaiter, self).__init__(name=self.__class__.__name__)
         self.daemon = True
         self._event_source = event_source
