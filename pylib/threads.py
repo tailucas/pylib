@@ -5,11 +5,11 @@ import sys
 import threading
 import time
 import traceback
-import zmq
 
 from datetime import datetime
 
 from .aws.metrics import post_count_metric
+from .zmq import zmq_context, zmq_sockets
 
 
 log = logging.getLogger(APP_NAME) # type: ignore
@@ -75,7 +75,14 @@ def thread_nanny(signal_handler):
             try:
                 for s in zmq_context._sockets: # type: ignore
                     if s and not s.closed:
-                        log.debug(f"Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.")
+                        message = f'Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.'
+                        created_at = ''
+                        # cost is acceptable here
+                        for location, sref in zmq_sockets.items():
+                            if s is sref:
+                                created_at = f' Created at {location}'
+                                break
+                        log.debug(f'{message}{created_at}')
             except RuntimeError:
                 # protect against "Set changed size during iteration", try again later
                 pass

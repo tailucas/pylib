@@ -1,4 +1,5 @@
 import builtins
+import inspect
 import logging
 import umsgpack
 import zmq
@@ -8,6 +9,7 @@ from threading import Thread
 from time import sleep
 # pylint: disable=no-name-in-module
 from zmq.error import ZMQError, ContextTerminated, Again
+from weakref import WeakValueDictionary
 
 # pylint: disable=relative-beyond-top-level
 from .data import make_payload
@@ -15,6 +17,19 @@ from .datetime import make_timestamp
 
 
 log = logging.getLogger(APP_NAME) # type: ignore
+
+
+zmq_sockets = WeakValueDictionary()
+zmq_context = zmq.Context()
+zmq_context.setsockopt(zmq.LINGER, 0)
+
+
+def zmq_socket(socket_type):
+    fi = inspect.stack()[0]
+    location = f'{fi.function} in {fi.filename} @ line {fi.lineno}'
+    socket = zmq_context.socket(socket_type)
+    zmq_sockets[location] = socket
+    return socket
 
 
 class AppPuller(Thread):

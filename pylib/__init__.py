@@ -6,8 +6,6 @@ import os
 import os.path
 import sentry_sdk
 import sys
-import threading
-import zmq
 
 from configparser import ConfigParser
 from pathlib import Path
@@ -63,11 +61,6 @@ sentry_sdk.init(
     integrations=builtins.SENTRY_EXTRAS # pylint: disable=no-member
 )
 
-
-zmq_context = zmq.Context()
-zmq_context.setsockopt(zmq.LINGER, 0)
-
-
 # update builtins
 builtins.APP_CONFIG = app_config
 device_name = app_config.get('app', 'device_name')
@@ -80,6 +73,5 @@ if len(device_name_parts) > 2:
 builtins.DEVICE_NAME_BASE = device_name_base
 builtins.log = log
 builtins.creds_config = creds
-builtins.zmq_context = zmq_context
 builtins.URL_WORKER_APP = 'inproc://app'
 builtins.URL_WORKER_PUBLISHER = 'inproc://publisher'
