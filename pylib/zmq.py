@@ -29,9 +29,19 @@ def zmq_term():
     log.info(f'ZMQ shutdown complete.')
 
 
+def try_close(socket):
+    if socket is None:
+        return
+    try:
+        location = zmq_sockets[socket]
+        log.info(f'Closing socket created at {location}...')
+        socket.close()
+    except ZMQError:
+        log.warning(f'Ignoring socket error when closing socket.', exc_info=True)
+
+
 class Closable(object):
-    def __init__(self, name, **kwargs):
-        self.name = name
+    def __init__(self, *args, **kwargs):
         self.sockets = WeakSet()
 
     def get_socket(self, socket_type):
@@ -41,12 +51,4 @@ class Closable(object):
 
     def close(self):
         for socket in self.sockets:
-            if socket is None:
-                continue
-            try:
-                location = zmq_sockets[socket]
-                log.info(f'{self.name} closing socket created at {location}...')
-                socket.close()
-            except ZMQError:
-                log.warning(f'Ignoring socket error when closing socket for {self.name}', exc_info=True)
-                continue
+            try_close(socket)
