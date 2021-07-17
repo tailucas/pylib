@@ -14,11 +14,11 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 class exception_handler(object):
 
-    def __init__(self, closable: Closable = None, with_socket_type=None, connect_url=None, and_raise=False):
+    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=False):
         self._closable = closable
-        self._socket_type = with_socket_type
         self._zmq_socket = None
         self._zmq_url = connect_url
+        self._socket_type = with_socket_type
         self._and_raise = and_raise
 
     def __enter__(self):
