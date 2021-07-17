@@ -78,11 +78,12 @@ def thread_nanny(signal_handler):
                     if s and not s.closed:
                         message = f'Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.'
                         created_at = ''
-                        # cost is acceptable here
-                        for location, sref in zmq_sockets.items():
-                            if s is sref:
+                        try:
+                            location = zmq_sockets[s]
+                            if location:
                                 created_at = f' Created at {location}'
-                                break
+                        except KeyError:
+                            pass
                         log.debug(f'{message}{created_at}')
             except RuntimeError:
                 # protect against "Set changed size during iteration", try again later
