@@ -45,6 +45,7 @@ class Closable(object):
         self.sockets = WeakSet()
         if bind_url:
             self.socket = self.get_socket(socket_type)
+            self.socket.bind(bind_url)
 
     def get_socket(self, socket_type):
         s = zmq_socket(socket_type)
