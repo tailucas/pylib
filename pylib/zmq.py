@@ -30,7 +30,7 @@ def zmq_term():
 
 
 class Closable(object):
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         self.name = name
         self.sockets = WeakSet()
 
