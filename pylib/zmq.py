@@ -41,8 +41,10 @@ def try_close(socket):
 
 
 class Closable(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, bind_url=None, socket_type=zmq.PULL, **kwargs):
         self.sockets = WeakSet()
+        if bind_url:
+            self.socket = self.get_socket(socket_type)
 
     def get_socket(self, socket_type):
         s = zmq_socket(socket_type)
