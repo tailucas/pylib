@@ -14,12 +14,13 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 class exception_handler(object):
 
-    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=False):
+    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=False, close_on_exit=False):
         self._closable = closable
         self._zmq_socket = None
         self._zmq_url = connect_url
         self._socket_type = with_socket_type
         self._and_raise = and_raise
+        self._close_on_exit = close_on_exit
 
     def __enter__(self):
         if self._socket_type:
@@ -29,19 +30,17 @@ class exception_handler(object):
         return self._zmq_socket
 
     def __exit__(self, exc_type, exc_val, tb):
+        if self._close_on_exit or exc_type is ContextTerminated:
+            if self._closable:
+                self._closable.close()
+            if self._zmq_socket:
+                try_close(self._zmq_socket)
         if exc_type is None:
             return True
         log.debug(f'Handling {exc_type.__name__} with flags...')
-        if exc_type is ContextTerminated:
-            if self._closable:
-                self._closable.close()
-            else:
-                log.warning(f'Received ZMQ {exc_type.__name__} but not closable. Propagating...', exc_info=True)
-        elif issubclass(exc_type, ZMQError):
+        if issubclass(exc_type, ZMQError):
             log.exception()
         elif issubclass(exc_type, Exception):
             log.exception()
             capture_exception(error=(exc_type, exc_val, tb))
-        if self._zmq_socket:
-            try_close(self._zmq_socket)
-        return self._and_raise
+        return not self._and_raise
