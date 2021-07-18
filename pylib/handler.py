@@ -39,8 +39,8 @@ class exception_handler(object):
             return True
         log.debug(f'Handling {exc_type.__name__} with flags...')
         if issubclass(exc_type, ZMQError):
-            log.exception()
+            log.exception(self.__class__.__name__)
         elif issubclass(exc_type, Exception):
-            log.exception()
+            log.exception(self.__class__.__name__)
             capture_exception(error=(exc_type, exc_val, tb))
         return not self._and_raise
