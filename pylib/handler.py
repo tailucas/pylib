@@ -41,6 +41,8 @@ class exception_handler(object):
         log.debug(f'Handling {exc_type.__name__} with flags...')
         if issubclass(exc_type, ContextTerminated):
             log.warning(self.__class__.__name__)
+            # treat as non-critical
+            return True
         elif issubclass(exc_type, ZMQError):
             log.exception(self.__class__.__name__)
         elif issubclass(exc_type, Exception):
