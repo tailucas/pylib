@@ -31,7 +31,7 @@ class exception_handler(object):
         return self._zmq_socket
 
     def __exit__(self, exc_type, exc_val, tb):
-        if self._close_on_exit or issubclass(exc_type, ContextTerminated):
+        if self._close_on_exit or (exc_type and issubclass(exc_type, ContextTerminated)):
             if self._closable:
                 self._closable.close()
             if self._zmq_socket:
