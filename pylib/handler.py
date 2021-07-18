@@ -14,7 +14,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 class exception_handler(object):
 
-    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=False, close_on_exit=False):
+    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=True, close_on_exit=False):
         self._closable = closable
         self._zmq_socket = None
         self._zmq_url = connect_url
