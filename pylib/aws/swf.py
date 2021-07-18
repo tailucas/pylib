@@ -21,7 +21,7 @@ from .. import threads
 from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload
 from .metrics import post_count_metric
-from ..zmq import zmq_socket
+from ..handler import exception_handler
 
 # pylint: disable=undefined-variable
 log = logging.getLogger(APP_NAME) # type: ignore
@@ -30,37 +30,32 @@ log = logging.getLogger(APP_NAME) # type: ignore
 class SWFActivityWaiter(Thread):
 
     def __init__(self, zmq_ipc_url, event_source, output_type, workflow_starter, workflow_instance):
-        super(SWFActivityWaiter, self).__init__(name=self.__class__.__name__)
+        Thread.__init__(self, name=self.__class__.__name__)
         self.daemon = True
         self._event_source = event_source
         self._output_type = output_type
         self._workflow_starter = workflow_starter
         self._workflow_instance = workflow_instance
         self._zmq_url = zmq_ipc_url
-        self.socket = zmq_socket(zmq.PUSH)
 
     def run(self):
         if self._workflow_instance is None:
             log.warning(f'No workflow instance for {self._output_type} @ {self._event_source}')
             return
         execution_result = None
-        try:
-            self.socket.connect(self._zmq_url)
+        with exception_handler(connect_url=self._zmq_url, with_socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
             try:
                 log.info(f"Awaiting {self._output_type} execution result: {self._workflow_instance.workflow_execution}")
                 execution_result = self._workflow_starter.wait_for_completion(self._workflow_instance, 1)
-            except (WorkflowTimedOutError, WorkflowFailedError) as e:
-                log.warning(
-                    f"Workflow {self._workflow_instance.workflow_execution} has failed.",
-                    exc_info=e)
+            except (WorkflowTimedOutError, WorkflowFailedError):
+                log.warning(f'Workflow {self._workflow_instance.workflow_execution} has failed.', exc_info=True)
             if execution_result is not None:
-                self.socket.send_pyobj({self._event_source: execution_result})
-        except Exception:
-            log.exception(self._name)
-            capture_exception()
-        finally:
-            self.socket.close()
-        log.info(f'{self._name} is done for {self._output_type} with result {execution_result}')
+                zmq_socket.send_pyobj({self._event_source: execution_result})
+        message = f'Workflow is done for {self._output_type} with result {execution_result}'
+        if execution_result:
+            log.info(message)
+        else:
+            log.warning(message)
 
 
 def swf_exception_handler(err: Exception, tb_list: StackSummary):
