@@ -1,5 +1,6 @@
 import builtins
 import logging
+from sys import exc_info
 
 from weakref import WeakValueDictionary
 
@@ -14,7 +15,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 class exception_handler(object):
 
-    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=True, close_on_exit=False):
+    def __init__(self, closable: Closable = None, connect_url=None, with_socket_type=None, and_raise=True, close_on_exit=True):
         self._closable = closable
         self._zmq_socket = None
         self._zmq_url = connect_url
@@ -30,7 +31,7 @@ class exception_handler(object):
         return self._zmq_socket
 
     def __exit__(self, exc_type, exc_val, tb):
-        if self._close_on_exit or exc_type is ContextTerminated:
+        if self._close_on_exit or issubclass(exc_type, ContextTerminated):
             if self._closable:
                 self._closable.close()
             if self._zmq_socket:
@@ -38,7 +39,9 @@ class exception_handler(object):
         if exc_type is None:
             return True
         log.debug(f'Handling {exc_type.__name__} with flags...')
-        if issubclass(exc_type, ZMQError):
+        if issubclass(exc_type, ContextTerminated):
+            log.warning(self.__class__.__name__)
+        elif issubclass(exc_type, ZMQError):
             log.exception(self.__class__.__name__)
         elif issubclass(exc_type, Exception):
             log.exception(self.__class__.__name__)
