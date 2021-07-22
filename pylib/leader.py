@@ -1,20 +1,21 @@
 import builtins
 import logging
 import boto3
-import botocore
-import threading
 
-from botocore.exceptions import ClientError
+
+from botocore.exceptions import (
+    ClientError,
+    EndpointConnectionError
+)
+
+
 from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime, timedelta
 from dateutil import tz
 from sentry_sdk import capture_exception
 from threading import Thread
-from time import sleep
 
-# from .aws.ddb import get_item, put_item, update_item
 from .datetime import make_timestamp, make_unix_timestamp
-from .aws.metrics import post_count_metric
 
 from . import threads
 
@@ -107,7 +108,7 @@ class Leader(Thread):
     def yield_to_leader(self):
         self._log_leader()
         log.info(f'Attempting leadership of {self._app_name} as {self._device_name}...')
-        while True:
+        while not threads.shutting_down:
             unix_timestamp = make_unix_timestamp()
             try:
                 self._ddb_table.put_item(
@@ -132,11 +133,8 @@ class Leader(Thread):
 
     def run(self):
         log.info(f'Maintaining leadership of {self._app_name} as {self._device_name}')
-        while True:
+        while not threads.shutting_down:
             try:
-                if threads.shutting_down:
-                    log.warn('No longer re-electing leadership due to shutdown.')
-                    break
                 if not self._update_leadership(make_unix_timestamp()):
                     # we've lost leadership
                     log.warning(f'Failure to refresh leadership of {self._app_name} by {self._device_name}.')
@@ -145,9 +143,11 @@ class Leader(Thread):
                     threads.interruptable_sleep.set()
                     # kill the thread
                     break
-                threads.interruptable_sleep.wait(ELECTION_UPDATE_INTERVAL_SECS)
+            except EndpointConnectionError:
+                log.warning(f'Problem updating leadership of {self._app_name} as {self._device_name}', exc_info=True)
             except Exception:
                 log.exception(self.__class__.__name__)
                 capture_exception()
-                sleep(ELECTION_RETRY_INTERVAL_SECS)
-                continue
+            # do not spin
+            threads.interruptable_sleep.wait(ELECTION_UPDATE_INTERVAL_SECS)
+        log.warn('No longer re-electing leadership due to shutdown.')
