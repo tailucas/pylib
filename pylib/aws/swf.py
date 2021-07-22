@@ -13,6 +13,7 @@ from botoflow import activity, \
     WorkflowDefinition
 from botoflow.options import activity_options
 from botoflow.constants import SECONDS, MINUTES
+from botocore.exceptions import EndpointConnectionError as bcece
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
 
@@ -59,14 +60,16 @@ class SWFActivityWaiter(Thread):
 
 
 def swf_exception_handler(err: Exception, tb_list: StackSummary):
-    stack_summary = ''
-    if (log.level == logging.DEBUG):
-        stack_summary = f' {tb_list.format()}'
-    message = f'SWF processing exception: {err!r}{stack_summary}'
-    log.fatal(message)
-    post_count_metric('Fatals')
-    threads.shutting_down = True
-    threads.interruptable_sleep.set()
+    try:
+        raise err
+    except bcece:
+        log.warning(f'SWF', exc_info=True)
+    except Exception:
+        log.exception('SWF')
+        capture_exception()
+        post_count_metric('Fatals')
+        threads.shutting_down = True
+        threads.interruptable_sleep.set()
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
