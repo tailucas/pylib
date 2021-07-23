@@ -40,6 +40,6 @@ class ZmqRelay(AppThread, Closable):
         self.socket.send(payload)
 
     def run(self):
-        with exception_handler(closable=self, connect_url=self._source_zmq_url, with_socket_type=self._source_socket_type) as zmq_socket:
+        with exception_handler(closable=self, connect_url=self._source_zmq_url, socket_type=self._source_socket_type) as zmq_socket:
             while not shutting_down:
                 self.process_message(zmq_socket=zmq_socket)

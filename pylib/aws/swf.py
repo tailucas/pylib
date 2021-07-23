@@ -43,7 +43,7 @@ class SWFActivityWaiter(Thread):
             log.warning(f'No workflow instance for {self._output_type} @ {self._event_source}')
             return
         execution_result = None
-        with exception_handler(connect_url=self._zmq_url, with_socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
+        with exception_handler(connect_url=self._zmq_url, socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
             try:
                 log.info(f"Awaiting {self._output_type} execution result: {self._workflow_instance.workflow_execution}")
                 execution_result = self._workflow_starter.wait_for_completion(self._workflow_instance, 1)
