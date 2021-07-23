@@ -77,5 +77,7 @@ else:
     builtins.DEVICE_NAME_BASE = device_name_base
     builtins.log = log
     builtins.creds_config = creds
-    builtins.URL_WORKER_APP = 'inproc://app'
-    builtins.URL_WORKER_PUBLISHER = 'inproc://publisher'
+    URL_WORKER_APP = 'inproc://app'
+    builtins.URL_WORKER_APP = URL_WORKER_APP
+    URL_WORKER_PUBLISHER = 'inproc://publisher'
+    builtins.URL_WORKER_PUBLISHER = URL_WORKER_PUBLISHER

@@ -3,6 +3,7 @@ import signal
 import subprocess
 
 from . import threads
+from . import APP_NAME
 
 log = logging.getLogger(APP_NAME) # type: ignore
 

@@ -1,4 +1,3 @@
-import builtins
 import inspect
 import logging
 import zmq
@@ -6,6 +5,7 @@ import zmq
 from weakref import WeakKeyDictionary, WeakSet
 from zmq.error import ZMQError
 
+from . import APP_NAME
 
 log = logging.getLogger(APP_NAME) # type: ignore
 
@@ -41,11 +41,15 @@ def try_close(socket):
 
 
 class Closable(object):
-    def __init__(self, bind_url=None, socket_type=zmq.PULL, **kwargs):
+    def __init__(self, connect_url=None, socket_type=zmq.PULL):
         self.sockets = WeakSet()
-        if bind_url:
+        self.socket = None
+        if connect_url:
             self.socket = self.get_socket(socket_type)
-            self.socket.bind(bind_url)
+            if socket_type in [zmq.PULL, zmq.PUB]:
+                self.socket.bind(connect_url)
+            else:
+                self.socket.connect(connect_url)
 
     def get_socket(self, socket_type):
         s = zmq_socket(socket_type)

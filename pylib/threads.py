@@ -1,4 +1,3 @@
-import builtins
 import logging
 import signal
 import sys
@@ -9,6 +8,7 @@ import zmq
 
 from datetime import datetime
 
+from . import APP_NAME
 from .aws.metrics import post_count_metric
 from .zmq import zmq_context, zmq_sockets
 

@@ -8,8 +8,9 @@ from dateutil import tz
 
 builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
+from . import APP_NAME
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)
 
 
 def is_list(value):
