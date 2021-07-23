@@ -68,6 +68,7 @@ else:
     # update builtins
     builtins.APP_CONFIG = app_config
     device_name = app_config.get('app', 'device_name')
+    DEVICE_NAME = device_name
     builtins.DEVICE_NAME = device_name
     device_name_base = device_name
     device_name_parts = device_name.split('-')
