@@ -27,7 +27,7 @@ class ZmqRelay(AppThread, Closable):
     def __init__(self, source_zmq_url, source_socket_type, sink_zmq_url, sink_socket_type):
         AppThread.__init__(self, name=self.__class__.__name__)
         self._sink_zmq_url = sink_zmq_url
-        Closable.__init__(self, bind_url=sink_zmq_url, socket_type=sink_socket_type)
+        Closable.__init__(self, connect_url=sink_zmq_url, socket_type=sink_socket_type)
         self._source_zmq_url = source_zmq_url
         self._source_socket_type = source_socket_type
 
