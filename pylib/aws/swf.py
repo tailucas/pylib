@@ -17,7 +17,6 @@ from botocore.exceptions import EndpointConnectionError as bcece
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
 
-from .. import process
 from .. import threads
 from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload

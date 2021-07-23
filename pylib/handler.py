@@ -2,8 +2,6 @@ import builtins
 import logging
 from sys import exc_info
 
-from weakref import WeakValueDictionary
-
 from sentry_sdk import capture_exception
 from time import sleep
 from zmq.error import ZMQError, ContextTerminated, Again
