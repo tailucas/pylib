@@ -37,7 +37,7 @@ class exception_handler(object):
         if self._close_on_exit or (exc_type and issubclass(exc_type, ContextTerminated)):
             if self._closable:
                 self._closable.close()
-            if self._zmq_socket:
+            elif self._zmq_socket:
                 try_close(self._zmq_socket)
         if exc_type is None:
             return True
