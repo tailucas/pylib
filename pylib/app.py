@@ -24,8 +24,8 @@ class AppThread(Thread):
 
 class ZmqRelay(AppThread, Closable):
 
-    def __init__(self, source_zmq_url, source_socket_type, sink_zmq_url, sink_socket_type):
-        AppThread.__init__(self, name=self.__class__.__name__)
+    def __init__(self, name, source_zmq_url, source_socket_type, sink_zmq_url, sink_socket_type):
+        AppThread.__init__(self, name=name)
         self._sink_zmq_url = sink_zmq_url
         Closable.__init__(self, connect_url=sink_zmq_url, socket_type=sink_socket_type)
         self._source_zmq_url = source_zmq_url
@@ -39,7 +39,11 @@ class ZmqRelay(AppThread, Closable):
             log.debug(f'Relaying {len(data)} bytes from {self._source_zmq_url} to {self._sink_zmq_url} ({len(payload)} bytes)')
         self.socket.send(payload)
 
+    def startup(self):
+        pass
+
     def run(self):
+        self.startup()
         with exception_handler(closable=self, connect_url=self._source_zmq_url, socket_type=self._source_socket_type) as zmq_socket:
             while not shutting_down:
                 self.process_message(zmq_socket=zmq_socket)
