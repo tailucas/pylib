@@ -3,13 +3,14 @@ import logging
 from threading import Thread
 from zmq import PUSH, PULL, PUB
 
-from . import APP_NAME
 from .data import make_payload
 from .handler import exception_handler
 from .threads import shutting_down, threads_tracked
 from .zmq import Closable
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(APP_NAME) # type: ignore
+
 
 class AppThread(Thread):
 

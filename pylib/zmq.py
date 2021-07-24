@@ -5,7 +5,6 @@ import zmq
 from weakref import WeakKeyDictionary, WeakSet
 from zmq.error import ZMQError
 
-from . import APP_NAME
 
 log = logging.getLogger(APP_NAME) # type: ignore
 

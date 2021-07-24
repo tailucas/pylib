@@ -4,9 +4,8 @@ import zmq
 from sentry_sdk import capture_exception
 from zmq.error import ZMQError, ContextTerminated
 
-from . import APP_NAME
-from .threads import interruptable_sleep
 from .zmq import Closable, zmq_socket, try_close
+
 
 log = logging.getLogger(APP_NAME) # type: ignore
 

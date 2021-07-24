@@ -82,4 +82,3 @@ else:
     builtins.URL_WORKER_APP = URL_WORKER_APP
     URL_WORKER_PUBLISHER = 'inproc://publisher'
     builtins.URL_WORKER_PUBLISHER = URL_WORKER_PUBLISHER
-    ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'

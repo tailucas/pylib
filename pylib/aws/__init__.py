@@ -4,7 +4,9 @@ import os
 from boto3 import Session
 from botocore.session import Session as BotoCoreSession
 
+
 log = logging.getLogger(APP_NAME) # type: ignore
+
 
 try:
     os.environ['AWS_ACCESS_KEY_ID']

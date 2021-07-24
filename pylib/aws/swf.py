@@ -17,13 +17,14 @@ from botocore.exceptions import EndpointConnectionError as bcece
 from botoflow.exceptions import ActivityTaskFailedError, ActivityTaskTimedOutError, \
     WorkflowFailedError, WorkflowTimedOutError
 
+from .metrics import post_count_metric
+
 from .. import threads
 from ..bluetooth import ping_bluetooth_devices
 from ..data import make_payload
-from .metrics import post_count_metric
 from ..handler import exception_handler
 
-# pylint: disable=undefined-variable
+
 log = logging.getLogger(APP_NAME) # type: ignore
 
 

@@ -1,4 +1,3 @@
-import builtins
 import logging
 import dateutil.parser
 import pytz
@@ -6,9 +5,11 @@ import pytz
 from datetime import datetime, timedelta
 from dateutil import tz
 
-from . import APP_NAME, ISO_DATE_FORMAT
 
-log = logging.getLogger(APP_NAME)
+log = logging.getLogger(APP_NAME) # type: ignore
+
+
+ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
 
 def is_list(value):

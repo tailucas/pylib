@@ -17,9 +17,9 @@ from threading import Thread
 from .datetime import make_timestamp, make_unix_timestamp
 
 from . import threads
-from . import APP_NAME, DEVICE_NAME
 
-log = logging.getLogger(APP_NAME)
+
+log = logging.getLogger(APP_NAME) # type: ignore
 
 
 TABLE_NAME = 'app_leader'
