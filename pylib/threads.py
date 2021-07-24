@@ -8,6 +8,8 @@ import zmq
 
 from datetime import datetime
 
+from zmq.error import ZMQError
+
 from .aws.metrics import post_count_metric
 from .zmq import zmq_context, zmq_sockets
 
@@ -74,16 +76,20 @@ def thread_nanny(signal_handler):
             # print zmq sockets that are still alive (and blocking shutdown)
             try:
                 for s in zmq_context._sockets: # type: ignore
-                    if s and not s.closed:
-                        message = f'Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.'
-                        created_at = ''
-                        try:
-                            location = zmq_sockets[s]
-                            if location:
-                                created_at = f' Created at {location}'
-                        except KeyError:
-                            pass
-                        log.debug(f'{message}{created_at}')
+                    try:
+                        if s and not s.closed:
+                            message = f'Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.'
+                            created_at = ''
+                            try:
+                                location = zmq_sockets[s]
+                                if location:
+                                    created_at = f' Created at {location}'
+                            except KeyError:
+                                pass
+                            log.debug(f'{message}{created_at}')
+                    except ZMQError:
+                        # not interesting in this context
+                        continue
             except RuntimeError:
                 # protect against "Set changed size during iteration", try again later
                 pass
