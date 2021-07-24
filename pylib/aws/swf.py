@@ -134,25 +134,11 @@ class IOBoardActivity(object):
 
     def __init__(self, zmq_url):
         self._zmq_url = zmq_url
-        self._zmq_worker = None
 
     @activity(version='1.1', start_to_close_timeout=5*SECONDS)
     def trigger_output(self, device_key, duration):
-        try:
-            # create ZMQ socket and use on the correct thread
-            if (self._zmq_worker is None):
-                self._zmq_worker = zmq_socket(zmq.PUSH) # type: ignore
-                self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj((device_key, duration))
-        except Exception:
-            log.exception(self.__class__.__name__)
-            capture_exception()
-            raise
-
-    def stop(self):
-        # create ZMQ socket and use on the correct thread
-        if (self._zmq_worker is not None):
-            self._zmq_worker.close()
+        with exception_handler(connect_url=self._zmq_url, socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
+            zmq_socket.send_pyobj((device_key, duration))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -161,25 +147,11 @@ class TTSActivity(object):
 
     def __init__(self, zmq_url):
         self._zmq_url = zmq_url
-        self._zmq_worker = None
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def say(self, message):
-        try:
-            # create ZMQ socket and use on the correct thread
-            if (self._zmq_worker is None):
-                self._zmq_worker = zmq_socket(zmq.PUSH) # type: ignore
-                self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj(message)
-        except Exception:
-            log.exception(self.__class__.__name__)
-            capture_exception()
-            raise
-
-    def stop(self):
-        # create ZMQ socket and use on the correct thread
-        if (self._zmq_worker is not None):
-            self._zmq_worker.close()
+        with exception_handler(connect_url=self._zmq_url, socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
+            zmq_socket.send_pyobj(message)
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -188,27 +160,11 @@ class SnapshotActivity(object):
 
     def __init__(self, zmq_url):
         self._zmq_url = zmq_url
-        self._zmq_worker = None
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def snapshot_camera(self, device_key, device_label, camera_config):
-        try:
-            # create ZMQ socket and use on the correct thread
-            if (self._zmq_worker is None):
-                self._zmq_worker = zmq_socket(zmq.PUSH) # type: ignore
-                self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj((device_key, device_label, camera_config))
-        except ContextTerminated:
-            self.stop()
-        except Exception:
-            log.exception(self.__class__.__name__)
-            capture_exception()
-            raise
-
-    def stop(self):
-        # create ZMQ socket and use on the correct thread
-        if (self._zmq_worker is not None):
-            self._zmq_worker.close()
+        with exception_handler(connect_url=self._zmq_url, socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
+            zmq_socket.send_pyobj((device_key, device_label, camera_config))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
@@ -217,27 +173,11 @@ class ImageProcessActivity(object):
 
     def __init__(self, zmq_url):
         self._zmq_url = zmq_url
-        self._zmq_worker = None
 
     @activity(version='1.0', start_to_close_timeout=30*SECONDS)
     def image_process_camera(self, device_key, device_label, camera_config, snapshot_processor_address):
-        try:
-            # create ZMQ socket and use on the correct thread
-            if (self._zmq_worker is None):
-                self._zmq_worker = zmq_socket(zmq.PUSH) # type: ignore
-                self._zmq_worker.connect(self._zmq_url)
-            self._zmq_worker.send_pyobj((device_key, device_label, camera_config, snapshot_processor_address))
-        except ContextTerminated:
-            self.stop()
-        except Exception:
-            log.exception(self.__class__.__name__)
-            capture_exception()
-            raise
-
-    def stop(self):
-        # create ZMQ socket and use on the correct thread
-        if (self._zmq_worker is not None):
-            self._zmq_worker.close()
+        with exception_handler(connect_url=self._zmq_url, socket_type=zmq.PUSH, and_raise=False) as zmq_socket:
+            zmq_socket.send_pyobj((device_key, device_label, camera_config, snapshot_processor_address))
 
 
 @activities(schedule_to_start_timeout=1*MINUTES,
