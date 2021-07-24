@@ -6,9 +6,7 @@ import pytz
 from datetime import datetime, timedelta
 from dateutil import tz
 
-builtins.ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
-
-from . import APP_NAME
+from . import APP_NAME, ISO_DATE_FORMAT
 
 log = logging.getLogger(APP_NAME)
 
