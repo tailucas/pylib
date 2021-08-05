@@ -68,6 +68,7 @@ def swf_exception_handler(err: Exception, tb_list: StackSummary):
         log.exception('SWF')
         capture_exception()
         post_count_metric('Fatals')
+    finally:
         threads.shutting_down = True
         threads.interruptable_sleep.set()
 
