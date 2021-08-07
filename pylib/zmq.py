@@ -32,8 +32,12 @@ def try_close(socket):
     if socket is None:
         return
     try:
-        location = zmq_sockets[socket]
-        log.info(f'Closing socket created at {location}...')
+        try:
+            location = zmq_sockets[socket]
+            if location:
+                log.info(f'Closing socket created at {location}...')
+        except KeyError:
+            pass
         socket.close()
     except ZMQError:
         log.warning(f'Ignoring socket error when closing socket.', exc_info=True)
