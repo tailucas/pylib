@@ -11,7 +11,7 @@ from datetime import datetime
 from zmq.error import ZMQError
 
 from .aws.metrics import post_count_metric
-from .zmq import zmq_context, zmq_sockets
+from .zmq import try_close, zmq_context
 
 
 log = logging.getLogger(APP_NAME) # type: ignore
@@ -64,34 +64,27 @@ def thread_nanny(signal_handler):
             # don't block on the long sleep
             interruptable_sleep.wait(58)
         else:
+            # interrupt any other sleepers now
+            interruptable_sleep.set()
             now = int(time.time())
             if shutting_down_time is None:
                 shutting_down_time = now
-            elif (now - shutting_down_time > shutting_down_grace_secs):
+            if (now - shutting_down_time > shutting_down_grace_secs):
                 if log.level != logging.DEBUG:
                     log.warning(f"Shutting-down duration has exceeded {shutting_down_grace_secs}s. Switching to debug logging...")
                     log.setLevel(logging.DEBUG)
-            # interrupt any other sleepers now
-            interruptable_sleep.set()
-            # print zmq sockets that are still alive (and blocking shutdown)
-            try:
-                for s in zmq_context._sockets: # type: ignore
-                    try:
-                        if s and not s.closed:
-                            message = f'Lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.'
-                            created_at = ''
-                            try:
-                                location = zmq_sockets[s]
-                                if location:
-                                    created_at = f' Created at {location}'
-                            except KeyError:
-                                pass
-                            log.debug(f'{message}{created_at}')
-                    except ZMQError:
-                        # not interesting in this context
-                        continue
-            except RuntimeError:
-                # protect against "Set changed size during iteration", try again later
-                pass
+                # close zmq sockets that are still alive (and blocking shutdown)
+                try:
+                    for s in zmq_context._sockets: # type: ignore
+                        try:
+                            if s and not s.closed:
+                                log.warning(f'Closing lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.')
+                                try_close(s)
+                        except ZMQError:
+                            # not interesting in this context
+                            continue
+                except RuntimeError:
+                    # protect against "Set changed size during iteration", try again later
+                    pass
         # never spin
         time.sleep(2)
