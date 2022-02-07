@@ -3,6 +3,7 @@ boto3
 netifaces
 onepasswordconnectsdk
 pathtools
+pika
 python-dateutil
 pytz
 pyzmq
