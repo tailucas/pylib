@@ -8,7 +8,7 @@ from .datetime import make_timestamp
 log = logging.getLogger(APP_NAME) # type: ignore
 
 
-def make_payload(timestamp=None, data=None, msgpack=True):
+def make_payload(timestamp=None, data=None, pack=True):
     payload = {'timestamp': make_timestamp(timestamp=timestamp, make_string=True)}
     if data is not None and len(data) > 0:
         payload['data'] = data
@@ -17,6 +17,6 @@ def make_payload(timestamp=None, data=None, msgpack=True):
             log.debug(json.dumps(payload))
         except (TypeError, UnicodeDecodeError):
             log.exception('Cannot JSON-encode payload for logging.')
-    if msgpack:
+    if pack:
         return msgpack.packb(payload)
     return payload
