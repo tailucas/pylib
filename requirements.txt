@@ -1,5 +1,6 @@
 botoflow
 boto3
+msgpack
 netifaces
 onepasswordconnectsdk
 pathtools
@@ -9,4 +10,3 @@ pytz
 pyzmq
 sentry-sdk
 simplejson
-u-msgpack-python

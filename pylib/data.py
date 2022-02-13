@@ -1,6 +1,6 @@
 import logging
 import simplejson as json
-import umsgpack
+import msgpack
 
 from .datetime import make_timestamp
 
@@ -18,5 +18,5 @@ def make_payload(timestamp=None, data=None, msgpack=True):
         except (TypeError, UnicodeDecodeError):
             log.exception('Cannot JSON-encode payload for logging.')
     if msgpack:
-        return umsgpack.packb(payload)
+        return msgpack.packb(payload)
     return payload
