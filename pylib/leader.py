@@ -77,7 +77,7 @@ class Leader(MQConnection):
         if self._elected_leader_at:
             leader_since = self._elected_leader_at
         else:
-            leader_since = make_timestamp(timestamp=leader_since, make_string=True)
+            leader_since = make_timestamp(timestamp=self._elected_leader_at, make_string=True)
         log.info(f'Elected leader for {self._app_name} is currently {leader_name} since {leader_since}.')
 
     # FIXME
