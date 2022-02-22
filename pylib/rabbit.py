@@ -43,7 +43,7 @@ class MQConnection(AppThread, Closable):
         self._mq_connection = None
         self._mq_channel = None
 
-    def close(self):
+    def _close(self):
         if self._mq_channel:
             try:
                 self._mq_channel.stop_consuming()
@@ -54,6 +54,9 @@ class MQConnection(AppThread, Closable):
                 self._mq_connection.close()
             except Exception:
                 pass
+
+    def close(self):
+        self._close()
         Closable.close(self)
 
 
@@ -77,14 +80,16 @@ class MQListener(MQConnection):
                     log.debug(f'Ready for RabbitMQ messages.')
                     self._mq_channel.start_consuming()
                     log.debug(f'RabbitMQ listener has finished.')
-                except (StreamLostError, AMQPConnectionError) as e:
-                    if not threads.shutting_down:
-                        raise e
                 except (ConnectionClosedByBroker, AMQPChannelError) as ce:
                     if not threads.shutting_down:
+                        # attempt cleanup
+                        self._close()
                         backoff = 10
                         log.warning(f'{ce!s}. Retrying connection setup after {backoff}s backoff...')
                         threads.interruptable_sleep.wait(backoff)
+                except (StreamLostError, AMQPConnectionError, AttributeError) as e:
+                    if not threads.shutting_down:
+                        raise e
 
 
 class MQTopicListener(MQListener):
