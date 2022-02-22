@@ -142,7 +142,7 @@ class Leader(MQConnection):
                     }
                     # no leader message has arrived
                     if message_age > ELECTION_POLL_THRESHOLD_SECS:
-                        log.info('Triggering leadership election after {ELECTION_POLL_THRESHOLD_SECS}s without leadership updates...')
+                        log.info(f'Triggering leadership election after {ELECTION_POLL_THRESHOLD_SECS}s without leadership updates...')
                         self._mq_channel.basic_publish(
                             exchange=self._mq_exchange_name,
                             routing_key=f'{TOPIC_PREFIX}.elect',

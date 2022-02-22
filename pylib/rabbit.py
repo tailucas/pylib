@@ -110,7 +110,7 @@ class MQTopicListener(MQListener):
             queue=mq_queue_name,
             on_message_callback=self.callback,
             auto_ack=True)
-        return ('topic', mq_channel)
+        return mq_channel
 
     def callback(self, ch, method, properties, body):
         topic = method.routing_key
