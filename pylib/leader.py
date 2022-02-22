@@ -145,17 +145,17 @@ class Leader(MQConnection):
                         log.info(f'Triggering leadership election after {ELECTION_POLL_THRESHOLD_SECS}s without leadership updates...')
                         self._mq_channel.basic_publish(
                             exchange=self._mq_exchange_name,
-                            routing_key=f'{TOPIC_PREFIX}.elect',
+                            routing_key=f'event.{TOPIC_PREFIX}.elect',
                             body=make_payload(data=event_payload))
                     if event is None:
                         continue
                     # update from an any candidate leader
                     self._last_message_time = now
                     origin, data = list(event.items())[0]
-                    if not origin.startswith(f'{TOPIC_PREFIX}.'):
+                    if not origin.startswith(f'event.{TOPIC_PREFIX}.'):
                         raise AssertionError(f'Unexpected message in leadership election logic from {origin}: {data}')
                     # leadership mode
-                    leadership_mode = origin.split('.')[1]
+                    leadership_mode = origin.split('.')[2]
                     partner_name = data['device_name']
                     leader_elect = data['leader_elect']
                     log.debug(f'Leadership mode {leadership_mode} message: {data}')
@@ -169,7 +169,7 @@ class Leader(MQConnection):
                             event_payload['leader_elect'] = self._elected_leader
                             self._mq_channel.basic_publish(
                                 exchange=self._mq_exchange_name,
-                                routing_key=f'{TOPIC_PREFIX}.elect',
+                                routing_key=f'event.{TOPIC_PREFIX}.elect',
                                 body=make_payload(data=event_payload))
                         elif self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
                             log.info(f'Declaring myself {self._device_name} as leader after election interval of {ELECTION_UPDATE_INTERVAL_SECS}s')
@@ -185,7 +185,7 @@ class Leader(MQConnection):
                         log.debug(f'Sending leadership notification: {event_payload}')
                         self._mq_channel.basic_publish(
                             exchange=self._mq_exchange_name,
-                            routing_key=f'{TOPIC_PREFIX}.notify',
+                            routing_key=f'event.{TOPIC_PREFIX}.notify',
                             body=make_payload(data=event_payload))
                         if not self._signalled:
                             log.info(f'Signalling application to finish startup...')
