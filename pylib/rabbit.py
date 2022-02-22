@@ -149,7 +149,7 @@ class MQQueueListener(MQListener):
         log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using queue {mq_queue_name}.')
         mq_channel.basic_qos(prefetch_count=1)
         mq_channel.basic_consume(queue=self._mq_queue_name, on_message_callback=self.callback)
-        return ('queue', mq_channel)
+        return mq_channel
 
     def callback(self, ch, method, properties, body):
         self._message_counter += 1

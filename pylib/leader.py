@@ -151,15 +151,12 @@ class Leader(MQConnection):
                         continue
                     # update from an any candidate leader
                     self._last_message_time = now
-                    origin, data = list(event.items())[0]
-                    if not origin.startswith(f'event.{TOPIC_PREFIX}.'):
-                        raise AssertionError(f'Unexpected message in leadership election logic from {origin}: {data}')
+                    action, data = list(event.items())[0]
                     # leadership mode
-                    leadership_mode = origin.split('.')[2]
                     partner_name = data['device_name']
                     leader_elect = data['leader_elect']
-                    log.debug(f'Leadership mode {leadership_mode} message: {data}')
-                    if leadership_mode == 'elect':
+                    log.debug(f'Leadership mode {action} message: {data}')
+                    if action == 'elect':
                         log.info(f'Comparing recognised leader {self._elected_leader} with leader elect {leader_elect} from {partner_name}...')
                         if self._elected_leader is None or self._elected_leader != leader_elect:
                             # make a choice
