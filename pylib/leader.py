@@ -56,7 +56,7 @@ class Leader(MQConnection):
             zmq_url=URL_WORKER_LEADER,
             mq_server_address=mq_server_address,
             mq_exchange_name=self._mq_exchange_name,
-            mq_topic_filter=f'{TOPIC_PREFIX}.#')
+            mq_topic_filter=f'event.{TOPIC_PREFIX}.#')
 
         # reference to start-up time
         self._last_message_time = int(time())
