@@ -137,7 +137,7 @@ class Leader(Thread):
                 if not self._update_leadership(make_unix_timestamp()):
                     # we've lost leadership
                     log.warning(f'Failure to refresh leadership of {self._app_name} by {self._device_name}.')
-                    # kill the applicatoin
+                    # kill the application
                     threads.shutting_down = True
                     threads.interruptable_sleep.set()
                     # kill the thread
