@@ -76,7 +76,9 @@ class Leader(MQConnection):
         leader_since = "unknown"
         if self._elected_leader_at:
             leader_since = self._elected_leader_at
-        log.info(f'Elected leader for {self._app_name} is currently {leader_name} since {make_timestamp(timestamp=leader_since, make_string=True)}.')
+        else:
+            leader_since = make_timestamp(timestamp=leader_since, make_string=True)
+        log.info(f'Elected leader for {self._app_name} is currently {leader_name} since {leader_since}.')
 
     # FIXME
     def _handle_election_failure(self):
