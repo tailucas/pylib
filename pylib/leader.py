@@ -109,6 +109,8 @@ class Leader(MQConnection):
         while not threads.shutting_down:
             self._log_leader()
             yield_to_leader_event.wait(LEADERSHIP_STATUS_SECS)
+            if self._signalled:
+                break
         log.info(f'Acquired leadership of {self._app_name} as {self._device_name}.')
 
     def _setup_senders(self):
@@ -152,6 +154,7 @@ class Leader(MQConnection):
                     # update from an any candidate leader
                     self._last_message_time = now
                     action, data = list(event.items())[0]
+                    data = data['data']
                     # leadership mode
                     partner_name = data['device_name']
                     leader_elect = data['leader_elect']
@@ -186,8 +189,8 @@ class Leader(MQConnection):
                             body=make_payload(data=event_payload))
                         if not self._signalled:
                             log.info(f'Signalling application to finish startup...')
-                            yield_to_leader_event.set()
                             self._signalled = True
+                            yield_to_leader_event.set()
                     else:
                         continue
                     # prevent spinning on messages
