@@ -30,7 +30,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 URL_WORKER_LEADER = 'inproc://leader'
 TOPIC_PREFIX = 'leader'
 ELECTION_POLL_INTERVAL_SECS = 1
-ELECTION_POLL_THRESHOLD_SECS = 5
+ELECTION_POLL_THRESHOLD_SECS = 6
 ELECTION_UPDATE_INTERVAL_SECS = ELECTION_POLL_INTERVAL_SECS * 3
 
 ELECTION_RETRY_INTERVAL_SECS = 10
@@ -80,38 +80,13 @@ class Leader(MQConnection):
             leader_since = make_timestamp(timestamp=self._elected_leader_at, make_string=True)
         log.info(f'Elected leader for {self._app_name} is currently {leader_name} since {leader_since}.')
 
-    # FIXME
-    def _handle_election_failure(self):
-        if datetime.now().minute % 5 == 0 and datetime.now().second < 10:
-            self._log_leader()
-        threads.interruptable_sleep.wait(ELECTION_RETRY_INTERVAL_SECS)
-
-    # FIXME
-    def _update_leadership(self, unix_timestamp):
-        success = False
-        # TODO
-        return success
-
-    # FIXME
-    def surrender_leadership(self):
-        # TODO
-        pass
-
-    # FIXME
-    def _die(self):
-        self._is_leader = False
-        # kill the application
-        threads.shutting_down = True
-        threads.interruptable_sleep.set()
-
     def yield_to_leader(self):
-        log.info(f'Checking leadership of {self._app_name}...')
         while not threads.shutting_down:
             self._log_leader()
             yield_to_leader_event.wait(LEADERSHIP_STATUS_SECS)
             if self._signalled:
                 break
-        log.info(f'Acquired leadership of {self._app_name} as {self._device_name}.')
+        log.info(f'Acquired leadership of {self._app_name} by {self._device_name}.')
 
     def _setup_senders(self):
         self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
@@ -120,7 +95,6 @@ class Leader(MQConnection):
         self._mq_channel = mq_channel_topic
 
     def run(self):
-        log.info(f'Evaluate {self._app_name} by {self._device_name}...')
         with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL) as zmq_socket:
             # start getting the topic and queue info
             self._topic_listener.start()
@@ -144,7 +118,7 @@ class Leader(MQConnection):
                     }
                     # no leader message has arrived
                     if message_age > ELECTION_POLL_THRESHOLD_SECS:
-                        log.info(f'Trigger {self._app_name} by {self._device_name} ({ELECTION_POLL_THRESHOLD_SECS}s without updates)...')
+                        log.info(f'Triggering leader election for {self._app_name} ({ELECTION_POLL_THRESHOLD_SECS}s without updates)...')
                         self._mq_channel.basic_publish(
                             exchange=self._mq_exchange_name,
                             routing_key=f'event.{TOPIC_PREFIX}.elect',
@@ -164,8 +138,13 @@ class Leader(MQConnection):
                             # make a choice
                             old_elected_leader = self._elected_leader
                             self._elected_leader = choice([self._device_name, leader_elect])
-                            log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) over leader elect {leader_elect} from {partner_name}...')
-                            self._elected_leader_at = now
+                            # do not choose None
+                            if self._elected_leader is None:
+                                self._elected_leader = self._device_name
+                            # reduce log noise
+                            if self._elected_leader != old_elected_leader:
+                                log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) over leader elect {leader_elect} from {partner_name}...')
+                                self._elected_leader_at = now
                             event_payload['leader_elect'] = self._elected_leader
                             self._mq_channel.basic_publish(
                                 exchange=self._mq_exchange_name,
