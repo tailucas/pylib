@@ -119,7 +119,7 @@ class MQTopicListener(MQListener):
         if len(topic_parts) < 3:
             log.warning(f'Ignoring non-routable message from topic [{topic}] due to unsufficient topic parts.')
             return
-        if 'heartbeat' not in topic:
+        if topic_parts[1] not in ['heartbeat', 'leader']:
             log.info(f'Device event on topic [{topic}]')
         device_event = None
         try:

@@ -30,7 +30,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 URL_WORKER_LEADER = 'inproc://leader'
 TOPIC_PREFIX = 'leader'
 ELECTION_POLL_INTERVAL_SECS = 1
-ELECTION_POLL_THRESHOLD_SECS = ELECTION_POLL_INTERVAL_SECS * 2
+ELECTION_POLL_THRESHOLD_SECS = 5
 ELECTION_UPDATE_INTERVAL_SECS = ELECTION_POLL_INTERVAL_SECS * 3
 
 ELECTION_RETRY_INTERVAL_SECS = 10
@@ -120,7 +120,7 @@ class Leader(MQConnection):
         self._mq_channel = mq_channel_topic
 
     def run(self):
-        log.info(f'Establishing leadership of {self._app_name} as {self._device_name}')
+        log.info(f'Evaluate {self._app_name} by {self._device_name}...')
         with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL) as zmq_socket:
             # start getting the topic and queue info
             self._topic_listener.start()
@@ -144,7 +144,7 @@ class Leader(MQConnection):
                     }
                     # no leader message has arrived
                     if message_age > ELECTION_POLL_THRESHOLD_SECS:
-                        log.info(f'Triggering leadership election after {ELECTION_POLL_THRESHOLD_SECS}s without leadership updates...')
+                        log.info(f'Trigger {self._app_name} by {self._device_name} ({ELECTION_POLL_THRESHOLD_SECS}s without updates)...')
                         self._mq_channel.basic_publish(
                             exchange=self._mq_exchange_name,
                             routing_key=f'event.{TOPIC_PREFIX}.elect',
@@ -160,11 +160,11 @@ class Leader(MQConnection):
                     leader_elect = data['leader_elect']
                     log.debug(f'Leadership mode {action} message: {data}')
                     if action == 'elect':
-                        log.info(f'Comparing recognised leader {self._elected_leader} with leader elect {leader_elect} from {partner_name}...')
                         if self._elected_leader is None or self._elected_leader != leader_elect:
                             # make a choice
-                            self._elected_leader = choice([self._device_name, partner_name])
-                            log.info(f'Choosing leader {self._elected_leader} against leader elect {leader_elect} from {partner_name}...')
+                            old_elected_leader = self._elected_leader
+                            self._elected_leader = choice([self._device_name, leader_elect])
+                            log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) over leader elect {leader_elect} from {partner_name}...')
                             self._elected_leader_at = now
                             event_payload['leader_elect'] = self._elected_leader
                             self._mq_channel.basic_publish(
@@ -172,11 +172,18 @@ class Leader(MQConnection):
                                 routing_key=f'event.{TOPIC_PREFIX}.elect',
                                 body=make_payload(data=event_payload))
                         elif self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
-                            log.info(f'Declaring myself {self._device_name} as leader after election interval of {ELECTION_UPDATE_INTERVAL_SECS}s')
+                            log.info(f'Elected {self._device_name} for {self._app_name} ({ELECTION_UPDATE_INTERVAL_SECS}s)...')
                             self._is_leader = True
                     else:
-                        # FIXME: disagreements
-                        if self._elected_leader is None and not self._is_leader:
+                        if self._is_leader and partner_name != self._device_name and leader_elect != self._device_name:
+                            # bail the application
+                            log.warning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
+                            self._is_leader = False
+                            # kill the application
+                            threads.shutting_down = True
+                            threads.interruptable_sleep.set()
+                        elif self._elected_leader is None:
+                            # record the leader for logging purposes
                             log.info(f'Setting elected leader to {leader_elect} via {self._device_name}.')
                             self._elected_leader = leader_elect
                             self._elected_leader_at = now
