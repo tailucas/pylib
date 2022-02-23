@@ -30,8 +30,8 @@ log = logging.getLogger(APP_NAME) # type: ignore
 URL_WORKER_LEADER = 'inproc://leader'
 TOPIC_PREFIX = 'leader'
 ELECTION_POLL_INTERVAL_SECS = 1
-ELECTION_POLL_THRESHOLD_SECS = 10
-ELECTION_UPDATE_INTERVAL_SECS = ELECTION_POLL_INTERVAL_SECS * 5
+ELECTION_UPDATE_INTERVAL_SECS = 3
+ELECTION_POLL_THRESHOLD_SECS = 5
 
 ELECTION_RETRY_INTERVAL_SECS = 10
 LEADERSHIP_STATUS_SECS = 60
@@ -75,8 +75,6 @@ class Leader(MQConnection):
             leader_name = self._elected_leader
         leader_since = "unknown"
         if self._elected_leader_at:
-            leader_since = self._elected_leader_at
-        else:
             leader_since = make_timestamp(timestamp=self._elected_leader_at, make_string=True)
         log.info(f'Elected leader for {self._app_name} is currently {leader_name} since {leader_since}.')
 
@@ -147,7 +145,7 @@ class Leader(MQConnection):
                                 self._elected_leader = self._device_name
                             # reduce log noise
                             if self._elected_leader != old_elected_leader:
-                                log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) over leader elect {leader_elect} from {partner_name}...')
+                                log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) instead of leader elect {leader_elect} from {partner_name}...')
                                 self._elected_leader_at = now
                                 log.debug(f'Sending election notification: {event_payload}')
                                 event_payload['leader_elect'] = self._elected_leader
@@ -167,7 +165,7 @@ class Leader(MQConnection):
                             # kill the application
                             threads.shutting_down = True
                             threads.interruptable_sleep.set()
-                        elif self._elected_leader is None:
+                        elif self._elected_leader is None or leader_elect != self._elected_leader:
                             # record the leader for logging purposes
                             log.info(f'Setting elected leader to {leader_elect} per {partner_name}.')
                             self._elected_leader = leader_elect
