@@ -123,6 +123,7 @@ class Leader(MQConnection):
                             exchange=self._mq_exchange_name,
                             routing_key=f'event.{TOPIC_PREFIX}.elect',
                             body=make_payload(data=event_payload))
+                        self._last_message_time = now
                     if event is None:
                         continue
                     # update from an any candidate leader
@@ -151,7 +152,7 @@ class Leader(MQConnection):
                                 routing_key=f'event.{TOPIC_PREFIX}.elect',
                                 body=make_payload(data=event_payload))
                         elif self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
-                            log.info(f'Elected {self._device_name} for {self._app_name} ({ELECTION_UPDATE_INTERVAL_SECS}s)...')
+                            log.info(f'Elected {self._device_name} for {self._app_name} (after {ELECTION_UPDATE_INTERVAL_SECS}s)...')
                             self._is_leader = True
                     else:
                         if self._is_leader and partner_name != self._device_name and leader_elect != self._device_name:
