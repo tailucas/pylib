@@ -2,24 +2,19 @@ import logging
 import pika
 import zmq
 
-from datetime import datetime, timedelta
-from dateutil import tz
 from pika.exceptions import StreamLostError, \
     ConnectionClosedByBroker, \
     AMQPChannelError, \
     AMQPConnectionError
 from random import choice
-from sentry_sdk import capture_exception
-from threading import Thread, Event
+from threading import Event
 from time import time
 from zmq.error import Again
 
-from .app import AppThread
 from .data import make_payload
 from .datetime import make_timestamp, make_unix_timestamp
 from .handler import exception_handler
 from .rabbit import MQTopicListener, MQConnection
-from .zmq import Closable
 
 from . import threads
 
@@ -30,12 +25,9 @@ log = logging.getLogger(APP_NAME) # type: ignore
 URL_WORKER_LEADER = 'inproc://leader'
 TOPIC_PREFIX = 'leader'
 ELECTION_POLL_INTERVAL_SECS = 1
-ELECTION_UPDATE_INTERVAL_SECS = 3
-ELECTION_POLL_THRESHOLD_SECS = 5
-
-ELECTION_RETRY_INTERVAL_SECS = 10
+ELECTION_UPDATE_INTERVAL_SECS = 10
+ELECTION_POLL_THRESHOLD_SECS = 30
 LEADERSHIP_STATUS_SECS = 60
-LEADERSHIP_GRACE_PERIOD_SECS = 300
 
 
 yield_to_leader_event = Event()
