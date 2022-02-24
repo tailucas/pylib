@@ -147,7 +147,7 @@ class Leader(MQConnection):
                                 body=make_payload(data=event_payload))
                             # process this right away
                             continue
-                    if self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
+                    if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
                         log.info(f'Elected {self._device_name} for {self._app_name} (after {ELECTION_UPDATE_INTERVAL_SECS}s)...')
                         self._is_leader = True
                     elif partner_name != self._device_name:
@@ -163,7 +163,6 @@ class Leader(MQConnection):
                             log.info(f'Setting elected leader to {leader_elect} per {partner_name}.')
                             self._elected_leader = leader_elect
                             self._elected_leader_at = now
-                    # send hearbeats
                     if self._is_leader:
                         if not self._signalled:
                                 log.info(f'Signalling application to finish startup...')
