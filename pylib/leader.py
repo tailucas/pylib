@@ -106,20 +106,21 @@ class Leader(MQConnection):
                         'device_name': self._device_name,
                         'leader_elect': self._elected_leader
                     }
-                    # no leader message has arrived
-                    if message_age > ELECTION_POLL_THRESHOLD_SECS:
-                        log.info(f'Triggering leader election for {self._app_name} ({message_age}s without updates)...')
-                        # volunteer self
-                        event_payload['leader_elect'] = self._device_name
+                    # no message in this interval
+                    if event is None:
+                        # no leader message has arrived
+                        mode = 'notify'
+                        if message_age > ELECTION_POLL_THRESHOLD_SECS:
+                            log.info(f'Triggering leader election for {self._app_name} ({message_age}s without updates)...')
+                            # volunteer self if not already elected
+                            mode = 'elect'
+                            event_payload['leader_elect'] = self._device_name
                         self._mq_channel.basic_publish(
                             exchange=self._mq_exchange_name,
-                            routing_key=f'event.{TOPIC_PREFIX}.elect',
+                            routing_key=f'event.{TOPIC_PREFIX}.{mode}',
                             body=make_payload(data=event_payload))
-                        self._last_message_time = now
                         continue
-                    if event is None:
-                        continue
-                    # update from an any candidate leader
+                    # update message age
                     self._last_message_time = now
                     action, data = list(event.items())[0]
                     data = data['data']
@@ -127,27 +128,28 @@ class Leader(MQConnection):
                     partner_name = data['device_name']
                     leader_elect = data['leader_elect']
                     log.debug(f'Leadership mode {action} message: {data}')
-                    if action == 'elect':
-                        if self._elected_leader is None or self._elected_leader != leader_elect:
-                            # make a choice
-                            old_elected_leader = self._elected_leader
-                            self._elected_leader = choice([self._device_name, leader_elect])
-                            # do not choose None
-                            if self._elected_leader is None:
-                                self._elected_leader = self._device_name
-                            # reduce log noise
-                            if self._elected_leader != old_elected_leader:
-                                log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) instead of leader elect {leader_elect} from {partner_name}...')
-                                self._elected_leader_at = now
-                                log.debug(f'Sending election notification: {event_payload}')
-                                event_payload['leader_elect'] = self._elected_leader
-                                self._mq_channel.basic_publish(
-                                    exchange=self._mq_exchange_name,
-                                    routing_key=f'event.{TOPIC_PREFIX}.elect',
-                                    body=make_payload(data=event_payload))
-                        elif self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
-                            log.info(f'Elected {self._device_name} for {self._app_name} (after {ELECTION_UPDATE_INTERVAL_SECS}s)...')
-                            self._is_leader = True
+                    if self._elected_leader is None or self._elected_leader != leader_elect:
+                        # make a choice
+                        old_elected_leader = self._elected_leader
+                        self._elected_leader = choice([self._device_name, leader_elect])
+                        # do not choose None
+                        if self._elected_leader is None:
+                            self._elected_leader = self._device_name
+                        # reduce log noise
+                        if self._elected_leader != old_elected_leader:
+                            log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) instead of leader elect {leader_elect} from {partner_name}...')
+                            self._elected_leader_at = now
+                            log.debug(f'Sending election notification: {event_payload}')
+                            event_payload['leader_elect'] = self._elected_leader
+                            self._mq_channel.basic_publish(
+                                exchange=self._mq_exchange_name,
+                                routing_key=f'event.{TOPIC_PREFIX}.elect',
+                                body=make_payload(data=event_payload))
+                            # process this right away
+                            continue
+                    if self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
+                        log.info(f'Elected {self._device_name} for {self._app_name} (after {ELECTION_UPDATE_INTERVAL_SECS}s)...')
+                        self._is_leader = True
                     elif partner_name != self._device_name:
                         if self._is_leader and leader_elect != self._device_name:
                             # bail the application
@@ -163,18 +165,12 @@ class Leader(MQConnection):
                             self._elected_leader_at = now
                     # send hearbeats
                     if self._is_leader:
-                        log.debug(f'Sending leadership notification: {event_payload}')
-                        event_payload['leader_elect'] = self._elected_leader
-                        self._mq_channel.basic_publish(
-                            exchange=self._mq_exchange_name,
-                            routing_key=f'event.{TOPIC_PREFIX}.notify',
-                            body=make_payload(data=event_payload))
                         if not self._signalled:
                                 log.info(f'Signalling application to finish startup...')
                                 self._signalled = True
                                 yield_to_leader_event.set()
                     # prevent spinning on messages
-                    threads.interruptable_sleep.wait(ELECTION_POLL_INTERVAL_SECS)
+                    #threads.interruptable_sleep.wait(ELECTION_POLL_INTERVAL_SECS)
                 except (StreamLostError, AMQPConnectionError) as e:
                     if not threads.shutting_down:
                         raise e
