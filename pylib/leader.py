@@ -7,7 +7,6 @@ from pika.exceptions import StreamLostError, \
     AMQPChannelError, \
     AMQPConnectionError
 from random import choice
-from threading import Event
 from time import time
 from zmq.error import Again
 
@@ -28,9 +27,6 @@ ELECTION_POLL_INTERVAL_SECS = 1
 ELECTION_UPDATE_INTERVAL_SECS = 10
 ELECTION_POLL_THRESHOLD_SECS = 30
 LEADERSHIP_STATUS_SECS = 60
-
-
-yield_to_leader_event = Event()
 
 
 class Leader(MQConnection):
@@ -73,9 +69,11 @@ class Leader(MQConnection):
     def yield_to_leader(self):
         while not threads.shutting_down:
             self._log_leader()
-            yield_to_leader_event.wait(LEADERSHIP_STATUS_SECS)
+            threads.interruptable_sleep.wait(LEADERSHIP_STATUS_SECS)
             if self._signalled:
                 break
+        if threads.shutting_down:
+            raise RuntimeWarning("Shutting down...")
         log.info(f'Acquired leadership of {self._app_name} by {self._device_name}.')
 
     def _setup_senders(self):
@@ -85,7 +83,7 @@ class Leader(MQConnection):
         self._mq_channel = mq_channel_topic
 
     def run(self):
-        with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL) as zmq_socket:
+        with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False) as zmq_socket:
             # start getting the topic and queue info
             self._topic_listener.start()
             # set up senders
@@ -167,14 +165,9 @@ class Leader(MQConnection):
                         if not self._signalled:
                                 log.info(f'Signalling application to finish startup...')
                                 self._signalled = True
-                                yield_to_leader_event.set()
-                    # prevent spinning on messages
-                    #threads.interruptable_sleep.wait(ELECTION_POLL_INTERVAL_SECS)
-                except (StreamLostError, AMQPConnectionError) as e:
-                    if not threads.shutting_down:
-                        raise e
-                except (ConnectionClosedByBroker, AMQPChannelError) as ce:
-                    if not threads.shutting_down:
-                        backoff = 10
-                        log.warning(f'{ce!s}. Retrying connection setup after {backoff}s backoff...')
-                        threads.interruptable_sleep.wait(backoff)
+                                threads.interruptable_sleep.set()
+                except Exception:
+                    # kill the application
+                    threads.shutting_down = True
+                    threads.interruptable_sleep.set()
+                    raise
