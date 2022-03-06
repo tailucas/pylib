@@ -126,6 +126,22 @@ class Leader(MQConnection):
                     partner_name = data['device_name']
                     leader_elect = data['leader_elect']
                     log.debug(f'Leadership mode {action} message: {data}')
+                    # yield first to another device if we're not understood to be the leader
+                    if partner_name != self._device_name:
+                        if self._is_leader and leader_elect != self._device_name:
+                            # bail the application
+                            log.warning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
+                            self._is_leader = False
+                            # kill the application
+                            threads.shutting_down = True
+                            threads.interruptable_sleep.set()
+                            continue
+                        elif self._elected_leader is None or self._elected_leader != leader_elect:
+                            # record the leader for logging purposes
+                            log.info(f'Setting elected leader to {leader_elect} per {partner_name}.')
+                            self._elected_leader = leader_elect
+                            self._elected_leader_at = now
+                            continue
                     if self._elected_leader is None or self._elected_leader != leader_elect:
                         # make a choice
                         old_elected_leader = self._elected_leader
@@ -148,19 +164,6 @@ class Leader(MQConnection):
                     if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and (now - self._elected_leader_at >= ELECTION_UPDATE_INTERVAL_SECS):
                         log.info(f'Elected {self._device_name} for {self._app_name} (after {ELECTION_UPDATE_INTERVAL_SECS}s)...')
                         self._is_leader = True
-                    elif partner_name != self._device_name:
-                        if self._is_leader and leader_elect != self._device_name:
-                            # bail the application
-                            log.warning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
-                            self._is_leader = False
-                            # kill the application
-                            threads.shutting_down = True
-                            threads.interruptable_sleep.set()
-                        elif self._elected_leader is None or self._elected_leader != leader_elect:
-                            # record the leader for logging purposes
-                            log.info(f'Setting elected leader to {leader_elect} per {partner_name}.')
-                            self._elected_leader = leader_elect
-                            self._elected_leader_at = now
                     if self._is_leader:
                         if not self._signalled:
                                 log.info(f'Signalling application to finish startup...')
