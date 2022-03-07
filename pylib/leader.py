@@ -113,10 +113,11 @@ class Leader(MQConnection):
                             # volunteer self if not already elected
                             mode = 'elect'
                             event_payload['leader_elect'] = self._device_name
-                        self._mq_channel.basic_publish(
-                            exchange=self._mq_exchange_name,
-                            routing_key=f'event.{TOPIC_PREFIX}.{mode}',
-                            body=make_payload(data=event_payload))
+                        if mode == 'elect' or self._is_leader:
+                            self._mq_channel.basic_publish(
+                                exchange=self._mq_exchange_name,
+                                routing_key=f'event.{TOPIC_PREFIX}.{mode}',
+                                body=make_payload(data=event_payload))
                         continue
                     # update message age
                     self._last_message_time = now
