@@ -44,20 +44,19 @@ class exception_handler(object):
         if exc_type is None:
             return True
         log.debug(f'Handling {exc_type.__name__} with flags...')
-        fatal_error = False
         if issubclass(exc_type, ContextTerminated):
             log.debug(self.__class__.__name__, exc_info=True)
             # treat as non-critical
             return True
-        elif issubclass(exc_type, ZMQError):
-            fatal_error = True
-            log.exception(self.__class__.__name__)
         elif issubclass(exc_type, Exception):
-            fatal_error = True
-            log.exception(self.__class__.__name__)
-            capture_exception(error=(exc_type, exc_val, tb))
-        if fatal_error and self._shutdown_on_error:
-            log.warning(f'Shutting down due to fatal error...')
-            threads.shutting_down = True
-            threads.interruptable_sleep.set()
+            if not threads.shutting_down:
+                log.exception(self.__class__.__name__)
+                capture_exception(error=(exc_type, exc_val, tb))
+                if self._shutdown_on_error:
+                    log.warning(f'Shutting down due to fatal error...')
+                    threads.shutting_down = True
+                    threads.interruptable_sleep.set()
+            else:
+                # log the exception as informational if in debug mode
+                log.debug(self.__class__.__name__, exc_info=True)
         return not self._and_raise
