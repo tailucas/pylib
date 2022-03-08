@@ -123,14 +123,14 @@ class Leader(MQConnection):
                 partner_name = data['device_name']
                 leader_elect = data['leader_elect']
                 log.debug(f'Leadership mode {action} message: {data}')
-                if self._elected_leader is None:
+                if self._elected_leader is None and leader_elect is not None:
                     log.info(f'Setting elected leader from {self._elected_leader} to {leader_elect} per {partner_name}.')
                     self._elected_leader = leader_elect
                     self._elected_leader_at = now
                     self._last_leader_message_time = now
-                elif self._elected_leader == leader_elect:
+                elif self._elected_leader is not None and self._elected_leader == leader_elect:
                     self._last_leader_message_time = now
-                elif self._elected_leader != leader_elect:
+                elif self._elected_leader != leader_elect or leader_elect is None:
                     # make a choice
                     old_elected_leader = self._elected_leader
                     self._elected_leader = choice([self._device_name, leader_elect])
