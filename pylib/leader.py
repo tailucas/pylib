@@ -47,7 +47,7 @@ class Leader(MQConnection):
             mq_topic_filter=f'event.{TOPIC_PREFIX}.#')
 
         # reference to start-up time
-        self._last_message_time = int(time())
+        self._last_leader_message_time = int(time())
         self._is_leader = False
         self._elected_leader = None
         self._elected_leader_at = None
@@ -101,26 +101,22 @@ class Leader(MQConnection):
                     'device_name': self._device_name,
                     'leader_elect': self._elected_leader
                 }
-                message_age = now - self._last_message_time
+                leader_message_age = now - self._last_leader_message_time
                 # no message in this interval
                 if event is None:
-                    # no leader message has arrived
                     mode = 'notify'
-                    if message_age >= ELECTION_POLL_THRESHOLD_SECS:
-                        log.info(f'Triggering leader election for {self._app_name} ({message_age}s without updates)...')
+                    if leader_message_age >= ELECTION_POLL_THRESHOLD_SECS:
+                        log.info(f'Triggering leader election for {self._app_name} ({leader_message_age}s without updates)...')
                         # volunteer self if not already elected
                         mode = 'elect'
                         event_payload['leader_elect'] = self._device_name
-                    if mode == 'elect' or self._is_leader:
-                        log.debug(f'Sending {mode} message (message age is {message_age}, leader? {self._is_leader})')
-                        self._mq_channel.basic_publish(
-                            exchange=self._mq_exchange_name,
-                            routing_key=f'event.{TOPIC_PREFIX}.{mode}',
-                            body=make_payload(data=event_payload))
+                    log.debug(f'Sending {mode} message (leader message age is {leader_message_age}, leader? {self._is_leader})')
+                    self._mq_channel.basic_publish(
+                        exchange=self._mq_exchange_name,
+                        routing_key=f'event.{TOPIC_PREFIX}.{mode}',
+                        body=make_payload(data=event_payload))
                     # nothing to further to process
                     continue
-                # update message age
-                self._last_message_time = now
                 action, data = list(event.items())[0]
                 data = data['data']
                 # leadership mode
@@ -131,7 +127,9 @@ class Leader(MQConnection):
                     log.info(f'Setting elected leader from {self._elected_leader} to {leader_elect} per {partner_name}.')
                     self._elected_leader = leader_elect
                     self._elected_leader_at = now
-                    continue
+                    self._last_leader_message_time = now
+                elif self._elected_leader == leader_elect:
+                    self._last_leader_message_time = now
                 elif self._elected_leader != leader_elect:
                     # make a choice
                     old_elected_leader = self._elected_leader
@@ -157,13 +155,7 @@ class Leader(MQConnection):
                     self._is_leader = True
                 if self._is_leader:
                     if leader_elect != self._device_name:
-                        # bail the application
-                        log.warning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
-                        self._is_leader = False
-                        # kill the application
-                        threads.shutting_down = True
-                        threads.interruptable_sleep.set()
-                        continue
+                        raise AssertionError(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
                     elif not self._signalled:
                             log.info(f'Signalling application to finish startup...')
                             self._signalled = True
