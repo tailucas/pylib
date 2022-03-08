@@ -72,7 +72,7 @@ class MQListener(MQConnection):
     # noinspection PyBroadException
     def run(self):
         self.processor.connect(self._zmq_url)
-        with exception_handler(closable=self, shutdown_on_error=True):
+        with exception_handler(closable=self, and_raise=False, shutdown_on_error=True):
             while not threads.shutting_down:
                 self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
                 self._mq_channel = self._setup_channel()
