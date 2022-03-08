@@ -37,7 +37,7 @@ class MQConnection(AppThread, Closable):
 
         pika_parameters = list()
         for source in self._mq_server_list:
-            pika_parameters.append(pika.ConnectionParameters(host=source))
+            pika_parameters.append(pika.ConnectionParameters(host=source, heartbeat=5))
         self._pika_parameters = tuple(pika_parameters)
 
         self._mq_connection = None
