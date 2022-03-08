@@ -4,6 +4,7 @@ import zmq
 from sentry_sdk import capture_exception
 from zmq.error import ZMQError, ContextTerminated
 
+from . import threads
 from .zmq import Closable, zmq_socket, try_close
 
 
@@ -12,13 +13,14 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 class exception_handler(object):
 
-    def __init__(self, closable: Closable = None, connect_url=None, socket_type=None, and_raise=True, close_on_exit=True):
+    def __init__(self, closable: Closable = None, connect_url=None, socket_type=None, and_raise=True, close_on_exit=True, shutdown_on_error=False):
         self._closable = closable
         self._zmq_socket = None
         self._zmq_url = connect_url
         self._socket_type = socket_type
         self._and_raise = and_raise
         self._close_on_exit = close_on_exit
+        self._shutdown_on_error = shutdown_on_error
 
     def __enter__(self):
         if self._socket_type:
@@ -42,13 +44,20 @@ class exception_handler(object):
         if exc_type is None:
             return True
         log.debug(f'Handling {exc_type.__name__} with flags...')
+        fatal_error = False
         if issubclass(exc_type, ContextTerminated):
             log.debug(self.__class__.__name__, exc_info=True)
             # treat as non-critical
             return True
         elif issubclass(exc_type, ZMQError):
+            fatal_error = True
             log.exception(self.__class__.__name__)
         elif issubclass(exc_type, Exception):
+            fatal_error = True
             log.exception(self.__class__.__name__)
             capture_exception(error=(exc_type, exc_val, tb))
+        if fatal_error and self._shutdown_on_error:
+            log.warning(f'Shutting down due to fatal error...')
+            threads.shutting_down = True
+            threads.interruptable_sleep.set()
         return not self._and_raise

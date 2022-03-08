@@ -37,7 +37,7 @@ class SignalHandler:
 
     def terminate(self, signum, frame):
         global shutting_down
-        log.warning(f'Signal {signum} received.')
+        log.warning(f'Signal {signum} received, shutting down...')
         self.last_signal = signum
         threads.shutting_down = True
         threads.interruptable_sleep.set()

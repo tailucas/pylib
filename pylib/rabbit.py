@@ -72,24 +72,13 @@ class MQListener(MQConnection):
     # noinspection PyBroadException
     def run(self):
         self.processor.connect(self._zmq_url)
-        with exception_handler(closable=self):
+        with exception_handler(closable=self, shutdown_on_error=True):
             while not threads.shutting_down:
-                try:
-                    self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
-                    self._mq_channel = self._setup_channel()
-                    log.debug(f'Ready for RabbitMQ messages.')
-                    self._mq_channel.start_consuming()
-                    log.debug(f'RabbitMQ listener has finished.')
-                except (ConnectionClosedByBroker, AMQPChannelError) as ce:
-                    if not threads.shutting_down:
-                        # attempt cleanup
-                        self._close()
-                        backoff = 10
-                        log.warning(f'{ce!s}. Retrying connection setup after {backoff}s backoff...')
-                        threads.interruptable_sleep.wait(backoff)
-                except (StreamLostError, AMQPConnectionError, AttributeError) as e:
-                    if not threads.shutting_down:
-                        raise e
+                self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
+                self._mq_channel = self._setup_channel()
+                log.debug(f'Ready for RabbitMQ messages.')
+                self._mq_channel.start_consuming()
+                log.debug(f'RabbitMQ listener has finished.')
 
 
 class MQTopicListener(MQListener):

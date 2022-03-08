@@ -82,95 +82,89 @@ class Leader(MQConnection):
         self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type='topic')
 
     def run(self):
-        with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False) as zmq_socket:
-            # start getting the topic and queue info
-            self._topic_listener.start()
+        with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False, shutdown_on_error=True) as zmq_socket:
             # set up senders
             self._setup_senders()
+            # start getting the topic and queue info
+            self._topic_listener.start()
             while not threads.shutting_down:
-                try:
-                    zmq_events = zmq_socket.poll(timeout=ELECTION_POLL_INTERVAL_SECS * 1000)
-                    now = int(time())
-                    event = None
-                    if zmq_events > 0:
-                        try:
-                            event = zmq_socket.recv_pyobj(zmq.NOBLOCK)
-                        except Again as e:
-                            log.debug(f'{e!s}')
-                    event_payload = {
-                        'app_name': self._app_name,
-                        'device_name': self._device_name,
-                        'leader_elect': self._elected_leader
-                    }
-                    message_age = now - self._last_message_time
-                    # no message in this interval
-                    if event is None:
-                        # no leader message has arrived
-                        mode = 'notify'
-                        if message_age >= ELECTION_POLL_THRESHOLD_SECS:
-                            log.info(f'Triggering leader election for {self._app_name} ({message_age}s without updates)...')
-                            # volunteer self if not already elected
-                            mode = 'elect'
-                            event_payload['leader_elect'] = self._device_name
-                        if mode == 'elect' or self._is_leader:
-                            log.debug(f'Sending {mode} message (message age is {message_age}, leader? {self._is_leader})')
-                            self._mq_channel.basic_publish(
-                                exchange=self._mq_exchange_name,
-                                routing_key=f'event.{TOPIC_PREFIX}.{mode}',
-                                body=make_payload(data=event_payload))
-                        # nothing to further to process
-                        continue
-                    # update message age
-                    self._last_message_time = now
-                    action, data = list(event.items())[0]
-                    data = data['data']
-                    # leadership mode
-                    partner_name = data['device_name']
-                    leader_elect = data['leader_elect']
-                    log.debug(f'Leadership mode {action} message: {data}')
+                zmq_events = zmq_socket.poll(timeout=ELECTION_POLL_INTERVAL_SECS * 1000)
+                now = int(time())
+                event = None
+                if zmq_events > 0:
+                    try:
+                        event = zmq_socket.recv_pyobj(zmq.NOBLOCK)
+                    except Again as e:
+                        log.debug(f'{e!s}')
+                event_payload = {
+                    'app_name': self._app_name,
+                    'device_name': self._device_name,
+                    'leader_elect': self._elected_leader
+                }
+                message_age = now - self._last_message_time
+                # no message in this interval
+                if event is None:
+                    # no leader message has arrived
+                    mode = 'notify'
+                    if message_age >= ELECTION_POLL_THRESHOLD_SECS:
+                        log.info(f'Triggering leader election for {self._app_name} ({message_age}s without updates)...')
+                        # volunteer self if not already elected
+                        mode = 'elect'
+                        event_payload['leader_elect'] = self._device_name
+                    if mode == 'elect' or self._is_leader:
+                        log.debug(f'Sending {mode} message (message age is {message_age}, leader? {self._is_leader})')
+                        self._mq_channel.basic_publish(
+                            exchange=self._mq_exchange_name,
+                            routing_key=f'event.{TOPIC_PREFIX}.{mode}',
+                            body=make_payload(data=event_payload))
+                    # nothing to further to process
+                    continue
+                # update message age
+                self._last_message_time = now
+                action, data = list(event.items())[0]
+                data = data['data']
+                # leadership mode
+                partner_name = data['device_name']
+                leader_elect = data['leader_elect']
+                log.debug(f'Leadership mode {action} message: {data}')
+                if self._elected_leader is None:
+                    log.info(f'Setting elected leader from {self._elected_leader} to {leader_elect} per {partner_name}.')
+                    self._elected_leader = leader_elect
+                    self._elected_leader_at = now
+                    continue
+                elif self._elected_leader != leader_elect:
+                    # make a choice
+                    old_elected_leader = self._elected_leader
+                    self._elected_leader = choice([self._device_name, leader_elect])
+                    # do not choose None
                     if self._elected_leader is None:
-                        log.info(f'Setting elected leader from {self._elected_leader} to {leader_elect} per {partner_name}.')
-                        self._elected_leader = leader_elect
+                        self._elected_leader = self._device_name
+                    # reduce log noise
+                    if self._elected_leader != old_elected_leader:
+                        log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) instead of leader elect {leader_elect} from {partner_name}...')
                         self._elected_leader_at = now
+                        log.debug(f'Sending election notification: {event_payload}')
+                        event_payload['leader_elect'] = self._elected_leader
+                        self._mq_channel.basic_publish(
+                            exchange=self._mq_exchange_name,
+                            routing_key=f'event.{TOPIC_PREFIX}.elect',
+                            body=make_payload(data=event_payload))
+                        # process this right away
                         continue
-                    elif self._elected_leader != leader_elect:
-                        # make a choice
-                        old_elected_leader = self._elected_leader
-                        self._elected_leader = choice([self._device_name, leader_elect])
-                        # do not choose None
-                        if self._elected_leader is None:
-                            self._elected_leader = self._device_name
-                        # reduce log noise
-                        if self._elected_leader != old_elected_leader:
-                            log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) instead of leader elect {leader_elect} from {partner_name}...')
-                            self._elected_leader_at = now
-                            log.debug(f'Sending election notification: {event_payload}')
-                            event_payload['leader_elect'] = self._elected_leader
-                            self._mq_channel.basic_publish(
-                                exchange=self._mq_exchange_name,
-                                routing_key=f'event.{TOPIC_PREFIX}.elect',
-                                body=make_payload(data=event_payload))
-                            # process this right away
-                            continue
-                    elected_since = now - self._elected_leader_at
-                    if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and elected_since >= ELECTION_UPDATE_INTERVAL_SECS:
-                        log.info(f'Elected {self._device_name} as {self._app_name} (after {elected_since}s)...')
-                        self._is_leader = True
-                    if self._is_leader:
-                        if leader_elect != self._device_name:
-                            # bail the application
-                            log.warning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
-                            self._is_leader = False
-                            # kill the application
-                            threads.shutting_down = True
+                elected_since = now - self._elected_leader_at
+                if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and elected_since >= ELECTION_UPDATE_INTERVAL_SECS:
+                    log.info(f'Elected {self._device_name} as {self._app_name} (after {elected_since}s)...')
+                    self._is_leader = True
+                if self._is_leader:
+                    if leader_elect != self._device_name:
+                        # bail the application
+                        log.warning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
+                        self._is_leader = False
+                        # kill the application
+                        threads.shutting_down = True
+                        threads.interruptable_sleep.set()
+                        continue
+                    elif not self._signalled:
+                            log.info(f'Signalling application to finish startup...')
+                            self._signalled = True
                             threads.interruptable_sleep.set()
-                            continue
-                        elif not self._signalled:
-                                log.info(f'Signalling application to finish startup...')
-                                self._signalled = True
-                                threads.interruptable_sleep.set()
-                except Exception:
-                    # kill the application
-                    threads.shutting_down = True
-                    threads.interruptable_sleep.set()
-                    raise
