@@ -9,6 +9,7 @@ from pika.exceptions import StreamLostError, \
     ConnectionClosedByBroker, \
     AMQPChannelError, \
     AMQPConnectionError
+from sentry_sdk.integrations.logging import ignore_logger
 from zmq.error import ZMQError
 
 from . import threads
@@ -16,6 +17,11 @@ from . import threads
 from .app import AppThread
 from .handler import exception_handler
 from .zmq import Closable
+
+
+# Reduce Sentry noise from pika loggers
+ignore_logger('pika.adapters.utils.connection_workflow')
+ignore_logger('pika.adapters.utils.io_services_utils')
 
 
 log = logging.getLogger(APP_NAME) # type: ignore

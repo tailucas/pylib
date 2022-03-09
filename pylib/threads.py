@@ -25,8 +25,8 @@ shutting_down = False
 
 
 def die():
-    global interruptable_sleep
     global shutting_down
+    global interruptable_sleep
     log.warning(f'Shutting down...')
     shutting_down = True
     interruptable_sleep.set()
