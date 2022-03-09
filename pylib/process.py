@@ -2,7 +2,7 @@ import logging
 import signal
 import subprocess
 
-from . import threads
+from .threads import die
 
 
 log = logging.getLogger(APP_NAME) # type: ignore
@@ -36,8 +36,6 @@ class SignalHandler:
             log.setLevel(logging.INFO)
 
     def terminate(self, signum, frame):
-        global shutting_down
-        log.warning(f'Signal {signum} received, shutting down...')
+        log.warning(f'Signal {signum} received.')
         self.last_signal = signum
-        threads.shutting_down = True
-        threads.interruptable_sleep.set()
+        die()

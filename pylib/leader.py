@@ -84,7 +84,10 @@ class Leader(MQConnection):
     def run(self):
         with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False, shutdown_on_error=True) as zmq_socket:
             # set up senders
-            self._setup_senders()
+            try:
+                self._setup_senders()
+            except AMQPConnectionError as e:
+                raise ResourceWarning('Leader election failure at startup.') from e
             # start getting the topic and queue info
             self._topic_listener.start()
             while not threads.shutting_down:

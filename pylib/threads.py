@@ -24,6 +24,14 @@ threads_tracked = set()
 shutting_down = False
 
 
+def die():
+    global interruptable_sleep
+    global shutting_down
+    log.warning(f'Shutting down...')
+    shutting_down = True
+    interruptable_sleep.set()
+
+
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
     global interruptable_sleep

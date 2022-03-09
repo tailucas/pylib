@@ -5,6 +5,8 @@ from sentry_sdk import capture_exception
 from zmq.error import ZMQError, ContextTerminated
 
 from . import threads
+
+from .threads import die
 from .zmq import Closable, zmq_socket, try_close
 
 
@@ -48,14 +50,19 @@ class exception_handler(object):
             log.debug(self.__class__.__name__, exc_info=True)
             # treat as non-critical
             return True
+        elif issubclass(exc_type, ResourceWarning):
+            # raised to indicate a fatal dependency error that
+            # does not fill Sentry with exception regressions
+            # or unhandled exceptions; used typically at startup
+            log.exception(self.__class__.__name__)
+            if self._shutdown_on_error:
+                die()
         elif issubclass(exc_type, Exception):
             if not threads.shutting_down:
                 log.exception(self.__class__.__name__)
                 capture_exception(error=(exc_type, exc_val, tb))
                 if self._shutdown_on_error:
-                    log.warning(f'Shutting down due to fatal error...')
-                    threads.shutting_down = True
-                    threads.interruptable_sleep.set()
+                    die()
             else:
                 # log the exception as informational if in debug mode
                 log.debug(self.__class__.__name__, exc_info=True)
