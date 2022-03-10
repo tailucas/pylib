@@ -131,7 +131,7 @@ class Leader(MQConnection):
                     self._elected_leader = leader_elect
                     self._elected_leader_at = now
                     self._last_leader_message_time = now
-                elif self._elected_leader is not None and self._elected_leader == leader_elect:
+                elif self._elected_leader is not None and self._elected_leader == leader_elect and self._elected_leader == partner_name:
                     self._last_leader_message_time = now
                 elif self._elected_leader != leader_elect or leader_elect is None:
                     # make a choice
