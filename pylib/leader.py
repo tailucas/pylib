@@ -23,9 +23,9 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 URL_WORKER_LEADER = 'inproc://leader'
 TOPIC_PREFIX = 'leader'
-ELECTION_POLL_INTERVAL_SECS = 1
+ELECTION_POLL_INTERVAL_SECS = 5
 ELECTION_UPDATE_INTERVAL_SECS = 10
-ELECTION_POLL_THRESHOLD_SECS = 30
+ELECTION_POLL_THRESHOLD_SECS = 20
 LEADERSHIP_STATUS_SECS = 60
 
 
@@ -158,7 +158,7 @@ class Leader(MQConnection):
                     self._is_leader = True
                 if self._is_leader:
                     if leader_elect != self._device_name:
-                        raise AssertionError(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
+                        raise ResourceWarning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
                     elif not self._signalled:
                             log.info(f'Signalling application to finish startup...')
                             self._signalled = True
