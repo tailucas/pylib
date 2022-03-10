@@ -52,20 +52,20 @@ class MQConnection(AppThread, Closable):
         self._mq_connection = None
         self._mq_channel = None
 
-    def _close(self):
+    def stop(self):
         if self._mq_channel:
             try:
                 self._mq_channel.stop_consuming()
             except Exception:
-                pass
+                log.debug(self.__class__.__name__, exc_info=True)
+
+    def close(self):
+        log.info(f'Closing RabbitMQ connection for {self.name}...')
         if self._mq_connection:
             try:
                 self._mq_connection.close()
             except Exception:
-                pass
-
-    def close(self):
-        self._close()
+                log.debug(self.__class__.__name__, exc_info=True)
         Closable.close(self)
 
 
@@ -82,12 +82,11 @@ class MQListener(MQConnection):
     def run(self):
         self.processor.connect(self._zmq_url)
         with exception_handler(closable=self, and_raise=False, shutdown_on_error=True):
-            while not threads.shutting_down:
-                self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
-                self._mq_channel = self._setup_channel()
-                log.debug(f'Ready for RabbitMQ messages.')
-                self._mq_channel.start_consuming()
-                log.debug(f'RabbitMQ listener has finished.')
+            self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
+            self._mq_channel = self._setup_channel()
+            log.info(f'Ready for RabbitMQ messages in {self.name}.')
+            self._mq_channel.start_consuming()
+            log.info(f'RabbitMQ listener for {self.name} has finished.')
 
 
 class MQTopicListener(MQListener):
