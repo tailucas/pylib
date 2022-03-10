@@ -54,7 +54,7 @@ class exception_handler(object):
             # raised to indicate a fatal dependency error that
             # does not fill Sentry with exception regressions
             # or unhandled exceptions; used typically at startup
-            log.exception(self.__class__.__name__)
+            log.warning(self.__class__.__name__, exc_info=True)
             if self._shutdown_on_error:
                 die()
         elif issubclass(exc_type, Exception):
