@@ -20,9 +20,11 @@ from .zmq import Closable
 
 
 # Reduce Sentry noise from pika loggers
+ignore_logger('pika.adapters.base_connection')
 ignore_logger('pika.adapters.blocking_connection')
 ignore_logger('pika.adapters.utils.connection_workflow')
 ignore_logger('pika.adapters.utils.io_services_utils')
+ignore_logger('pika.channel')
 
 
 log = logging.getLogger(APP_NAME) # type: ignore
