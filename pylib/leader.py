@@ -152,10 +152,11 @@ class Leader(MQConnection):
                             body=make_payload(data=event_payload))
                         # process this right away
                         continue
-                elected_since = now - self._elected_leader_at
-                if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and elected_since >= ELECTION_UPDATE_INTERVAL_SECS:
-                    log.info(f'Elected {self._device_name} as {self._app_name} (after {elected_since}s)...')
-                    self._is_leader = True
+                if self._elected_leader_at is not None:
+                    elected_since = now - self._elected_leader_at
+                    if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and elected_since >= ELECTION_UPDATE_INTERVAL_SECS:
+                        log.info(f'Elected {self._device_name} as {self._app_name} (after {elected_since}s)...')
+                        self._is_leader = True
                 if self._is_leader:
                     if leader_elect != self._device_name:
                         raise ResourceWarning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
