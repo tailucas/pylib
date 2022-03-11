@@ -111,7 +111,7 @@ class Leader(MQConnection):
                 # no message in this interval
                 if event is None:
                     mode = 'notify'
-                    if leader_message_age >= ELECTION_POLL_THRESHOLD_SECS:
+                    if leader_message_age >= ELECTION_POLL_THRESHOLD_SECS or self._elected_leader is None:
                         log.info(f'Triggering leader election for {self._app_name} ({leader_message_age}s without updates)...')
                         # volunteer self if not already elected
                         mode = 'elect'
@@ -129,32 +129,36 @@ class Leader(MQConnection):
                 partner_name = data['device_name']
                 leader_elect = data['leader_elect']
                 log.debug(f'Leadership mode {action} message: {data}')
-                if self._elected_leader is None and leader_elect is not None:
-                    log.info(f'Setting elected leader from {self._elected_leader} to {leader_elect} per {partner_name}.')
-                    self._elected_leader = leader_elect
+                if action == 'elect':
                     self._elected_leader_at = now
-                    self._last_leader_message_time = now
-                elif self._elected_leader is not None and self._elected_leader == leader_elect and self._elected_leader == partner_name:
-                    self._last_leader_message_time = now
-                elif self._elected_leader != leader_elect or leader_elect is None:
-                    # make a choice
-                    old_elected_leader = self._elected_leader
+                old_elected_leader = self._elected_leader
+                if self._elected_leader is None:
+                    if leader_elect is None:
+                        log.info(f'{partner_name} has no leader. Setting elected leader to {self._device_name}.')
+                        self._elected_leader = self._device_name
+                    else:
+                        log.info(f'{partner_name} elects {leader_elect}. Elected leader is {self._elected_leader}.')
+                        self._elected_leader = leader_elect
+                elif self._elected_leader == leader_elect:
+                    if self._elected_leader == partner_name:
+                        self._last_leader_message_time = now
+                elif self._elected_leader != leader_elect:
+                    # make a choice as a tie breaker
                     self._elected_leader = choice([self._device_name, leader_elect])
                     # do not choose None
                     if self._elected_leader is None:
                         self._elected_leader = self._device_name
-                    # reduce log noise
-                    if self._elected_leader != old_elected_leader:
-                        log.info(f'Choosing {self._elected_leader} (previously {old_elected_leader}). {partner_name} elects {leader_elect}.')
-                        self._elected_leader_at = now
-                        log.debug(f'Sending election notification: {event_payload}')
-                        event_payload['leader_elect'] = self._elected_leader
-                        self._mq_channel.basic_publish(
-                            exchange=self._mq_exchange_name,
-                            routing_key=f'event.{TOPIC_PREFIX}.elect',
-                            body=make_payload(data=event_payload))
-                        # process this right away
-                        continue
+                # if a change happened, announce it
+                if self._elected_leader != old_elected_leader:
+                    log.info(f'{partner_name} elects {leader_elect}. Choosing {self._elected_leader} (previously {old_elected_leader}).')
+                    log.debug(f'Sending election notification: {event_payload}')
+                    event_payload['leader_elect'] = self._elected_leader
+                    self._mq_channel.basic_publish(
+                        exchange=self._mq_exchange_name,
+                        routing_key=f'event.{TOPIC_PREFIX}.elect',
+                        body=make_payload(data=event_payload))
+                    # process this right away
+                    continue
                 if self._elected_leader_at is not None:
                     elected_since = now - self._elected_leader_at
                     if not self._is_leader and self._elected_leader == leader_elect and self._elected_leader == self._device_name and elected_since >= ELECTION_UPDATE_INTERVAL_SECS:
@@ -162,7 +166,7 @@ class Leader(MQConnection):
                         self._is_leader = True
                 if self._is_leader:
                     if leader_elect != self._device_name:
-                        raise ResourceWarning(f'Lost leadership of {self._app_name}. {partner_name} claims {leader_elect} is leader.')
+                        raise ResourceWarning(f'{partner_name} elects {leader_elect}. Lost leadership of {self._app_name}.')
                     elif not self._signalled:
                             log.info(f'Signalling application to finish startup...')
                             self._signalled = True
