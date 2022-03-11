@@ -145,7 +145,7 @@ class Leader(MQConnection):
                         self._elected_leader = self._device_name
                     # reduce log noise
                     if self._elected_leader != old_elected_leader:
-                        log.info(f'Electing {self._elected_leader} (previously {old_elected_leader}) instead of leader elect {leader_elect} from {partner_name}...')
+                        log.info(f'Choosing {self._elected_leader} (previously {old_elected_leader}). {partner_name} elects {leader_elect}.')
                         self._elected_leader_at = now
                         log.debug(f'Sending election notification: {event_payload}')
                         event_payload['leader_elect'] = self._elected_leader
