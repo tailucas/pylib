@@ -37,6 +37,8 @@ class Leader(MQConnection):
         self._app_name = app_name
         self._device_name = device_name
 
+        self._running = True
+
         self._mq_exchange_name = mq_exchange_name
 
         # listen for ongoing leader heartbeats
@@ -54,6 +56,7 @@ class Leader(MQConnection):
         self._signalled = False
 
     def close(self):
+        self._running = False
         self._topic_listener.close()
         MQConnection.close(self)
 
@@ -90,7 +93,7 @@ class Leader(MQConnection):
                 raise ResourceWarning('Leader election failure at startup.') from e
             # start getting the topic and queue info
             self._topic_listener.start()
-            while not threads.shutting_down:
+            while self._running:
                 zmq_events = zmq_socket.poll(timeout=ELECTION_POLL_INTERVAL_SECS * 1000)
                 now = int(time())
                 event = None
@@ -164,3 +167,4 @@ class Leader(MQConnection):
                             log.info(f'Signalling application to finish startup...')
                             self._signalled = True
                             threads.interruptable_sleep.set()
+            log.info('Leader election stopped.')
