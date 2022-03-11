@@ -24,7 +24,9 @@ ignore_logger('pika.adapters.base_connection')
 ignore_logger('pika.adapters.blocking_connection')
 ignore_logger('pika.adapters.utils.connection_workflow')
 ignore_logger('pika.adapters.utils.io_services_utils')
+ignore_logger('pika.callback')
 ignore_logger('pika.channel')
+ignore_logger('pika.connection')
 
 
 log = logging.getLogger(APP_NAME) # type: ignore
@@ -85,8 +87,12 @@ class MQListener(MQConnection):
             self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
             self._mq_channel = self._setup_channel()
             log.info(f'Ready for RabbitMQ messages in {self.name}.')
-            self._mq_channel.start_consuming()
-            log.info(f'RabbitMQ listener for {self.name} has finished.')
+            try:
+                self._mq_channel.start_consuming()
+            except StreamLostError as e:
+                raise ResourceWarning() from e
+            finally:
+                log.info(f'RabbitMQ listener for {self.name} has finished.')
 
 
 class MQTopicListener(MQListener):
