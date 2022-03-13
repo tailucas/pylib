@@ -112,7 +112,7 @@ class Leader(MQConnection):
                 if event is None:
                     mode = 'notify'
                     if leader_message_age >= ELECTION_POLL_THRESHOLD_SECS or self._elected_leader is None:
-                        log.info(f'Triggering leader election for {self._app_name} ({leader_message_age}s without updates)...')
+                        log.info(f'Triggering leader election for {self._app_name} ({leader_message_age}s without updates, leader is {self._elected_leader})...')
                         # volunteer self if not already elected
                         mode = 'elect'
                         event_payload['leader_elect'] = self._device_name
