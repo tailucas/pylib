@@ -25,7 +25,7 @@ URL_WORKER_LEADER = 'inproc://leader'
 TOPIC_PREFIX = 'leader'
 ELECTION_POLL_INTERVAL_SECS = 5
 ELECTION_UPDATE_INTERVAL_SECS = 10
-ELECTION_POLL_THRESHOLD_SECS = 20
+ELECTION_POLL_THRESHOLD_SECS = 30
 LEADERSHIP_STATUS_SECS = 60
 
 
@@ -116,6 +116,9 @@ class Leader(MQConnection):
                         # volunteer self if not already elected
                         mode = 'elect'
                         event_payload['leader_elect'] = self._device_name
+                        # assume isolation from queue
+                        if leader_message_age >= ELECTION_POLL_THRESHOLD_SECS + ELECTION_UPDATE_INTERVAL_SECS:
+                            raise ResourceWarning(f'Overdue leader election for {self._app_name} ({leader_message_age}s without updates, leader was {self._elected_leader}). Assuming isolated...')
                     log.debug(f'Sending {mode} message (leader message age is {leader_message_age}, leader? {self._is_leader})')
                     self._mq_channel.basic_publish(
                         exchange=self._mq_exchange_name,
