@@ -7,6 +7,7 @@ from pika.exceptions import StreamLostError, \
     AMQPChannelError, \
     AMQPConnectionError
 from random import choice
+from threading import Event
 from time import time
 from zmq.error import Again
 
@@ -36,6 +37,8 @@ class Leader(MQConnection):
 
         self._app_name = app_name
         self._device_name = device_name
+
+        self._leadership_gate = Event()
 
         self._running = True
 
@@ -72,7 +75,7 @@ class Leader(MQConnection):
     def yield_to_leader(self):
         while not threads.shutting_down:
             self._log_leader()
-            threads.interruptable_sleep.wait(LEADERSHIP_STATUS_SECS)
+            self._leadership_gate.wait(LEADERSHIP_STATUS_SECS)
             if self._signalled:
                 break
         if threads.shutting_down:
@@ -173,5 +176,6 @@ class Leader(MQConnection):
                     elif not self._signalled:
                             log.info(f'Signalling application to finish startup...')
                             self._signalled = True
-                            threads.interruptable_sleep.set()
+                            self._leadership_gate.set()
+            # TODO: send surrender
             log.info('Leader election stopped.')
