@@ -57,7 +57,7 @@ class Leader(MQConnection):
 
     def stop(self):
         self._running = False
-        self._topic_listener.close()
+        self._topic_listener.stop()
         MQConnection.stop(self)
 
     def _log_leader(self):
