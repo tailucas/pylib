@@ -89,7 +89,9 @@ class MQListener(MQConnection):
             try:
                 self._mq_channel.start_consuming()
             except Exception as e:
-                raise ResourceWarning() from e
+                log.debug(self.__class__.__name__, exc_info=True)
+                if not threads.shutting_down:
+                    raise e
             finally:
                 log.info(f'RabbitMQ listener for {self.name} has finished.')
 
@@ -137,6 +139,7 @@ class MQTopicListener(MQListener):
         try:
             self.processor.send_pyobj({topic_parts[2]: device_event})
         except Exception as e:
+            log.debug(self.__class__.__name__, exc_info=True)
             if not threads.shutting_down:
                 raise e
 
@@ -170,6 +173,7 @@ class MQQueueListener(MQListener):
         try:
             self.processor.send_pyobj({self._mq_queue_name: device_event})
         except Exception as e:
+            log.debug(self.__class__.__name__, exc_info=True)
             if not threads.shutting_down:
                 raise e
 
