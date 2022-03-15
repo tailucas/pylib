@@ -55,7 +55,7 @@ class Leader(MQConnection):
         self._elected_leader_at = None
         self._signalled = False
 
-    def close(self):
+    def stop(self):
         self._running = False
         self._topic_listener.close()
         MQConnection.close(self)

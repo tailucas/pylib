@@ -54,16 +54,15 @@ class MQConnection(AppThread, Closable):
         self._mq_connection = None
         self._mq_channel = None
 
-    def stop(self):
+    def close(self):
         if self._mq_channel:
+            log.info(f'Stopping RabbitMQ channel for {self.name}...')
             try:
                 self._mq_channel.stop_consuming()
             except Exception:
                 log.debug(self.__class__.__name__, exc_info=True)
-
-    def close(self):
-        log.info(f'Closing RabbitMQ connection for {self.name}...')
         if self._mq_connection:
+            log.info(f'Closing RabbitMQ connection for {self.name}...')
             try:
                 self._mq_connection.close()
             except Exception:
@@ -89,7 +88,7 @@ class MQListener(MQConnection):
             log.info(f'Ready for RabbitMQ messages in {self.name}.')
             try:
                 self._mq_channel.start_consuming()
-            except StreamLostError as e:
+            except Exception as e:
                 raise ResourceWarning() from e
             finally:
                 log.info(f'RabbitMQ listener for {self.name} has finished.')
