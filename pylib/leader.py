@@ -96,6 +96,12 @@ class Leader(MQConnection):
                 raise ResourceWarning('Leader election failure at startup.') from e
             # start getting the topic and queue info
             self._topic_listener.start()
+            # create reusable payload structure
+            event_payload = {
+                'app_name': self._app_name,
+                'device_name': self._device_name,
+                'leader_elect': self._elected_leader
+            }
             while self._running:
                 zmq_events = zmq_socket.poll(timeout=ELECTION_POLL_INTERVAL_SECS * 1000)
                 now = int(time())
@@ -105,11 +111,6 @@ class Leader(MQConnection):
                         event = zmq_socket.recv_pyobj(zmq.NOBLOCK)
                     except Again as e:
                         log.debug(f'{e!s}')
-                event_payload = {
-                    'app_name': self._app_name,
-                    'device_name': self._device_name,
-                    'leader_elect': self._elected_leader
-                }
                 leader_message_age = now - self._last_leader_message_time
                 # no message in this interval
                 if event is None:
@@ -137,6 +138,11 @@ class Leader(MQConnection):
                 log.debug(f'Leadership mode {action} message: {data}')
                 if action == 'elect':
                     self._elected_leader_at = now
+                elif action == 'surrender':
+                    if self._elected_leader == partner_name:
+                        log.info(f'{partner_name} has surrendered leadership.')
+                        self._elected_leader = None
+                        continue
                 old_elected_leader = self._elected_leader
                 if self._elected_leader is None:
                     if leader_elect is None:
@@ -177,5 +183,10 @@ class Leader(MQConnection):
                             log.info(f'Signalling application to finish startup...')
                             self._signalled = True
                             self._leadership_gate.set()
-            # TODO: send surrender
+            if self._is_leader and self._signalled:
+                log.info(f'Surrendering leadership of {self._app_name}...')
+                self._mq_channel.basic_publish(
+                    exchange=self._mq_exchange_name,
+                    routing_key=f'event.{TOPIC_PREFIX}.surrender',
+                    body=make_payload(data=event_payload))
             log.info('Leader election stopped.')
