@@ -58,7 +58,7 @@ class Leader(MQConnection):
     def stop(self):
         self._running = False
         self._topic_listener.close()
-        MQConnection.close(self)
+        MQConnection.stop(self)
 
     def _log_leader(self):
         leader_name = "unknown"

@@ -54,7 +54,7 @@ class MQConnection(AppThread, Closable):
         self._mq_connection = None
         self._mq_channel = None
 
-    def close(self):
+    def stop(self):
         if self._mq_channel:
             log.info(f'Stopping RabbitMQ channel for {self.name}...')
             try:
