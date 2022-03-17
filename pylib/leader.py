@@ -1,4 +1,5 @@
 import logging
+from tkinter import E
 import pika
 import zmq
 
@@ -104,6 +105,16 @@ class Leader(MQConnection):
         self._mq_channel = self._mq_connection.channel()
         self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type='topic')
 
+    def _basic_publish(self, routing_key):
+        try:
+            self._mq_channel.basic_publish(
+                exchange=self._mq_exchange_name,
+                routing_key=routing_key,
+                body=make_payload(data=self._event_payload))
+        except (ConnectionClosedByBroker, StreamLostError) as e:
+            # handled error
+            raise ResourceWarning('Message publish failure.') from e
+
     def run(self):
         with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False, shutdown_on_error=True) as zmq_socket:
             # set up senders
@@ -135,10 +146,7 @@ class Leader(MQConnection):
                         if leader_message_age >= ELECTION_POLL_THRESHOLD_SECS + ELECTION_UPDATE_INTERVAL_SECS:
                             raise ResourceWarning(f'Overdue leader election for {self._app_name} ({leader_message_age}s without updates, leader was {self._elected_leader}). Assuming isolated...')
                     log.debug(f'Sending {mode} message (leader message age is {leader_message_age}, leader? {self._is_leader})')
-                    self._mq_channel.basic_publish(
-                        exchange=self._mq_exchange_name,
-                        routing_key=f'event.{TOPIC_PREFIX}.{mode}',
-                        body=make_payload(data=self._event_payload))
+                    self._basic_publish(routing_key=f'event.{TOPIC_PREFIX}.{mode}')
                     # nothing to further to process
                     continue
                 action, data = list(event.items())[0]
@@ -179,10 +187,7 @@ class Leader(MQConnection):
                     log.info(f'{partner_name} elects {leader_elect}. Choosing {self._elected_leader} (previously {old_elected_leader}).')
                     log.debug(f'Sending election notification: {self._event_payload}')
                     self._event_payload['leader_elect'] = self._elected_leader
-                    self._mq_channel.basic_publish(
-                        exchange=self._mq_exchange_name,
-                        routing_key=f'event.{TOPIC_PREFIX}.elect',
-                        body=make_payload(data=self._event_payload))
+                    self._basic_publish(routing_key=f'event.{TOPIC_PREFIX}.elect')
                     # process this right away
                     continue
                 if self._elected_leader_at is not None:

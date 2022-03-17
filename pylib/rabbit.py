@@ -88,6 +88,9 @@ class MQListener(MQConnection):
             log.info(f'Ready for RabbitMQ messages in {self.name}.')
             try:
                 self._mq_channel.start_consuming()
+            except (ConnectionClosedByBroker, StreamLostError) as e:
+                # handled error
+                raise ResourceWarning('Consumer interrupted.') from e
             except Exception as e:
                 log.debug(self.__class__.__name__, exc_info=True)
                 if not threads.shutting_down:
