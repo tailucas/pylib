@@ -1,5 +1,4 @@
 import logging
-from tkinter import E
 import pika
 import zmq
 
