@@ -14,7 +14,7 @@ from zmq.error import Again
 from .data import make_payload
 from .datetime import make_timestamp, make_unix_timestamp
 from .handler import exception_handler
-from .rabbit import MQTopicListener, MQConnection
+from .rabbit import ZMQListener, MQConnection
 
 from . import threads
 
@@ -33,7 +33,7 @@ LEADERSHIP_STATUS_SECS = 60
 class Leader(MQConnection):
 
     def __init__(self, mq_server_address, mq_exchange_name, app_name=APP_NAME, device_name=DEVICE_NAME): # type: ignore
-        MQConnection.__init__(self, mq_server_address=mq_server_address)
+        MQConnection.__init__(self, mq_server_address=mq_server_address, mq_exchange_name=mq_exchange_name)
 
         self._app_name = app_name
         self._device_name = device_name
@@ -45,7 +45,7 @@ class Leader(MQConnection):
         self._mq_exchange_name = mq_exchange_name
 
         # listen for ongoing leader heartbeats
-        self._topic_listener = MQTopicListener(
+        self._topic_listener = ZMQListener(
             zmq_url=URL_WORKER_LEADER,
             mq_server_address=mq_server_address,
             mq_exchange_name=self._mq_exchange_name,

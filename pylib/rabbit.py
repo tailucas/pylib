@@ -33,11 +33,9 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 
 class MQConnection(AppThread, Closable):
-    def __init__(self, mq_server_address):
+    def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic'):
         AppThread.__init__(self, name=self.__class__.__name__)
         Closable.__init__(self)
-
-        self.processor = self.get_socket(zmq.PUSH)
 
         if isinstance(mq_server_address, str):
             self._mq_server_list = [mq_server_address]
@@ -51,8 +49,20 @@ class MQConnection(AppThread, Closable):
             pika_parameters.append(pika.ConnectionParameters(host=source))
         self._pika_parameters = tuple(pika_parameters)
 
+        self._mq_exchange_type = mq_exchange_type
+        self._mq_exchange_name = mq_exchange_name
+        self._mq_topic_filter = mq_topic_filter
+
         self._mq_connection = None
         self._mq_channel = None
+        self._mq_queue_name = None
+
+    def _setup_channel(self):
+        self._mq_channel = self._mq_connection.channel()
+        self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type)
+        mq_result = self._mq_channel.queue_declare('', exclusive=True)
+        self._mq_queue_name = mq_result.method.queue
+        log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}.')
 
     def stop(self):
         if self._mq_channel:
@@ -70,21 +80,35 @@ class MQConnection(AppThread, Closable):
         Closable.close(self)
 
 
-class MQListener(MQConnection):
+class ZMQListener(MQConnection):
 
-    def __init__(self, zmq_url, mq_server_address):
-        MQConnection.__init__(self, mq_server_address=mq_server_address)
+    def __init__(self, zmq_url, mq_server_address, mq_exchange_name, mq_topic_filter, mq_exchange_type):
+        MQConnection.__init__(
+            self,
+            mq_server_address=mq_server_address,
+            mq_exchange_name=mq_exchange_name,
+            mq_topic_filter=mq_topic_filter,
+            mq_exchange_type=mq_exchange_type)
+        self.processor = self.get_socket(zmq.PUSH)
         self._zmq_url = zmq_url
 
     def _setup_channel(self):
-        raise NotImplementedError()
+        MQConnection._setup_channel(self)
+        self._mq_channel.queue_bind(
+            exchange=self._mq_exchange_name,
+            queue=self._mq_queue_name,
+            routing_key=self._mq_topic_filter)
+        self._mq_channel.basic_consume(
+            queue=self._mq_queue_name,
+            on_message_callback=self.callback,
+            auto_ack=True)
 
     # noinspection PyBroadException
     def run(self):
         self.processor.connect(self._zmq_url)
         with exception_handler(closable=self, and_raise=False, shutdown_on_error=True):
             self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
-            self._mq_channel = self._setup_channel()
+            self._setup_channel()
             log.info(f'Ready for RabbitMQ messages in {self.name}.')
             try:
                 self._mq_channel.start_consuming()
@@ -97,32 +121,6 @@ class MQListener(MQConnection):
                     raise e
             finally:
                 log.info(f'RabbitMQ listener for {self.name} has finished.')
-
-
-class MQTopicListener(MQListener):
-
-    def __init__(self, zmq_url, mq_server_address, mq_exchange_name, mq_topic_filter='#'):
-        MQListener.__init__(self, zmq_url=zmq_url, mq_server_address=mq_server_address)
-
-        self._mq_exchange_type = 'topic'
-        self._mq_exchange_name = mq_exchange_name
-        self._mq_topic_filter = mq_topic_filter
-
-    def _setup_channel(self):
-        mq_channel = self._mq_connection.channel()
-        mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type)
-        mq_result = mq_channel.queue_declare('', exclusive=True)
-        mq_queue_name = mq_result.method.queue
-        log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {mq_queue_name}.')
-        mq_channel.queue_bind(
-            exchange=self._mq_exchange_name,
-            queue=mq_queue_name,
-            routing_key=self._mq_topic_filter)
-        mq_channel.basic_consume(
-            queue=mq_queue_name,
-            on_message_callback=self.callback,
-            auto_ack=True)
-        return mq_channel
 
     def callback(self, ch, method, properties, body):
         topic = method.routing_key
@@ -145,43 +143,3 @@ class MQTopicListener(MQListener):
             log.debug(self.__class__.__name__, exc_info=True)
             if not threads.shutting_down:
                 raise e
-
-
-class MQQueueListener(MQListener):
-
-    def __init__(self, zmq_url, mq_server_address, mq_queue_name, ack_linger_secs=0):
-        MQListener.__init__(self, zmq_url=zmq_url, mq_server_address=mq_server_address)
-
-        self._mq_queue_name = mq_queue_name
-        self._ack_linger_secs = ack_linger_secs
-
-    def _setup_channel(self):
-        mq_channel = self._mq_connection.channel()
-        mq_result = mq_channel.queue_declare(queue=self._mq_queue_name, durable=True)
-        mq_queue_name = mq_result.method.queue
-        log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using queue {mq_queue_name}.')
-        mq_channel.basic_qos(prefetch_count=1)
-        mq_channel.basic_consume(queue=self._mq_queue_name, on_message_callback=self.callback)
-        return mq_channel
-
-    def callback(self, ch, method, properties, body):
-        self._message_counter += 1
-
-        device_event = None
-        try:
-            device_event = msgpack.unpackb(body)
-        except UnpackException:
-            log.exception('Bad message: {}'.format(body))
-            return
-        try:
-            self.processor.send_pyobj({self._mq_queue_name: device_event})
-        except Exception as e:
-            log.debug(self.__class__.__name__, exc_info=True)
-            if not threads.shutting_down:
-                raise e
-
-        # linger acknowledgement
-        if self._ack_linger_secs > 0:
-            threads.interruptable_sleep.wait(self._ack_linger_secs)
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
