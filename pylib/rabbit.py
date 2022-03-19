@@ -15,6 +15,8 @@ from zmq.error import ZMQError
 from . import threads
 
 from .app import AppThread
+from .data import make_payload
+from .datetime import make_timestamp, make_unix_timestamp
 from .handler import exception_handler
 from .zmq import Closable
 
@@ -58,27 +60,53 @@ class MQConnection(AppThread, Closable):
         self._mq_channel = None
         self._mq_queue_name = None
 
-    def _setup_channel(self):
-        self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
-        self._mq_channel = self._mq_connection.channel()
-        self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type, arguments=self._mq_arguments)
-        mq_result = self._mq_channel.queue_declare('', exclusive=True)
-        self._mq_queue_name = mq_result.method.queue
-        log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}.')
+    def _basic_publish(self, routing_key, event_payload, close_channel=False, close_connection=False):
+        try:
+            self._setup_channel()
+            self._mq_channel.basic_publish(
+                exchange=self._mq_exchange_name,
+                routing_key=routing_key,
+                body=make_payload(data=event_payload))
+            if close_channel:
+                self._close_channel()
+                if close_connection:
+                    self._close_connection()
+        except (ConnectionClosedByBroker, StreamLostError) as e:
+            # handled error
+            raise ResourceWarning('Message publish failure.') from e
 
-    def stop(self):
-        if self._mq_channel:
-            log.info(f'Stopping RabbitMQ channel for {self.name}...')
-            try:
-                self._mq_channel.stop_consuming()
-            except Exception:
-                log.debug(self.__class__.__name__, exc_info=True)
+    def _setup_connection(self):
+        if self._mq_connection is None or self._mq_connection.is_closed:
+            self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
+
+    def _setup_channel(self):
+        self._setup_connection()
+        if self._mq_channel is None or self._mq_channel.is_closed:
+            self._mq_channel = self._mq_connection.channel()
+            self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type, arguments=self._mq_arguments)
+            mq_result = self._mq_channel.queue_declare('', exclusive=True)
+            self._mq_queue_name = mq_result.method.queue
+            log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}.')
+
+    def _close_connection(self):
         if self._mq_connection:
             log.info(f'Closing RabbitMQ connection for {self.name}...')
             try:
                 self._mq_connection.close()
             except Exception:
                 log.debug(self.__class__.__name__, exc_info=True)
+
+    def _close_channel(self):
+        if self._mq_channel:
+            log.info(f'Stopping RabbitMQ channel for {self.name}...')
+            try:
+                self._mq_channel.stop_consuming()
+            except Exception:
+                log.debug(self.__class__.__name__, exc_info=True)
+
+    def stop(self):
+        self._close_channel()
+        self._close_connection()
         Closable.close(self)
 
 
