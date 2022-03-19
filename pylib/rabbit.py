@@ -172,3 +172,45 @@ class ZMQListener(MQConnection):
             log.debug(self.__class__.__name__, exc_info=True)
             if not threads.shutting_down:
                 raise e
+
+
+class RabbitMQRelay(AppThread):
+
+    def __init__(self, zmq_url, mq_server_address, mq_exchange_name, mq_topic_filter, mq_exchange_type):
+        AppThread.__init__(self, name=self.__class__.__name__)
+        self._source_zmq_url = zmq_url
+        self._source_socket_type = zmq.PULL
+
+        self._mq_config_server = mq_server_address
+        self._mq_connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._mq_config_server))
+        self._mq_channel = self._mq_connection.channel()
+        self._mq_config_exchange = mq_exchange_name
+        self._mq_exchange_type = mq_exchange_type
+        self._mq_channel.exchange_declare(exchange=self._mq_config_exchange, exchange_type=self._mq_exchange_type)
+        self._mq_device_topic = mq_topic_filter
+
+    @property
+    def device_topic(self):
+        return self._mq_device_topic
+
+    def close(self):
+        self._mq_connection.close()
+
+    def process_message(self, zmq_socket):
+        event_topic, event_payload = zmq_socket.recv_pyobj()
+        try:
+            self._mq_channel.basic_publish(
+                exchange=self._mq_config_exchange,
+                routing_key=event_topic,
+                body=make_payload(data=event_payload))
+        except (ConnectionClosedByBroker, StreamLostError) as e:
+            raise ResourceWarning() from e
+
+    def startup(self):
+        log.info(f'Using RabbitMQ server at {self._mq_config_server} with {self._mq_exchange_type} ({self._mq_device_topic}) exchange {self._mq_config_exchange}.')
+
+    def run(self):
+        self.startup()
+        with exception_handler(connect_url=self._source_zmq_url, socket_type=self._source_socket_type, and_raise=False, shutdown_on_error=True) as zmq_socket:
+            while not threads.shutting_down:
+                self.process_message(zmq_socket=zmq_socket)
