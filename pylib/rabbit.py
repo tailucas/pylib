@@ -33,7 +33,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 
 class MQConnection(AppThread, Closable):
-    def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic'):
+    def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter, mq_exchange_type):
         AppThread.__init__(self, name=self.__class__.__name__)
         Closable.__init__(self)
 

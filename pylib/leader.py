@@ -33,7 +33,12 @@ LEADERSHIP_STATUS_SECS = 60
 class Leader(MQConnection):
 
     def __init__(self, mq_server_address, mq_exchange_name, app_name=APP_NAME, device_name=DEVICE_NAME): # type: ignore
-        MQConnection.__init__(self, mq_server_address=mq_server_address, mq_exchange_name=mq_exchange_name)
+        MQConnection.__init__(
+            self,
+            mq_server_address=mq_server_address,
+            mq_exchange_name=mq_exchange_name,
+            mq_topic_filter='#',
+            mq_exchange_type='topic')
 
         self._app_name = app_name
         self._device_name = device_name
@@ -49,7 +54,8 @@ class Leader(MQConnection):
             zmq_url=URL_WORKER_LEADER,
             mq_server_address=mq_server_address,
             mq_exchange_name=self._mq_exchange_name,
-            mq_topic_filter=f'event.{TOPIC_PREFIX}.#')
+            mq_topic_filter=f'event.{TOPIC_PREFIX}.#',
+            mq_exchange_type='topic')
 
         # reference to start-up time
         self._last_leader_message_time = int(time())
