@@ -36,9 +36,7 @@ class Leader(MQConnection):
         MQConnection.__init__(
             self,
             mq_server_address=mq_server_address,
-            mq_exchange_name=mq_exchange_name,
-            mq_topic_filter='#',
-            mq_exchange_type='topic')
+            mq_exchange_name=mq_exchange_name)
 
         self._app_name = app_name
         self._device_name = device_name
@@ -105,11 +103,6 @@ class Leader(MQConnection):
             raise RuntimeWarning("Shutting down...")
         log.info(f'Acquired leadership of {self._app_name} by {self._device_name}.')
 
-    def _setup_senders(self):
-        self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
-        self._mq_channel = self._mq_connection.channel()
-        self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type='topic')
-
     def _basic_publish(self, routing_key):
         try:
             self._mq_channel.basic_publish(
@@ -124,7 +117,7 @@ class Leader(MQConnection):
         with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False, shutdown_on_error=True) as zmq_socket:
             # set up senders
             try:
-                self._setup_senders()
+                self._setup_channel()
             except AMQPConnectionError as e:
                 raise ResourceWarning('Leader election failure at startup.') from e
             # start getting the topic and queue info
