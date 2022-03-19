@@ -33,7 +33,7 @@ log = logging.getLogger(APP_NAME) # type: ignore
 
 
 class MQConnection(AppThread, Closable):
-    def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic'):
+    def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic', mq_arguments=None):
         AppThread.__init__(self, name=self.__class__.__name__)
         Closable.__init__(self)
 
@@ -52,6 +52,7 @@ class MQConnection(AppThread, Closable):
         self._mq_exchange_name = mq_exchange_name
         self._mq_topic_filter = mq_topic_filter
         self._mq_exchange_type = mq_exchange_type
+        self._mq_arguments = mq_arguments
 
         self._mq_connection = None
         self._mq_channel = None
@@ -60,7 +61,7 @@ class MQConnection(AppThread, Closable):
     def _setup_channel(self):
         self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
         self._mq_channel = self._mq_connection.channel()
-        self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type)
+        self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type, arguments=self._mq_arguments)
         mq_result = self._mq_channel.queue_declare('', exclusive=True)
         self._mq_queue_name = mq_result.method.queue
         log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}.')
