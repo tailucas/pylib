@@ -71,7 +71,10 @@ def thread_nanny(signal_handler):
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
                 post_count_metric('Fatals', 0)
-            monitor.ping(metrics={'threads_alive': len(threads_alive), 'threads_missing': len(thread_deficit)})
+            try:
+                monitor.ping(metrics={'threads_alive': len(threads_alive), 'threads_missing': len(thread_deficit)})
+            except Exception as e:
+                log.warning(f'Problem sending cronitor ping: {e!s}')
             # don't block on the long sleep
             interruptable_sleep.wait(60)
         else:
