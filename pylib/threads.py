@@ -61,6 +61,7 @@ def thread_nanny(signal_handler):
                         log.debug(line)
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
+            state = 'ok'
             if len(thread_deficit) > 0:
                 error_msg = f'A thread has died. Expected threads are [{threads_tracked}], ' \
                             f'missing is [{thread_deficit}].'
@@ -68,11 +69,19 @@ def thread_nanny(signal_handler):
                 post_count_metric('Fatals')
                 shutting_down = True
                 interruptable_sleep.set()
+                state = 'fail'
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
                 post_count_metric('Fatals', 0)
             try:
-                monitor.ping(metrics={'threads_alive': len(threads_alive), 'threads_missing': len(thread_deficit)})
+                monitor.ping(
+                    host=DEVICE_NAME, # type: ignore
+                    state=state,
+                    metrics={
+                        'count': len(threads_alive),
+                        'error_count': len(thread_deficit)
+                    }
+                )
             except Exception as e:
                 log.warning(f'Problem sending cronitor ping: {e!s}')
             # don't block on the long sleep
