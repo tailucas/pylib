@@ -8,6 +8,7 @@ import sys
 if hasattr(builtins, 'PYTEST'):
     pass
 else:
+    import cronitor
     import onepasswordconnectsdk
     import sentry_sdk
 
@@ -64,6 +65,7 @@ else:
         dsn=creds.sentry_dsn,
         integrations=builtins.SENTRY_EXTRAS # pylint: disable=no-member
     )
+    cronitor.api_key = creds.cronitor_token
 
     # update builtins
     builtins.APP_CONFIG = app_config

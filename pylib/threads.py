@@ -1,3 +1,4 @@
+import cronitor
 import logging
 import signal
 import sys
@@ -39,6 +40,7 @@ def thread_nanny(signal_handler):
     global shutting_down
     shutting_down_grace_secs = 30
     shutting_down_time = None
+    monitor = cronitor.Monitor(APP_NAME) # type: ignore
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -69,8 +71,9 @@ def thread_nanny(signal_handler):
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
                 post_count_metric('Fatals', 0)
+            monitor.ping(metrics={'threads_alive': len(threads_alive), 'threads_missing': len(thread_deficit)})
             # don't block on the long sleep
-            interruptable_sleep.wait(58)
+            interruptable_sleep.wait(60)
         else:
             # interrupt any other sleepers now
             interruptable_sleep.set()
