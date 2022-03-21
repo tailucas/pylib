@@ -64,11 +64,10 @@ class MQConnection(AppThread, Closable):
         success = False
         tries = 1
         while tries < 2:
-            if tries > 1:
-                try:
-                    self._setup_channel()
-                except AMQPConnectionError as e:
-                    raise ResourceWarning('Problem setting up connection or channel.')
+            try:
+                self._setup_channel()
+            except AMQPConnectionError as e:
+                raise ResourceWarning('Problem setting up connection or channel.')
             try:
                 self._mq_channel.basic_publish(
                     exchange=self._mq_exchange_name,
