@@ -79,7 +79,10 @@ class MQConnection(AppThread, Closable):
             except StreamLostError as e:
                 log.warning('Lost stream during publish {e!s}')
                 # try again
-                continue
+                if tries < 2:
+                    continue
+                else:
+                    raise RuntimeWarning('Failure after retry.') from e
             except ConnectionClosedByBroker as e:
                 raise ResourceWarning() from e
             finally:
@@ -90,6 +93,8 @@ class MQConnection(AppThread, Closable):
                     if close_connection or not success:
                         log.warning(f'Closing potentially stale connection (successful attempt? {success})...')
                         self._close_connection()
+        if not success:
+            raise AssertionError('No success after publish attempt.')
 
     def _setup_connection(self):
         if self._mq_connection is None or self._mq_connection.is_closed:
