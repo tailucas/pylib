@@ -61,19 +61,35 @@ class MQConnection(AppThread, Closable):
         self._mq_queue_name = None
 
     def _basic_publish(self, routing_key, event_payload, close_channel=False, close_connection=False):
-        try:
-            self._setup_channel()
-            self._mq_channel.basic_publish(
-                exchange=self._mq_exchange_name,
-                routing_key=routing_key,
-                body=make_payload(data=event_payload))
-            if close_channel:
-                self._close_channel()
-                if close_connection:
-                    self._close_connection()
-        except (ConnectionClosedByBroker, StreamLostError) as e:
-            # handled error
-            raise ResourceWarning('Message publish failure.') from e
+        success = False
+        tries = 1
+        while tries < 2:
+            if tries > 1:
+                try:
+                    self._setup_channel()
+                except AMQPConnectionError as e:
+                    raise ResourceWarning('Problem setting up connection or channel.')
+            try:
+                self._mq_channel.basic_publish(
+                    exchange=self._mq_exchange_name,
+                    routing_key=routing_key,
+                    body=make_payload(data=event_payload))
+                success = True
+                break
+            except StreamLostError as e:
+                log.warning('Lost stream during publish {e!s}')
+                # try again
+                continue
+            except ConnectionClosedByBroker as e:
+                raise ResourceWarning() from e
+            finally:
+                tries += 1
+                if close_channel or not success:
+                    log.warning(f'Closing potentially stale channel (successful attempt? {success})...')
+                    self._close_channel()
+                    if close_connection or not success:
+                        log.warning(f'Closing potentially stale connection (successful attempt? {success})...')
+                        self._close_connection()
 
     def _setup_connection(self):
         if self._mq_connection is None or self._mq_connection.is_closed:
