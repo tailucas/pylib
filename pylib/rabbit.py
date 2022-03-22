@@ -63,34 +63,35 @@ class MQConnection(AppThread, Closable):
     def _basic_publish(self, routing_key, event_payload, close_channel=False, close_connection=False):
         success = False
         tries = 1
-        while tries < 2:
+        while tries <= 2:
             try:
                 self._setup_channel()
             except AMQPConnectionError as e:
-                raise ResourceWarning('Problem setting up connection or channel.')
+                raise ResourceWarning('Problem setting up connection or channel.') from e
             try:
                 self._mq_channel.basic_publish(
                     exchange=self._mq_exchange_name,
                     routing_key=routing_key,
                     body=make_payload(data=event_payload))
                 success = True
+                # exit loop
                 break
             except StreamLostError as e:
-                log.warning(f'Lost stream during publish {e!s}')
                 # try again
                 if tries < 2:
+                    log.warning(f'Retrying on lost stream during publish: {e!s}')
                     continue
                 else:
-                    raise RuntimeWarning('Failure after retry.') from e
+                    raise RuntimeWarning('Publish failure after retry.') from e
             except ConnectionClosedByBroker as e:
                 raise ResourceWarning() from e
             finally:
                 tries += 1
                 if close_channel or not success:
-                    log.warning(f'Closing potentially stale channel (successful attempt? {success})...')
+                    log.debug(f'Closing potentially stale channel (successful attempt? {success})...')
                     self._close_channel()
                     if close_connection or not success:
-                        log.warning(f'Closing potentially stale connection (successful attempt? {success})...')
+                        log.debug(f'Closing potentially stale connection (successful attempt? {success})...')
                         self._close_connection()
         if not success:
             raise AssertionError('No success after publish attempt.')
