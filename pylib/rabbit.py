@@ -76,7 +76,7 @@ class MQConnection(AppThread, Closable):
                 success = True
                 break
             except StreamLostError as e:
-                log.warning('Lost stream during publish {e!s}')
+                log.warning(f'Lost stream during publish {e!s}')
                 # try again
                 if tries < 2:
                     continue
