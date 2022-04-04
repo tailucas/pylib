@@ -108,9 +108,10 @@ class Leader(MQConnection):
                 break
         if threads.shutting_down:
             raise RuntimeWarning("Shutting down...")
-        with open(self._leader_marker_file, encoding='utf-8') as f:
-            log.info(f'Writing leader marker file: {self._leader_marker_file}')
-            f.write(f'{self._app_name}:{self._device_name}:{self._elected_leader_at}')
+        log.info(f'Writing leader marker file: {self._leader_marker_file}')
+        f = open(self._leader_marker_file, "w")
+        f.write(f'{self._app_name}:{self._device_name}:{self._elected_leader_at}')
+        f.close()
         log.info(f'Acquired leadership of {self._app_name} by {self._device_name}.')
 
     def run(self):
