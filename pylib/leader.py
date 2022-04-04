@@ -1,5 +1,5 @@
 import logging
-import pika
+import os
 import zmq
 
 from pika.exceptions import StreamLostError, \
@@ -32,7 +32,7 @@ LEADERSHIP_STATUS_SECS = 60
 
 class Leader(MQConnection):
 
-    def __init__(self, mq_server_address, mq_exchange_name, app_name=APP_NAME, device_name=DEVICE_NAME): # type: ignore
+    def __init__(self, mq_server_address, mq_exchange_name, app_name=APP_NAME, device_name=DEVICE_NAME, leader_marker_file='/data/is_leader'): # type: ignore
         MQConnection.__init__(
             self,
             mq_server_address=mq_server_address,
@@ -40,6 +40,7 @@ class Leader(MQConnection):
 
         self._app_name = app_name
         self._device_name = device_name
+        self._leader_marker_file = leader_marker_file
 
         self._leadership_gate = Event()
 
@@ -71,6 +72,9 @@ class Leader(MQConnection):
 
     def stop(self):
         # attempt best-effort surrender
+        if os.path.exists(self._leader_marker_file):
+            log.info(f'Removing leader marker file: {self._leader_marker_file}')
+            os.remove(self._leader_marker_file)
         try:
             if self._is_leader and self._signalled:
                 log.info(f'Surrendering leadership of {self._app_name}...')
@@ -94,6 +98,9 @@ class Leader(MQConnection):
         log.info(f'Elected leader for {self._app_name} is currently {leader_name} since {leader_since}.')
 
     def yield_to_leader(self):
+        if os.path.exists(self._leader_marker_file):
+            log.info(f'Removing stale leader marker file: {self._leader_marker_file}')
+            os.remove(self._leader_marker_file)
         while not threads.shutting_down:
             self._log_leader()
             self._leadership_gate.wait(LEADERSHIP_STATUS_SECS)
@@ -101,6 +108,9 @@ class Leader(MQConnection):
                 break
         if threads.shutting_down:
             raise RuntimeWarning("Shutting down...")
+        with open(self._leader_marker_file, encoding='utf-8') as f:
+            log.info(f'Writing leader marker file: {self._leader_marker_file}')
+            f.write(f'{self._app_name}:{self._device_name}:{self._elected_leader_at}')
         log.info(f'Acquired leadership of {self._app_name} by {self._device_name}.')
 
     def run(self):
