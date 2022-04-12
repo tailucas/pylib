@@ -65,7 +65,7 @@ def thread_nanny(signal_handler):
             if len(thread_deficit) > 0:
                 error_msg = f'A thread has died. Expected threads are [{threads_tracked}], ' \
                             f'missing is [{thread_deficit}].'
-                log.fatal(error_msg)
+                log.warning(error_msg)
                 post_count_metric('Fatals')
                 shutting_down = True
                 interruptable_sleep.set()
