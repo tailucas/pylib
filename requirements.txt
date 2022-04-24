@@ -8,6 +8,7 @@ pathtools
 pika
 python-dateutil
 pytz
+PyYAML
 pyzmq
 sentry-sdk
 simplejson
