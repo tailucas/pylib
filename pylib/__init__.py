@@ -44,11 +44,12 @@ else:
     log.setLevel(logging.DEBUG)
     # define the log format
     formatter = logging.Formatter('%(name)s %(threadName)s [%(levelname)s] %(message)s')
+    syslog_handler = None
     if os.path.exists('/dev/log'):
         syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
         syslog_handler.setFormatter(formatter)
         log.addHandler(syslog_handler)
-    if sys.stdout.isatty() or 'SUPERVISOR_ENABLED' in os.environ:
+    if sys.stdout.isatty() or ('SUPERVISOR_ENABLED' in os.environ and syslog_handler is None):
         log.warning("Using console logging because there is a tty or under supervisord.")
         stream_handler = logging.StreamHandler(stream=sys.stdout)
         stream_handler.setFormatter(formatter)
