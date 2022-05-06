@@ -44,16 +44,16 @@ else:
     log.setLevel(logging.DEBUG)
     # define the log format
     formatter = logging.Formatter('%(name)s %(threadName)s [%(levelname)s] %(message)s')
-    syslog_handler = None
+    log_handler = None
     if os.path.exists('/dev/log'):
-        syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
-        syslog_handler.setFormatter(formatter)
-        log.addHandler(syslog_handler)
-    if sys.stdout.isatty() or ('SUPERVISOR_ENABLED' in os.environ and syslog_handler is None):
+        log_handler = logging.handlers.SysLogHandler(address='/dev/log')
+        log_handler.setFormatter(formatter)
+        log.addHandler(log_handler)
+    if sys.stdout.isatty() or ('SUPERVISOR_ENABLED' in os.environ and log_handler is None):
         log.warning("Using console logging because there is a tty or under supervisord.")
-        stream_handler = logging.StreamHandler(stream=sys.stdout)
-        stream_handler.setFormatter(formatter)
-        log.addHandler(stream_handler)
+        log_handler = logging.StreamHandler(stream=sys.stdout)
+        log_handler.setFormatter(formatter)
+        log.addHandler(log_handler)
 
 
     # credentials
@@ -82,6 +82,7 @@ else:
         device_name_base = '-'.join(device_name_parts[0:2])
     builtins.DEVICE_NAME_BASE = device_name_base
     builtins.log = log
+    builtins.log_handler = log_handler
     builtins.creds_config = creds
     URL_WORKER_APP = 'inproc://app'
     builtins.URL_WORKER_APP = URL_WORKER_APP
