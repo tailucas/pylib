@@ -40,7 +40,7 @@ def thread_nanny(signal_handler):
     global shutting_down
     shutting_down_grace_secs = 30
     shutting_down_time = None
-    monitor = cronitor.Monitor(APP_NAME) # type: ignore
+    monitor = cronitor.Monitor(APP_CONFIG.get('app', 'cronitor_monitor_key')) # type: ignore
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
