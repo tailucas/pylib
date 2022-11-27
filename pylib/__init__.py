@@ -71,6 +71,7 @@ else:
     cronitor.api_key = creds.cronitor_token
 
     # update builtins
+    builtins.APP_PATH = app_path
     builtins.APP_CONFIG = app_config
     device_name = app_config.get('app', 'device_name')
     DEVICE_NAME = device_name
