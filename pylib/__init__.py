@@ -68,7 +68,8 @@ else:
         dsn=creds.sentry_dsn,
         integrations=builtins.SENTRY_EXTRAS # pylint: disable=no-member
     )
-    cronitor.api_key = creds.cronitor_token
+    if hasattr(creds, 'cronitor_token'):
+        cronitor.api_key = creds.cronitor_token
 
     # update builtins
     builtins.APP_PATH = app_path
