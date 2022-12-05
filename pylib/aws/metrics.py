@@ -3,19 +3,19 @@ from . import boto3_session
 from ..datetime import make_timestamp
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 app_metrics = boto3_session.client('cloudwatch')
 
 
-def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name=DEVICE_NAME_BASE): # type: ignore
+def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name=DEVICE_NAME_BASE):  # type: ignore
     global app_metrics
     # define default dimensions
     metric_dimensions = [
         {
             'Name': 'Application',
-            'Value': APP_NAME # type: ignore
+            'Value': APP_NAME  # type: ignore
         },
         {
             'Name': 'Device',

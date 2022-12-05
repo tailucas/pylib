@@ -1,7 +1,5 @@
 import builtins
-import logging
 import logging.handlers
-import os
 import os.path
 import sys
 
@@ -20,7 +18,7 @@ else:
     )
 
     # expose builtins for lint-friendly
-    APP_NAME = builtins.APP_NAME # pylint: disable=no-member
+    APP_NAME = builtins.APP_NAME  # pylint: disable=no-member
 
     if sys.stdout.isatty() and os.system('systemctl status app') == 0:
         print(f"{APP_NAME} is already running. Use 'systemctl stop app' to stop first.")
@@ -34,9 +32,7 @@ else:
     app_config.optionxform = str
     app_config.read([os.path.join(app_path, f'{APP_NAME}.conf')])
 
-
     log = logging.getLogger(APP_NAME)
-
 
     # do not propagate to console logging
     log.propagate = False
@@ -55,7 +51,6 @@ else:
         log_handler.setFormatter(formatter)
         log.addHandler(log_handler)
 
-
     # credentials
     creds_client: Client = new_client_from_environment(url=os.environ['OP_CONNECT_SERVER'])
     creds_vaults = creds_client.get_vaults()
@@ -63,10 +58,9 @@ else:
         log.info(f"Credential vault {vault.name} contains {vault.items} credentials.")
     creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config) # pylint: disable=no-member
 
-
     sentry_sdk.init(
         dsn=creds.sentry_dsn,
-        integrations=builtins.SENTRY_EXTRAS # pylint: disable=no-member
+        integrations=builtins.SENTRY_EXTRAS  # pylint: disable=no-member
     )
     if hasattr(creds, 'cronitor_token'):
         cronitor.api_key = creds.cronitor_token

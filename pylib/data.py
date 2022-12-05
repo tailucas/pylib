@@ -5,7 +5,7 @@ import msgpack
 from .datetime import make_timestamp
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 def make_payload(timestamp=None, data=None, pack=True):

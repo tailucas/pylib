@@ -31,7 +31,7 @@ ignore_logger('pika.channel')
 ignore_logger('pika.connection')
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 class MQConnection(AppThread, Closable):

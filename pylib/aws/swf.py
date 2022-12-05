@@ -25,7 +25,7 @@ from ..data import make_payload
 from ..handler import exception_handler
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 class SWFActivityWaiter(Thread):

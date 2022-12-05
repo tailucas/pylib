@@ -6,7 +6,7 @@ from weakref import WeakKeyDictionary, WeakSet
 from zmq.error import ZMQError
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 zmq_sockets = WeakKeyDictionary()

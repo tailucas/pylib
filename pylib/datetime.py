@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from dateutil import tz
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 ISO_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
@@ -46,7 +46,7 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
         timestamp = new_timestamp
     log.debug(f'Using timestamp {timestamp}')
     if make_string:
-        return timestamp.strftime(ISO_DATE_FORMAT) # type: ignore
+        return timestamp.strftime(ISO_DATE_FORMAT)  # type: ignore
     return timestamp
 
 

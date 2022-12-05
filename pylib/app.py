@@ -9,7 +9,7 @@ from .threads import shutting_down, threads_tracked
 from .zmq import Closable
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 class AppThread(Thread):

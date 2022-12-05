@@ -19,7 +19,7 @@ from .rabbit import ZMQListener, MQConnection
 from . import threads
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 URL_WORKER_LEADER = 'inproc://leader'

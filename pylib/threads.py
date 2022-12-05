@@ -15,7 +15,7 @@ from .aws.metrics import post_count_metric
 from .zmq import try_close, zmq_context
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
@@ -40,7 +40,9 @@ def thread_nanny(signal_handler):
     global shutting_down
     shutting_down_grace_secs = 30
     shutting_down_time = None
-    monitor = cronitor.Monitor(APP_CONFIG.get('app', 'cronitor_monitor_key')) # type: ignore
+    monitor = None
+    if APP_CONFIG.has_option('app', 'cronitor_monitor_key'):  # type: ignore
+        monitor = cronitor.Monitor(APP_CONFIG.get('app', 'cronitor_monitor_key'))  # type: ignore
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -73,17 +75,18 @@ def thread_nanny(signal_handler):
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
                 post_count_metric('Fatals', 0)
-            try:
-                monitor.ping(
-                    host=DEVICE_NAME, # type: ignore
-                    state=state,
-                    metrics={
-                        'count': len(threads_alive),
-                        'error_count': len(thread_deficit)
-                    }
-                )
-            except Exception as e:
-                log.warning(f'Problem sending cronitor ping: {e!s}')
+            if monitor is not None:
+                try:
+                    monitor.ping(
+                        host=DEVICE_NAME, # type: ignore
+                        state=state,
+                        metrics={
+                            'count': len(threads_alive),
+                            'error_count': len(thread_deficit)
+                        }
+                    )
+                except Exception as e:
+                    log.warning(f'Problem sending cronitor ping: {e!s}')
             # don't block on the long sleep
             interruptable_sleep.wait(60)
         else:

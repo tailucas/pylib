@@ -5,7 +5,7 @@ import subprocess
 from .threads import die
 
 
-log = logging.getLogger(APP_NAME) # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 def exec_cmd(cmd):
