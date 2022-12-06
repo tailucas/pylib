@@ -56,7 +56,7 @@ else:
     creds_vaults = creds_client.get_vaults()
     for vault in creds_vaults:
         log.info(f"Credential vault {vault.name} contains {vault.items} credentials.")
-    creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config) # pylint: disable=no-member
+    creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config)  # pylint: disable=no-member
 
     sentry_sdk.init(
         dsn=creds.sentry_dsn,

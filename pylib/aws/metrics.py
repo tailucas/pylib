@@ -5,12 +5,17 @@ from ..datetime import make_timestamp
 
 log = logging.getLogger(APP_NAME)  # type: ignore
 
-
-app_metrics = boto3_session.client('cloudwatch')
+app_metrics = None
+if boto3_session is not None:
+    app_metrics = boto3_session.client('cloudwatch')
+else:
+    log.warning('AWS boto3_session is not set. CloudWatch metrics will be unavailable.')
 
 
 def post_count_metric(metric_name, count=1, unit='Count', dimensions=None, device_name=DEVICE_NAME_BASE):  # type: ignore
     global app_metrics
+    if app_metrics is None:
+        return
     # define default dimensions
     metric_dimensions = [
         {

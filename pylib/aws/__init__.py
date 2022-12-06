@@ -3,6 +3,7 @@ import os
 
 
 log = logging.getLogger(APP_NAME)  # type: ignore
+boto3_session = None
 aws_enabled = False
 
 try:
