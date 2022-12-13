@@ -22,6 +22,7 @@ def update_section(yaml_section, section_namespace, replacement):
         section_namespace=section_namespace,
         replacement=replacement)
 
+
 if __name__ == "__main__":
     yaml_config = None
     yaml_section_namespace_input = None
