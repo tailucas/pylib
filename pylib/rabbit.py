@@ -158,9 +158,9 @@ class ZMQListener(MQConnection):
     def run(self):
         self.processor.connect(self._zmq_url)
         with exception_handler(closable=self, and_raise=False, shutdown_on_error=True):
-            self._setup_channel()
-            log.info(f'Ready for RabbitMQ messages in {self.name}.')
             try:
+                self._setup_channel()
+                log.info(f'Ready for RabbitMQ messages in {self.name}.')
                 self._mq_channel.start_consuming()
             except (AMQPConnectionError, ConnectionClosedByBroker, StreamLostError) as e:
                 # handled error
