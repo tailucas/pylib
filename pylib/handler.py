@@ -62,7 +62,7 @@ class exception_handler(object):
                 log.exception(self.__class__.__name__)
                 capture_exception(error=(exc_type, exc_val, tb))
                 if self._shutdown_on_error:
-                    die()
+                    die(exception=exc_type)
             else:
                 # log the exception as informational if in debug mode
                 log.debug(self.__class__.__name__, exc_info=True)

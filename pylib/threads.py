@@ -23,14 +23,18 @@ interruptable_sleep = threading.Event()
 threads_tracked = set()
 # shutdown flag
 shutting_down = False
+# shutdown trigger exception
+trigger_exception = None
 
 
-def die():
+def die(exception=None):
     global shutting_down
     global interruptable_sleep
+    global trigger_exception
     log.debug(f'Shutting down...')
     shutting_down = True
     interruptable_sleep.set()
+    trigger_exception = exception
 
 
 # noinspection PyShadowingNames

@@ -163,10 +163,13 @@ class ZMQListener(MQConnection):
                 log.info(f'Ready for RabbitMQ messages in {self.name}.')
                 self._mq_channel.start_consuming()
             except (AMQPConnectionError, ConnectionClosedByBroker, StreamLostError) as e:
-                # handled error
-                raise ResourceWarning('Consumer interrupted.') from e
+                if not threads.shutting_down:
+                    raise e
+                else:
+                    # handled error due to already shutting down
+                    raise ResourceWarning('Consumer interrupted.') from e
             except Exception as e:
-                log.debug(self.__class__.__name__, exc_info=True)
+                log.warning(f'{self.__class__.__name__} encountered unhandled; raising.', exc_info=True)
                 if not threads.shutting_down:
                     raise e
             finally:
