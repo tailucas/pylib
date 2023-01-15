@@ -37,6 +37,22 @@ def die(exception=None):
     trigger_exception = exception
 
 
+def bye():
+    global trigger_exception
+    exit_cause = trigger_exception
+    exit_code = 0
+    exit_message = f'Shutdown complete.'
+    if exit_cause is not None:
+        exit_message += f' Exception was {exit_cause.__name__}.'
+        exit_code = 1
+    exit_message += f' Exiting with code {exit_code}.'
+    log.info(exit_message)
+    # flush loggers
+    logging.shutdown()
+    # exit process
+    exit(code=exit_code)
+
+
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
     global interruptable_sleep
