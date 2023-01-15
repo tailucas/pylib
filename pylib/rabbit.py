@@ -34,6 +34,10 @@ ignore_logger('pika.connection')
 log = logging.getLogger(APP_NAME)  # type: ignore
 
 
+BLOCKED_CONNECTION_TIMEOUT = 5
+PUBLISH_RETRIES = 2
+
+
 class MQConnection(AppThread, Closable):
     def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic', mq_arguments=None):
         AppThread.__init__(self, name=self.__class__.__name__)
@@ -48,7 +52,9 @@ class MQConnection(AppThread, Closable):
 
         pika_parameters = list()
         for source in self._mq_server_list:
-            pika_parameters.append(pika.ConnectionParameters(host=source))
+            pika_parameters.append(pika.ConnectionParameters(
+                host=source,
+                blocked_connection_timeout=BLOCKED_CONNECTION_TIMEOUT))
         self._pika_parameters = tuple(pika_parameters)
 
         self._mq_exchange_name = mq_exchange_name
@@ -63,7 +69,7 @@ class MQConnection(AppThread, Closable):
     def _basic_publish(self, routing_key, event_payload, close_channel=False, close_connection=False):
         success = False
         tries = 1
-        while tries <= 2:
+        while tries <= PUBLISH_RETRIES:
             try:
                 self._setup_channel()
             except AMQPConnectionError as e:
@@ -78,7 +84,7 @@ class MQConnection(AppThread, Closable):
                 break
             except StreamLostError as e:
                 # try again
-                if tries < 2:
+                if tries < PUBLISH_RETRIES:
                     log.warning(f'Retrying on lost stream during publish: {e!s}')
                     continue
                 else:
@@ -206,7 +212,10 @@ class RabbitMQRelay(AppThread):
         self._source_socket_type = zmq.PULL
 
         self._mq_config_server = mq_server_address
-        self._mq_connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._mq_config_server))
+        self._mq_connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=self._mq_config_server,
+                blocked_connection_timeout=BLOCKED_CONNECTION_TIMEOUT))
         self._mq_channel = self._mq_connection.channel()
         self._mq_config_exchange = mq_exchange_name
         self._mq_exchange_type = mq_exchange_type
