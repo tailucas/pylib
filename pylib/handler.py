@@ -56,7 +56,7 @@ class exception_handler(object):
             # or unhandled exceptions; used typically at startup
             log.warning(self.__class__.__name__, exc_info=True)
             if self._shutdown_on_error:
-                die()
+                die(exception=exc_type)
         elif issubclass(exc_type, Exception):
             if not threads.shutting_down:
                 log.exception(self.__class__.__name__)
