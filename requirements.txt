@@ -2,9 +2,7 @@ botoflow
 boto3
 cronitor
 msgpack
-netifaces
 onepasswordconnectsdk
-pathtools
 pika
 python-dateutil
 pytz
