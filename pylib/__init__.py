@@ -3,6 +3,8 @@ import logging.handlers
 import os.path
 import sys
 
+WORK_DIR = '/opt/app'
+
 if hasattr(builtins, 'PYTEST'):
     pass
 else:
@@ -24,14 +26,6 @@ else:
         print(f"{APP_NAME} is already running. Use 'systemctl stop app' to stop first.")
         sys.exit(1)
 
-    # use parent of this module's top-level __init__.py
-    app_path = Path(os.path.abspath(os.path.dirname(__file__))).parent
-    # set the working directory for libraries that assume this (such as PyDrive)
-    os.chdir(app_path)
-    app_config = ConfigParser()
-    app_config.optionxform = str
-    app_config.read([os.path.join(app_path, f'{APP_NAME}.conf')])
-
     log = logging.getLogger(APP_NAME)
 
     # do not propagate to console logging
@@ -51,6 +45,19 @@ else:
         log_handler.setFormatter(formatter)
         log.addHandler(log_handler)
 
+    # use parent of this module's top-level __init__.py
+    app_path = Path(os.path.abspath(os.path.dirname(__file__))).parent
+    log.debug(f'Running from {app_path}, using working directory {WORK_DIR}')
+    # assert working directory for assumptions made (such as PyDrive)
+    current_work_dir = os.getcwd()
+    if current_work_dir != WORK_DIR:
+        log.warning(f'Changing working directory from {current_work_dir} to {WORK_DIR}')
+        os.chdir(WORK_DIR)
+
+    app_config = ConfigParser()
+    app_config.optionxform = str
+    app_config.read([os.path.join(app_path, f'{APP_NAME}.conf')])
+
     # credentials
     creds_client: Client = new_client_from_environment(url=os.environ['OP_CONNECT_SERVER'])
     creds_vaults = creds_client.get_vaults()
@@ -66,7 +73,7 @@ else:
         cronitor.api_key = creds.cronitor_token
 
     # update builtins
-    builtins.APP_PATH = app_path
+    builtins.APP_PATH = WORK_DIR
     builtins.APP_CONFIG = app_config
     device_name = app_config.get('app', 'device_name')
     DEVICE_NAME = device_name
