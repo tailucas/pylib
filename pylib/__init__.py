@@ -18,7 +18,7 @@ else:
         new_client_from_environment
     )
 
-    from .app import APP_NAME, WORK_DIR
+    from app import APP_NAME, WORK_DIR
 
     if sys.stdout.isatty() and os.system('systemctl status app') == 0:
         print(f"{APP_NAME} is already running. Use 'systemctl stop app' to stop first.")
