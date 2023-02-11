@@ -3,7 +3,6 @@ import logging.handlers
 import os.path
 import sys
 
-WORK_DIR = '/opt/app'
 
 if hasattr(builtins, 'PYTEST'):
     pass
@@ -19,8 +18,7 @@ else:
         new_client_from_environment
     )
 
-    # expose builtins for lint-friendly
-    APP_NAME = builtins.APP_NAME  # pylint: disable=no-member
+    from .app import APP_NAME, WORK_DIR
 
     if sys.stdout.isatty() and os.system('systemctl status app') == 0:
         print(f"{APP_NAME} is already running. Use 'systemctl stop app' to stop first.")
@@ -75,6 +73,7 @@ else:
         cronitor.api_key = creds.cronitor_token
 
     # update builtins
+    builtins.APP_NAME = APP_NAME
     builtins.APP_PATH = WORK_DIR
     builtins.APP_CONFIG = app_config
     device_name = app_config.get('app', 'device_name')
