@@ -54,9 +54,11 @@ else:
         log.warning(f'Changing working directory from {current_work_dir} to {WORK_DIR}')
         os.chdir(WORK_DIR)
 
+    app_config_path = os.path.join(WORK_DIR, f'{APP_NAME}.conf')
     app_config = ConfigParser()
     app_config.optionxform = str
-    app_config.read([os.path.join(app_path, f'{APP_NAME}.conf')])
+    log.info(f'Loading application configuration from {app_config_path}')
+    app_config.read([app_config_path])
 
     # credentials
     creds_client: Client = new_client_from_environment(url=os.environ['OP_CONNECT_SERVER'])
