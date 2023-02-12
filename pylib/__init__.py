@@ -52,7 +52,7 @@ else:
         log.warning(f'Changing working directory from {current_work_dir} to {WORK_DIR}')
         os.chdir(WORK_DIR)
 
-    app_config_path = os.path.join(WORK_DIR, f'{APP_NAME}.conf')
+    app_config_path = os.path.join(WORK_DIR, f'app.conf')
     app_config = ConfigParser()
     app_config.optionxform = str
     log.info(f'Loading application configuration from {app_config_path}')
