@@ -34,7 +34,9 @@ def die(exception=None):
     log.debug(f'Shutting down...')
     shutting_down = True
     interruptable_sleep.set()
-    trigger_exception = exception
+    # enforce latch so as not to unset later due to __main__ shutdown
+    if exception is not None:
+        trigger_exception = exception
 
 
 def bye():
