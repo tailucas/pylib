@@ -109,7 +109,7 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 [issues-shield]: https://img.shields.io/github/issues/tailucas/pylib.svg?style=for-the-badge
 [issues-url]: https://github.com/tailucas/pylib/issues
 [license-shield]: https://img.shields.io/github/license/tailucas/pylib.svg?style=for-the-badge
-[license-url]: https://github.com/tailucas/pylib/blob/master/LICENSE.txt
+[license-url]: https://github.com/tailucas/pylib/blob/master/LICENSE
 
 [baseapp-url]: https://github.com/tailucas/base-app
 [tailucas-url]: https://github.com/tailucas
