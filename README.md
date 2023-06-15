@@ -38,9 +38,9 @@ Handy stand-alone tools:
 
 A crude attempt to visualize the package structure with [pyreverse](https://pypi.org/project/pyreverse/).
 
-![packages](/../../../../tailucas.github.io/blob/main/assets/pylib/packages.png)
+![packages](/../../../../tailucas/tailucas.github.io/blob/main/assets/pylib/packages.png)
 
-![classes](/../../../../tailucas.github.io/blob/main/assets/pylib/comms_classes.png)
+![classes](/../../../../tailucas/tailucas.github.io/blob/main/assets/pylib/comms_classes.png)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
