@@ -8,6 +8,8 @@
 
 ## About The Project
 
+### Overview
+
 This package was created by factoring out many reusable code artifacts from my [various projects][tailucas-url] over a number of years. Since this work was not a part of a group effort, the test coverage is predictably abysmal :raised_eyebrow: and Python documentation notably absent :expressionless:. For each of my projects, which derive from a common Docker application [found here][baseapp-url], this package provides some specific and relatively powerful features to enable rapid offshoots for new ideas. Here is what functionality this package provides:
 
 * [aws.__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/aws/__init__.py): If AWS environment variables are set, global boto and boto3 session objects are instantiated.
@@ -31,6 +33,14 @@ Handy stand-alone tools:
 * [config_interpol](https://github.com/tailucas/pylib/blob/master/config_interpol): By making creative ~~ab~~use of Python's ConfigParser, this tool designed for the command-line will take a configuration file with variables that are automatically substituted with with either an overlay configuration or environment variables by the same name and output the interpolated configuration. A good example of this tool being used is [here](https://github.com/tailucas/base-app/blob/723bbef3a4f5380d722dae52bcb52537b4e44bc1/base_entrypoint.sh#L5).
 * [cred_tool](https://github.com/tailucas/pylib/blob/master/cred_tool): Useful to fetch an item from [1Password][1p-url].
 * [yaml_interpol](https://github.com/tailucas/pylib/blob/master/yaml_interpol): A script useful to generate docker-compose YAML output from templates. A crude example is [here](https://github.com/tailucas/base-app/blob/723bbef3a4f5380d722dae52bcb52537b4e44bc1/Makefile#LL21C47-L21C47) which fetches application configuration from a 1Password vault. Note that application runtime secrets are only in memory and loaded in [__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/__init__.py). I happen to use 1Password to also store application key-value pairs for use in docker-compose templates.
+
+### Package Structure
+
+A crude attempt to visualize the package structure with [pyreverse](https://pypi.org/project/pyreverse/).
+
+![packages](/../../../../tailucas.github.io/blob/main/assets/pylib/packages.png)
+
+![classes](/../../../../tailucas.github.io/blob/main/assets/pylib/comms_classes.png)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
