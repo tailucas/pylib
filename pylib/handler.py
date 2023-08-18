@@ -2,6 +2,7 @@ import logging
 import zmq
 
 from sentry_sdk import capture_exception
+from typing import ContextManager, Optional
 from zmq.error import ZMQError, ContextTerminated
 
 from . import threads
@@ -13,9 +14,16 @@ from .zmq import Closable, zmq_socket, try_close
 log = logging.getLogger(APP_NAME)  # type: ignore
 
 
-class exception_handler(object):
+class exception_handler(ContextManager):
 
-    def __init__(self, closable: Closable = None, connect_url=None, socket_type=None, and_raise=True, close_on_exit=True, shutdown_on_error=False):
+    def __init__(
+            self,
+            closable: Optional[Closable] = None,
+            connect_url: Optional[str]=None,
+            socket_type: Optional[int]=None,
+            and_raise: Optional[bool]=True,
+            close_on_exit: Optional[bool]=True,
+            shutdown_on_error: Optional[bool]=False):
         self._closable = closable
         self._zmq_socket = None
         self._zmq_url = connect_url
@@ -27,11 +35,11 @@ class exception_handler(object):
     def __enter__(self):
         if self._socket_type:
             if self._closable:
-                self._zmq_socket = self._closable.get_socket(self._socket_type)
+                self._zmq_socket = self._closable.get_socket()
             else:
                 self._zmq_socket = zmq_socket(self._socket_type)
         if self._zmq_url:
-            if self._socket_type in [zmq.PULL, zmq.PUB]:
+            if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
                 self._zmq_socket.bind(self._zmq_url)
             else:
                 self._zmq_socket.connect(self._zmq_url)

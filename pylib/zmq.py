@@ -2,22 +2,30 @@ import inspect
 import logging
 import zmq
 
+from typing import Optional
+
 from weakref import WeakKeyDictionary, WeakSet
 from zmq.error import ZMQError
 
-
 log = logging.getLogger(APP_NAME)  # type: ignore
-
 
 zmq_sockets = WeakKeyDictionary()
 zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
 
+# asyncio capabilities
+from zmq.asyncio import Context as AsyncioContext
+# FIXME: https://github.com/zeromq/pyzmq/issues/940
+zmq_async_context = AsyncioContext.shadow(zmq_context.underlying)
 
-def zmq_socket(socket_type):
+
+def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
     fi = inspect.stack()[-1]
     location = f'{fi.function} in {fi.filename} @ line {fi.lineno}'
-    socket = zmq_context.socket(socket_type)
+    if is_async:
+        socket = zmq_async_context.socket(socket_type)
+    else:
+        socket = zmq_context.socket(socket_type)
     zmq_sockets[socket] = location
     return socket
 
@@ -44,18 +52,36 @@ def try_close(socket):
 
 
 class Closable(object):
-    def __init__(self, connect_url=None, socket_type=zmq.PULL):
+
+    @property
+    def is_async(self) -> bool:
+        return self._is_async
+
+    @property
+    def socket_type(self) -> int:
+        return self._socket_type
+
+    @property
+    def socket_url(self) -> str:
+        return self._socket_url
+
+    def __init__(self, connect_url=None, socket_type=zmq.PULL, is_async: Optional[bool]=False, do_connect: Optional[bool]=True):
         self.sockets = WeakSet()
         self.socket = None
-        if connect_url:
-            self.socket = self.get_socket(socket_type)
-            if socket_type in [zmq.PULL, zmq.PUB]:
+        self._socket_url: str = connect_url
+        self._socket_type: int = socket_type
+        self._is_async: bool = is_async
+        if connect_url and do_connect:
+            self.socket = self.get_socket(socket_type, is_async=is_async)
+            if socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
                 self.socket.bind(connect_url)
             else:
                 self.socket.connect(connect_url)
 
-    def get_socket(self, socket_type):
-        s = zmq_socket(socket_type)
+    def get_socket(self, socket_type: Optional[int]=None, is_async: Optional[bool]=False):
+        if socket_type is None:
+            socket_type = self._socket_type
+        s = zmq_socket(socket_type=socket_type, is_async=is_async)
         self.sockets.add(s)
         return s
 

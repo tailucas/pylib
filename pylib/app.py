@@ -1,7 +1,10 @@
+import asyncio
 import logging
 
 from threading import Thread
-from zmq import PUSH, PULL, PUB
+from typing import Optional
+from zmq import PUSH, PULL, PUB, REP
+from zmq.asyncio import Socket as AsyncSocket
 
 from .data import make_payload
 from .handler import exception_handler
@@ -48,3 +51,32 @@ class ZmqRelay(AppThread, Closable):
         with exception_handler(closable=self, connect_url=self._source_zmq_url, socket_type=self._source_socket_type) as zmq_socket:
             while not shutting_down:
                 self.process_message(zmq_socket=zmq_socket)
+
+
+class ZmqWorker(AppThread, Closable):
+
+    def __init__(self, name: str, worker_zmq_url: str):
+        AppThread.__init__(self, name=name)
+        Closable.__init__(self, connect_url=worker_zmq_url, socket_type=REP, is_async=True, do_connect=False)
+
+    async def process_message(self, payload):
+        raise NotImplementedError()
+
+    def startup(self):
+        pass
+
+    async def async_run(self):
+        with exception_handler(closable=self) as zmq_socket:
+            while not shutting_down:
+                data = await zmq_socket.recv_pyobj()
+                response = await self.process_message(payload=data)
+                await zmq_socket.send_pyobj(response)
+
+    def run(self):
+        self.startup()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self.async_run())
+        finally:
+            loop.close()
