@@ -33,15 +33,18 @@ class exception_handler(ContextManager):
         self._shutdown_on_error = shutdown_on_error
 
     def __enter__(self):
-        if self._socket_type:
-            if self._closable:
-                self._zmq_socket = self._closable.get_socket()
-            else:
-                self._zmq_socket = zmq_socket(self._socket_type)
+        if self._closable:
+            self._zmq_url = self._closable.socket_url
+            self._socket_type = self._closable.socket_type
+            self._zmq_socket = self._closable.get_socket()
+        elif self._socket_type:
+            self._zmq_socket = zmq_socket(self._socket_type)
         if self._zmq_url:
             if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
+                log.debug(f'Binding {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
                 self._zmq_socket.bind(self._zmq_url)
             else:
+                log.debug(f'Connecting {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
                 self._zmq_socket.connect(self._zmq_url)
         return self._zmq_socket
 

@@ -126,7 +126,7 @@ def thread_nanny(signal_handler):
                     for s in zmq_context._sockets: # type: ignore
                         try:
                             if s and not s.closed:
-                                log.warning(f'Closing lingering socket type {s.TYPE} (push is {zmq.PUSH}, pull is {zmq.PULL}) for endpoint {s.LAST_ENDPOINT}.')
+                                log.warning(f'Closing lingering socket type {s.TYPE} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) for endpoint {s.LAST_ENDPOINT}.')
                                 try_close(s)
                         except ZMQError:
                             # not interesting in this context

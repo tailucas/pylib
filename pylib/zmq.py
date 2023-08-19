@@ -17,11 +17,13 @@ zmq_context.setsockopt(zmq.LINGER, 0)
 from zmq.asyncio import Context as AsyncioContext
 # FIXME: https://github.com/zeromq/pyzmq/issues/940
 zmq_async_context = AsyncioContext.shadow(zmq_context.underlying)
+zmq_async_context.setsockopt(zmq.LINGER, 0)
 
 
 def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
     fi = inspect.stack()[-1]
     location = f'{fi.function} in {fi.filename} @ line {fi.lineno}'
+    log.debug(f'Creating {is_async=} socket for location {location}...')
     if is_async:
         socket = zmq_async_context.socket(socket_type)
     else:
@@ -32,6 +34,7 @@ def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
 
 def zmq_term():
     log.info(f'Shutting down ZMQ context...')
+    zmq_async_context.term()
     zmq_context.term()
     log.info(f'ZMQ shutdown complete.')
 
@@ -78,10 +81,10 @@ class Closable(object):
             else:
                 self.socket.connect(connect_url)
 
-    def get_socket(self, socket_type: Optional[int]=None, is_async: Optional[bool]=False):
+    def get_socket(self, socket_type: Optional[int]=None):
         if socket_type is None:
             socket_type = self._socket_type
-        s = zmq_socket(socket_type=socket_type, is_async=is_async)
+        s = zmq_socket(socket_type=socket_type, is_async=self._is_async)
         self.sockets.add(s)
         return s
 
