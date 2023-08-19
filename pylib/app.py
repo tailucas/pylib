@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from threading import Thread
-from typing import Optional
+from typing import Dict
 from zmq import PUSH, PULL, PUB, REP
 from zmq.asyncio import Socket as AsyncSocket
 
@@ -59,7 +59,7 @@ class ZmqWorker(AppThread, Closable):
         AppThread.__init__(self, name=name)
         Closable.__init__(self, connect_url=worker_zmq_url, socket_type=REP, is_async=True, do_connect=False)
 
-    async def process_message(self, payload):
+    async def process_message(self, message: Dict) -> Dict:
         raise NotImplementedError()
 
     def startup(self):
@@ -68,8 +68,8 @@ class ZmqWorker(AppThread, Closable):
     async def async_run(self):
         with exception_handler(closable=self) as zmq_socket:
             while not shutting_down:
-                data = await zmq_socket.recv_pyobj()
-                response = await self.process_message(payload=data)
+                message = await zmq_socket.recv_pyobj()
+                response = await self.process_message(message=message)
                 await zmq_socket.send_pyobj(response)
 
     def run(self):
