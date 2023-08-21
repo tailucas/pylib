@@ -16,6 +16,7 @@ zmq_context.setsockopt(zmq.LINGER, 0)
 # asyncio capabilities
 from zmq.asyncio import Context as AsyncioContext
 # FIXME: https://github.com/zeromq/pyzmq/issues/940
+# FIXME: Exception in callback Socket._init_io_state.<locals>.<lambda>() on Context.term() within asyncio
 zmq_async_context = AsyncioContext.shadow(zmq_context.underlying)
 zmq_async_context.setsockopt(zmq.LINGER, 0)
 
@@ -34,14 +35,7 @@ def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
 
 def zmq_term():
     log.info(f'Shutting down ZMQ context...')
-    try:
-        zmq_context.term()
-    except Exception:
-        log.warning(f'Problem shutting down ZMQ context.', exc_info=True)
-    try:
-        zmq_async_context.term()
-    except Exception:
-        log.warning(f'Problem shutting down async ZMQ context.', exc_info=True)
+    zmq_context.term()
     log.info(f'ZMQ shutdown complete.')
 
 

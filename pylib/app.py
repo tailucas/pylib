@@ -57,7 +57,7 @@ class ZmqWorker(AppThread, Closable):
 
     def __init__(self, name: str, worker_zmq_url: str):
         AppThread.__init__(self, name=name)
-        Closable.__init__(self, connect_url=worker_zmq_url, socket_type=REP, is_async=True, do_connect=False)
+        Closable.__init__(self, connect_url=worker_zmq_url, socket_type=REP, do_connect=False)
 
     async def process_message(self, message: Dict) -> Dict:
         raise NotImplementedError()
@@ -65,18 +65,10 @@ class ZmqWorker(AppThread, Closable):
     def startup(self):
         pass
 
-    async def async_run(self):
-        with exception_handler(closable=self) as zmq_socket:
-            while not shutting_down:
-                message = await zmq_socket.recv_pyobj()
-                response = await self.process_message(message=message)
-                await zmq_socket.send_pyobj(response)
-
     def run(self):
         self.startup()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(self.async_run())
-        finally:
-            loop.close()
+        with exception_handler(closable=self, and_raise=False, close_on_exit=True) as zmq_socket:
+            while not shutting_down:
+                message = zmq_socket.recv_pyobj()
+                response = self.process_message(message=message)
+                zmq_socket.send_pyobj(response)
