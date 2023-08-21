@@ -34,8 +34,14 @@ def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
 
 def zmq_term():
     log.info(f'Shutting down ZMQ context...')
-    zmq_async_context.term()
-    zmq_context.term()
+    try:
+        zmq_context.term()
+    except Exception:
+        log.warning(f'Problem shutting down ZMQ context.', exc_info=True)
+    try:
+        zmq_async_context.term()
+    except Exception:
+        log.warning(f'Problem shutting down async ZMQ context.', exc_info=True)
     log.info(f'ZMQ shutdown complete.')
 
 
