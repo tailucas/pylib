@@ -75,7 +75,7 @@ class Closable(object):
         self._socket_type: int = socket_type
         self._is_async: bool = is_async
         if connect_url and do_connect:
-            self.socket = self.get_socket(socket_type, is_async=is_async)
+            self.socket = self.get_socket(socket_type)
             if socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
                 self.socket.bind(connect_url)
             else:
