@@ -18,13 +18,11 @@ class exception_handler(ContextManager):
 
     def __init__(
             self,
-            closable: Optional[Closable] = None,
-            connect_url: Optional[str]=None,
-            socket_type: Optional[int]=None,
+            connect_url: str,
+            socket_type: Optional[int]=zmq.PUSH,
             and_raise: Optional[bool]=True,
             close_on_exit: Optional[bool]=True,
             shutdown_on_error: Optional[bool]=False):
-        self._closable = closable
         self._zmq_socket = None
         self._zmq_url = connect_url
         self._socket_type = socket_type
@@ -33,26 +31,18 @@ class exception_handler(ContextManager):
         self._shutdown_on_error = shutdown_on_error
 
     def __enter__(self):
-        if self._closable:
-            self._zmq_url = self._closable.socket_url
-            self._socket_type = self._closable.socket_type
-            self._zmq_socket = self._closable.get_socket()
-        elif self._socket_type:
-            self._zmq_socket = zmq_socket(self._socket_type)
-        if self._zmq_url:
-            if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
-                log.debug(f'Binding {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
-                self._zmq_socket.bind(self._zmq_url)
-            else:
-                log.debug(f'Connecting {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
-                self._zmq_socket.connect(self._zmq_url)
+        self._zmq_socket = zmq_socket(self._socket_type)
+        if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
+            log.debug(f'Binding {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
+            self._zmq_socket.bind(self._zmq_url)
+        else:
+            log.debug(f'Connecting {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
+            self._zmq_socket.connect(self._zmq_url)
         return self._zmq_socket
 
     def __exit__(self, exc_type, exc_val, tb):
         if self._close_on_exit or (exc_type and issubclass(exc_type, ContextTerminated)):
-            if self._closable:
-                self._closable.close()
-            elif self._zmq_socket:
+            if self._zmq_socket:
                 try_close(self._zmq_socket)
         if exc_type is None:
             return True

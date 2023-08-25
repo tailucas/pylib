@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import zmq
 
 from threading import Thread
 from typing import Dict
@@ -28,36 +29,38 @@ class AppThread(Thread):
 
 class ZmqRelay(AppThread, Closable):
 
-    def __init__(self, name, source_zmq_url, source_socket_type, sink_zmq_url, sink_socket_type):
+    def __init__(self, name, source_zmq_url, sink_zmq_url):
         AppThread.__init__(self, name=name)
+        Closable.__init__(self, connect_url=source_zmq_url)
         self._sink_zmq_url = sink_zmq_url
-        Closable.__init__(self, connect_url=sink_zmq_url, socket_type=sink_socket_type)
-        self._source_zmq_url = source_zmq_url
-        self._source_socket_type = source_socket_type
 
-    def process_message(self, zmq_socket):
-        data = zmq_socket.recv_pyobj()
+    def process_message(self, sink_socket):
+        data = self.socket.recv_pyobj()
         payload = make_payload(data=data)
         # do not info on heartbeats
         if 'device_info' not in data:
-            log.debug(f'Relaying {len(data)} bytes from {self._source_zmq_url} to {self._sink_zmq_url} ({len(payload)} bytes)')
-        self.socket.send(payload)
+            log.debug(f'Relaying {len(data)} bytes from {self.socket_url} to {self._sink_zmq_url} ({len(payload)} bytes)')
+        sink_socket.send(payload)
 
     def startup(self):
-        pass
+        if self.socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
+            self.get_socket()
+            log.debug(f'Binding {self.socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self.socket_type}')
+            self.socket.bind(self.socket_url)
 
     def run(self):
         self.startup()
-        with exception_handler(closable=self, connect_url=self._source_zmq_url, socket_type=self._source_socket_type) as zmq_socket:
+        with exception_handler(connect_url=self._sink_zmq_url) as socket:
             while not shutting_down:
-                self.process_message(zmq_socket=zmq_socket)
+                self.process_message(sink_socket=socket)
+        self.close()
 
 
-class ZmqWorker(AppThread, Closable):
+class ZmqWorker(AppThread):
 
     def __init__(self, name: str, worker_zmq_url: str):
         AppThread.__init__(self, name=name)
-        Closable.__init__(self, connect_url=worker_zmq_url, socket_type=REP, do_connect=False)
+        self._worker_zmq_url = worker_zmq_url
 
     async def process_message(self, message: Dict) -> Dict:
         raise NotImplementedError()
@@ -67,7 +70,7 @@ class ZmqWorker(AppThread, Closable):
 
     def run(self):
         self.startup()
-        with exception_handler(closable=self, and_raise=False, close_on_exit=True) as zmq_socket:
+        with exception_handler(connect_url=self._worker_zmq_url, socket_type=REP, and_raise=False, close_on_exit=True) as zmq_socket:
             while not shutting_down:
                 message = zmq_socket.recv_pyobj()
                 response = self.process_message(message=message)

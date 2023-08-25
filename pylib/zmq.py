@@ -24,7 +24,7 @@ zmq_async_context.setsockopt(zmq.LINGER, 0)
 def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
     fi = inspect.stack()[-1]
     location = f'{fi.function} in {fi.filename} @ line {fi.lineno}'
-    log.debug(f'Creating {is_async=} socket for location {location}...')
+    log.debug(f'Creating {is_async=} {socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) socket for location {location}...')
     if is_async:
         socket = zmq_async_context.socket(socket_type)
     else:
@@ -57,37 +57,28 @@ def try_close(socket):
 class Closable(object):
 
     @property
-    def is_async(self) -> bool:
-        return self._is_async
+    def socket(self):
+        return self._socket
 
     @property
-    def socket_type(self) -> int:
+    def socket_type(self):
         return self._socket_type
 
     @property
-    def socket_url(self) -> str:
+    def socket_url(self):
         return self._socket_url
 
-    def __init__(self, connect_url=None, socket_type=zmq.PULL, is_async: Optional[bool]=False, do_connect: Optional[bool]=True):
-        self.sockets = WeakSet()
-        self.socket = None
+    def __init__(self, connect_url=None, socket_type=zmq.PULL, is_async: Optional[bool]=False):
+        self._socket = None
         self._socket_url: str = connect_url
         self._socket_type: int = socket_type
         self._is_async: bool = is_async
-        if connect_url and do_connect:
-            self.socket = self.get_socket(socket_type)
-            if socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
-                self.socket.bind(connect_url)
-            else:
-                self.socket.connect(connect_url)
 
-    def get_socket(self, socket_type: Optional[int]=None):
-        if socket_type is None:
-            socket_type = self._socket_type
-        s = zmq_socket(socket_type=socket_type, is_async=self._is_async)
-        self.sockets.add(s)
-        return s
+    def get_socket(self):
+        if self._socket is not None:
+            raise AssertionError(f'Socket already assigned to this instance.')
+        self._socket = zmq_socket(socket_type=self._socket_type, is_async=self._is_async)
+        return self._socket
 
     def close(self):
-        for socket in self.sockets:
-            try_close(socket)
+        try_close(self._socket)
