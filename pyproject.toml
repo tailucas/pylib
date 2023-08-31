@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pylib"
+name = "tailucas-pylib"
 version = "0.0.1"
 description = "Common Python utility modules"
 authors = ["Tai Lucas <tglucas@gmail.com>"]
