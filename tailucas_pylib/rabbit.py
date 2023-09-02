@@ -146,7 +146,6 @@ class ZMQListener(MQConnection):
             mq_exchange_name=mq_exchange_name,
             mq_topic_filter=mq_topic_filter,
             mq_exchange_type=mq_exchange_type)
-        self.processor = self.get_socket(zmq.PUSH)
         self._zmq_url = zmq_url
 
     def _setup_channel(self):
@@ -162,8 +161,8 @@ class ZMQListener(MQConnection):
 
     # noinspection PyBroadException
     def run(self):
-        self.processor.connect(self._zmq_url)
-        with exception_handler(closable=self, and_raise=False, shutdown_on_error=True):
+        with exception_handler(connect_url=self._zmq_url, and_raise=False, shutdown_on_error=True) as zmq_socket:
+            self.processor = zmq_socket
             try:
                 self._setup_channel()
                 log.info(f'Ready for RabbitMQ messages in {self.name}.')

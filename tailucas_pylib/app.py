@@ -43,13 +43,11 @@ class ZmqRelay(AppThread, Closable):
         sink_socket.send(payload)
 
     def startup(self):
-        if self.socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
-            self.get_socket()
-            log.debug(f'Binding {self.socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self.socket_type}')
-            self.socket.bind(self.socket_url)
+        pass
 
     def run(self):
         self.startup()
+        self.get_socket()
         with exception_handler(connect_url=self._sink_zmq_url) as socket:
             while not shutting_down:
                 self.process_message(sink_socket=socket)

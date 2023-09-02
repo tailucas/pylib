@@ -74,10 +74,12 @@ class Closable(object):
         self._socket_type: int = socket_type
         self._is_async: bool = is_async
 
-    def get_socket(self):
-        if self._socket is not None:
-            raise AssertionError(f'Socket already assigned to this instance.')
-        self._socket = zmq_socket(socket_type=self._socket_type, is_async=self._is_async)
+    def get_socket(self, and_bind: Optional[bool]=True):
+        if self._socket is None:
+            self._socket = zmq_socket(socket_type=self._socket_type, is_async=self._is_async)
+            if and_bind and self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
+                log.info(f'Binding {self._socket_type} ({zmq.PULL=}, {zmq.PUB=}, {zmq.REP=}) ZMQ socket to {self._socket_url}.')
+                self._socket.bind(self._socket_url)
         return self._socket
 
     def close(self):
