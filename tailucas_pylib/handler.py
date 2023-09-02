@@ -22,16 +22,18 @@ class exception_handler(ContextManager):
             socket_type: Optional[int]=zmq.PUSH,
             and_raise: Optional[bool]=True,
             close_on_exit: Optional[bool]=True,
-            shutdown_on_error: Optional[bool]=False):
+            shutdown_on_error: Optional[bool]=False,
+            is_async: Optional[bool]=False):
         self._zmq_socket = None
         self._zmq_url = connect_url
         self._socket_type = socket_type
         self._and_raise = and_raise
         self._close_on_exit = close_on_exit
         self._shutdown_on_error = shutdown_on_error
+        self._is_async = is_async
 
     def __enter__(self):
-        self._zmq_socket = zmq_socket(self._socket_type)
+        self._zmq_socket = zmq_socket(socket_type=self._socket_type, is_async=self._is_async)
         if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
             log.debug(f'Binding {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}')
             self._zmq_socket.bind(self._zmq_url)
