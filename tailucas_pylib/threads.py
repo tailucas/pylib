@@ -123,16 +123,17 @@ def thread_nanny(signal_handler):
                     log.setLevel(logging.DEBUG)
                 # close zmq sockets that are still alive (and blocking shutdown)
                 try:
-                    for s in zmq_sockets: # type: ignore
+                    for s in zmq_sockets.keys(): # type: ignore
                         try:
                             if s and not s.closed:
                                 log.warning(f'Closing lingering socket type {s.TYPE} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) for endpoint {s.LAST_ENDPOINT}.')
                                 try_close(s)
                         except ZMQError:
+                            log.debug('ZMQ error on closing socket.', exc_info=True)
                             # not interesting in this context
                             continue
                 except RuntimeError:
                     # protect against "Set changed size during iteration", try again later
-                    pass
+                    log.debug('Issue on closing lingering sockets.', exc_info=True)
         # never spin
         time.sleep(2)
