@@ -21,8 +21,11 @@ zmq_async_context.setsockopt(zmq.LINGER, 0)
 
 
 def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
-    fi = inspect.stack()[-1]
-    location = f'{fi.function} in {fi.filename} @ line {fi.lineno}'
+    call_stack = inspect.stack()
+    locations = []
+    for fi in call_stack:
+        locations.append(f'{fi.function} in {fi.filename} @ line {fi.lineno}')
+    location = ', '.join(locations)
     log.debug(f'Creating {is_async=} {socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) socket for location {location}...')
     if is_async:
         socket = zmq_async_context.socket(socket_type)
@@ -45,9 +48,9 @@ def try_close(socket):
         try:
             location = zmq_sockets[socket]
             if location:
-                log.debug(f'Closing socket created at {location}...')
+                log.debug(f'Closing {socket!r} created at {location}...')
         except KeyError:
-            pass
+            log.debug(f'Closing {socket!r}...')
         socket.close()
     except ZMQError:
         log.warning(f'Ignoring socket error when closing socket.', exc_info=True)
