@@ -1,4 +1,3 @@
-import inspect
 import logging
 import msgpack
 import pika
@@ -10,7 +9,6 @@ from pika.exceptions import StreamLostError, \
     AMQPChannelError, \
     AMQPConnectionError
 from sentry_sdk.integrations.logging import ignore_logger
-from zmq.error import ZMQError
 
 from . import threads
 
@@ -18,7 +16,6 @@ from .app import AppThread
 from .data import make_payload
 from .datetime import make_timestamp, make_unix_timestamp
 from .handler import exception_handler
-from .zmq import Closable
 
 
 # Reduce Sentry noise from pika loggers
@@ -38,10 +35,9 @@ BLOCKED_CONNECTION_TIMEOUT = 5
 PUBLISH_RETRIES = 2
 
 
-class MQConnection(AppThread, Closable):
+class MQConnection(AppThread):
     def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic', mq_arguments=None):
         AppThread.__init__(self, name=self.__class__.__name__)
-        Closable.__init__(self)
 
         if isinstance(mq_server_address, str):
             self._mq_server_list = [mq_server_address]
@@ -134,7 +130,6 @@ class MQConnection(AppThread, Closable):
     def stop(self):
         self._close_channel()
         self._close_connection()
-        Closable.close(self)
 
 
 class ZMQListener(MQConnection):
