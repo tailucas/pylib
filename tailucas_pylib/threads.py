@@ -123,10 +123,10 @@ def thread_nanny(signal_handler):
                     log.setLevel(logging.DEBUG)
                 # close zmq sockets that are still alive (and blocking shutdown)
                 try:
-                    for s in zmq_sockets.keys(): # type: ignore
+                    for s,l in zmq_sockets.items(): # type: ignore
                         try:
                             if s and not s.closed:
-                                log.warning(f'Closing lingering socket type {s.TYPE} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) for endpoint {s.LAST_ENDPOINT}.')
+                                log.warning(f'Closing lingering socket {s!r} created at {l}.')
                                 try_close(s)
                         except ZMQError:
                             log.debug('ZMQ error on closing socket.', exc_info=True)
