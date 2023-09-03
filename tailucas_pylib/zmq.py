@@ -12,7 +12,6 @@ log = logging.getLogger(APP_NAME)  # type: ignore
 zmq_sockets = WeakKeyDictionary()
 zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
-
 # asyncio capabilities
 from zmq.asyncio import Context as AsyncioContext
 # FIXME: https://github.com/zeromq/pyzmq/issues/940
@@ -46,7 +45,7 @@ def try_close(socket):
         try:
             location = zmq_sockets[socket]
             if location:
-                log.info(f'Closing socket created at {location}...')
+                log.debug(f'Closing socket created at {location}...')
         except KeyError:
             pass
         socket.close()
@@ -78,7 +77,7 @@ class Closable(object):
         if self._socket is None:
             self._socket = zmq_socket(socket_type=self._socket_type, is_async=self._is_async)
             if and_bind and self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
-                log.info(f'Binding {self._socket_type} ({zmq.PULL=}, {zmq.PUB=}, {zmq.REP=}) ZMQ socket to {self._socket_url}.')
+                log.debug(f'Binding {self._socket_type} ({zmq.PULL=}, {zmq.PUB=}, {zmq.REP=}) ZMQ socket to {self._socket_url}.')
                 self._socket.bind(self._socket_url)
         return self._socket
 

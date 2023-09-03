@@ -48,7 +48,7 @@ class ZmqRelay(AppThread, Closable):
     def run(self):
         self.startup()
         self.get_socket()
-        with exception_handler(connect_url=self._sink_zmq_url) as socket:
+        with exception_handler(connect_url=self._sink_zmq_url, and_raise=False, shutdown_on_error=True) as socket:
             while not shutting_down:
                 self.process_message(sink_socket=socket)
         self.close()
@@ -68,7 +68,7 @@ class ZmqWorker(AppThread):
 
     def run(self):
         self.startup()
-        with exception_handler(connect_url=self._worker_zmq_url, socket_type=REP, and_raise=False, close_on_exit=True) as zmq_socket:
+        with exception_handler(connect_url=self._worker_zmq_url, socket_type=REP, and_raise=False, shutdown_on_error=True) as zmq_socket:
             while not shutting_down:
                 message = zmq_socket.recv_pyobj()
                 response = self.process_message(message=message)

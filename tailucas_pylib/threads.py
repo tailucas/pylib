@@ -12,7 +12,7 @@ from datetime import datetime
 from zmq.error import ZMQError
 
 from .aws.metrics import post_count_metric
-from .zmq import try_close, zmq_context
+from .zmq import try_close, zmq_sockets
 
 
 log = logging.getLogger(APP_NAME)  # type: ignore
@@ -123,7 +123,7 @@ def thread_nanny(signal_handler):
                     log.setLevel(logging.DEBUG)
                 # close zmq sockets that are still alive (and blocking shutdown)
                 try:
-                    for s in zmq_context._sockets: # type: ignore
+                    for s in zmq_sockets: # type: ignore
                         try:
                             if s and not s.closed:
                                 log.warning(f'Closing lingering socket type {s.TYPE} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) for endpoint {s.LAST_ENDPOINT}.')
