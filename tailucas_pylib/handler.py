@@ -57,9 +57,13 @@ class exception_handler(ContextManager):
             # raised to indicate a fatal dependency error that
             # does not fill Sentry with exception regressions
             # or unhandled exceptions; used typically at startup
-            log.warning(self.__class__.__name__, exc_info=True)
-            if self._shutdown_on_error:
-                die(exception=exc_type)
+            if not threads.shutting_down:
+                log.warning(self.__class__.__name__, exc_info=True)
+                if self._shutdown_on_error:
+                    die(exception=exc_type)
+            else:
+                # log the exception as informational if in debug mode
+                log.debug(self.__class__.__name__, exc_info=True)
         elif issubclass(exc_type, Exception):
             if not threads.shutting_down:
                 log.exception(self.__class__.__name__)
