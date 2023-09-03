@@ -60,7 +60,10 @@ def thread_nanny(signal_handler):
     global interruptable_sleep
     global threads_tracked
     global shutting_down
-    shutting_down_grace_secs = 30
+    if APP_CONFIG.has_option('app', 'shutting_down_grace_secs'):  # type: ignore
+        shutting_down_grace_secs = APP_CONFIG.getint('app', 'shutting_down_grace_secs')  # type: ignore
+    else:
+        shutting_down_grace_secs = 30
     shutting_down_time = None
     monitor = None
     if APP_CONFIG.has_option('app', 'cronitor_monitor_key'):  # type: ignore
