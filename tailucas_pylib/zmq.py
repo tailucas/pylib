@@ -70,18 +70,21 @@ class Closable(object):
     def socket_url(self):
         return self._socket_url
 
-    def __init__(self, connect_url=None, socket_type=zmq.PULL, is_async: Optional[bool]=False):
+    def __init__(self, connect_url: str, socket_type=zmq.PULL, is_async: Optional[bool]=False):
         self._socket = None
         self._socket_url: str = connect_url
         self._socket_type: int = socket_type
-        self._is_async: bool = is_async
+        self._is_async: Optional[bool] = is_async
 
-    def get_socket(self, and_bind: Optional[bool]=True):
+    def get_socket(self):
         if self._socket is None:
             self._socket = zmq_socket(socket_type=self._socket_type, is_async=self._is_async)
-            if and_bind and self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
+            if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
                 log.debug(f'Binding {self._socket_type} ({zmq.PULL=}, {zmq.PUB=}, {zmq.REP=}) ZMQ socket to {self._socket_url}.')
                 self._socket.bind(self._socket_url)
+            else:
+                log.debug(f'Connecting {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._socket_url}')
+                self._socket.connect(self._socket_url)
         return self._socket
 
     def close(self):
