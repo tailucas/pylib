@@ -14,9 +14,9 @@ from dateutil import tz
 from sentry_sdk import capture_exception
 from threading import Thread
 
-from .datetime import make_timestamp, make_unix_timestamp
+from ..datetime import make_timestamp, make_unix_timestamp
 
-from . import threads
+from .. import threads
 
 
 log = logging.getLogger(APP_NAME)  # type: ignore
@@ -35,7 +35,7 @@ class Leader(Thread):
         self.daemon = True
 
         self._ddb = boto3.resource('dynamodb')
-        self._ddb_table = self._ddb.Table(TABLE_NAME)
+        self._ddb_table = self._ddb.Table(TABLE_NAME)  # type: ignore
 
         self._app_name = app_name
         self._device_name = device_name

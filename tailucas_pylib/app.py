@@ -1,11 +1,8 @@
-import asyncio
 import logging
 import zmq
 
 from threading import Thread
 from typing import Dict
-from zmq import PUSH, PULL, PUB, REP
-from zmq.asyncio import Socket as AsyncSocket
 
 from .data import make_payload
 from .handler import exception_handler
@@ -68,7 +65,7 @@ class ZmqWorker(AppThread):
 
     def run(self):
         self.startup()
-        with exception_handler(connect_url=self._worker_zmq_url, socket_type=REP, and_raise=False, shutdown_on_error=True) as zmq_socket:
+        with exception_handler(connect_url=self._worker_zmq_url, socket_type=zmq.REP, and_raise=False, shutdown_on_error=True) as zmq_socket:
             while not shutting_down:
                 message = zmq_socket.recv_pyobj()
                 response = self.process_message(message=message)

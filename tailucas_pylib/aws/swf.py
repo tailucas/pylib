@@ -1,7 +1,6 @@
 import logging
 import netifaces
 import zmq
-from zmq import ContextTerminated
 
 from sentry_sdk import capture_exception
 from threading import Thread

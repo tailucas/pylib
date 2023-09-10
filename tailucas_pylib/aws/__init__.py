@@ -1,3 +1,4 @@
+import builtins
 import logging
 import os
 
@@ -11,7 +12,7 @@ try:
     os.environ['AWS_SECRET_ACCESS_KEY']
     aws_enabled = True
 except KeyError:
-    if hasattr(creds_config, 'aws_akid'):  # type: ignore
+    if hasattr(builtins, 'creds_config') and hasattr(creds_config, 'aws_akid'):  # type: ignore
         log.debug('AWS environment variables unset. Setting in Python from credential provider.')
         os.environ['AWS_ACCESS_KEY_ID'] = creds_config.aws_akid  # type: ignore
         os.environ['AWS_SECRET_ACCESS_KEY'] = creds_config.aws_sak  # type: ignore
@@ -27,6 +28,6 @@ if aws_enabled:
         aws_secret_access_key=creds_config.aws_sak,  # type: ignore
         botocore_session=boto_session)
 
-if APP_CONFIG.has_section('botoflow'):  # type: ignore
+if hasattr(builtins, 'APP_CONFIG') and APP_CONFIG.has_section('botoflow'):  # type: ignore
     swf_region = APP_CONFIG.get('botoflow', 'region')  # type: ignore
     swf_domain = APP_CONFIG.get('botoflow', 'domain')  # type: ignore

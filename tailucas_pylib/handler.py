@@ -8,7 +8,7 @@ from zmq.error import ZMQError, ContextTerminated
 from . import threads
 
 from .threads import die
-from .zmq import Closable, zmq_socket, try_close
+from .zmq import zmq_socket, try_close
 
 
 log = logging.getLogger(APP_NAME)  # type: ignore
