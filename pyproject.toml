@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tailucas-pylib"
-version = "0.1.3"
+version = "0.1.4"
 description = "Common Python utility modules"
 authors = ["Tai Lucas <tglucas@gmail.com>"]
 license = "MIT"
