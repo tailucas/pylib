@@ -1,6 +1,9 @@
+import asyncio
 import logging
 import os
 import zmq
+
+from typing import Awaitable
 
 from pika.exceptions import StreamLostError, \
     ConnectionClosedByBroker, \
@@ -115,7 +118,7 @@ class Leader(MQConnection):
         log.info(f'Acquired leadership of {self._app_name} by {self._device_name}.')
 
     def run(self):
-        with exception_handler(closable=self, connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False, shutdown_on_error=True) as zmq_socket:
+        with exception_handler(connect_url=URL_WORKER_LEADER, socket_type=zmq.PULL, and_raise=False, shutdown_on_error=True) as zmq_socket:
             # set up senders
             try:
                 self._setup_channel()
@@ -124,7 +127,7 @@ class Leader(MQConnection):
             # start getting the topic and queue info
             self._topic_listener.start()
             while self._running:
-                zmq_events = zmq_socket.poll(timeout=ELECTION_POLL_INTERVAL_SECS * 1000)
+                zmq_events: int = zmq_socket.poll(timeout=ELECTION_POLL_INTERVAL_SECS * 1000)
                 now = int(time())
                 event = None
                 if zmq_events > 0:
