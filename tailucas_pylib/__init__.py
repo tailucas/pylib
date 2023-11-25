@@ -65,10 +65,11 @@ else:
     builtins.APP_CONFIG = app_config  # type: ignore
 
     # 1Password credentials
-    app_creds_config = copy.deepcopy(builtins.creds_config)
+    app_creds_config = None
     op_connect_server_env = 'OP_CONNECT_SERVER'
     if op_connect_server_env in os.environ:
         if hasattr(builtins, 'creds_config'):
+            app_creds_config = builtins.creds_config
             import onepasswordconnectsdk
             from onepasswordconnectsdk.client import (
                 Client,
@@ -83,9 +84,8 @@ else:
             else:
                 log.error(f'No vaults found on 1Password server {op_connect_server}. Fix or remove environment variable {op_connect_server_env}.')
                 sys.exit(1)
-            creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config)  # type: ignore
-            # replace creds config with provider
-            builtins.creds_config = creds  # type: ignore
+            creds = onepasswordconnectsdk.load(client=creds_client, config=app_creds_config)  # type: ignore
+            builtins.creds = creds  # type: ignore
         else:
             log.warning(f'Assign CredsConfig to builtins.creds_config in __main__ to enable 1Password credential services.')
     else:
