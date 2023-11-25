@@ -1,4 +1,5 @@
 import builtins
+import copy
 import logging.handlers
 import os.path
 import sys
@@ -64,7 +65,7 @@ else:
     builtins.APP_CONFIG = app_config  # type: ignore
 
     # 1Password credentials
-    creds = None
+    app_creds_config = copy.deepcopy(builtins.creds_config)
     op_connect_server_env = 'OP_CONNECT_SERVER'
     if op_connect_server_env in os.environ:
         if hasattr(builtins, 'creds_config'):
@@ -83,6 +84,7 @@ else:
                 log.error(f'No vaults found on 1Password server {op_connect_server}. Fix or remove environment variable {op_connect_server_env}.')
                 sys.exit(1)
             creds = onepasswordconnectsdk.load(client=creds_client, config=builtins.creds_config)  # type: ignore
+            # replace creds config with provider
             builtins.creds_config = creds  # type: ignore
         else:
             log.warning(f'Assign CredsConfig to builtins.creds_config in __main__ to enable 1Password credential services.')
@@ -90,7 +92,7 @@ else:
         log.warning(f'Set environment variable {op_connect_server_env} to enable 1Password credential services.')
 
     # Sentry
-    if creds and hasattr(creds, 'sentry_dsn'):
+    if app_creds_config and hasattr(app_creds_config, 'sentry_dsn'):
         integrations = []
         if hasattr(builtins, 'SENTRY_EXTRAS'):
             integrations = builtins.SENTRY_EXTRAS  # type: ignore
@@ -105,7 +107,7 @@ else:
         log.warning(f'Add sentry_dsn to CredsConfig in __main__ to enable Sentry.io ticketing.')
 
     # Cronitor
-    if creds and hasattr(creds, 'cronitor_token'):
+    if app_creds_config and hasattr(app_creds_config, 'cronitor_token'):
         import cronitor
         cronitor.api_key = creds.cronitor_token  # type: ignore
     else:
