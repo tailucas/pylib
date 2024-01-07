@@ -98,9 +98,13 @@ else:
             integrations = builtins.SENTRY_EXTRAS  # type: ignore
         else:
             log.warning(f'Define a list builtins.SENTRY_EXTRAS in __main__ to enable Sentry.io extras.')
+        sentry_environment = None
+        if hasattr(builtins, 'SENTRY_ENVIRONMENT'):
+            sentry_environment = builtins.SENTRY_ENVIRONMENT  # type: ignore
         import sentry_sdk
         sentry_sdk.init(
             dsn=creds.sentry_dsn,  # type: ignore
+            environment=sentry_environment,  # type: ignore
             integrations=integrations
         )
     else:
