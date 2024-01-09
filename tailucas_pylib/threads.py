@@ -90,8 +90,7 @@ def thread_nanny(signal_handler):
                             f'missing is [{thread_deficit}].'
                 log.warning(error_msg)
                 post_count_metric('Fatals')
-                shutting_down = True
-                interruptable_sleep.set()
+                die(exception=ResourceWarning(error_msg))
                 state = 'fail'
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
