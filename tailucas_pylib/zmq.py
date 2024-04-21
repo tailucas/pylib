@@ -41,7 +41,9 @@ def zmq_socket(socket_type: int, is_async: Optional[bool]=False):
 def zmq_term():
     log.info(f'Shutting down ZMQ context...')
     zmq_context.term()
+    global zmq_async_context
     if zmq_async_context:
+        log.info(f'Shutting down async ZMQ context...')
         try:
             zmq_async_context.term()
         except Exception:
