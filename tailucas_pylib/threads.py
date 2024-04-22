@@ -44,7 +44,7 @@ def bye():
     exit_code = 0
     exit_message = f'Shutdown complete.'
     if exit_cause is not None:
-        exit_message += f' Exception was {exit_cause.__name__}.'
+        exit_message += f' Exception was {exit_cause!s}.'
         exit_code = 1
     exit_message += f' Exiting with code {exit_code}.'
     log.info(exit_message)
