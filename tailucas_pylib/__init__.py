@@ -104,11 +104,15 @@ else:
         sentry_environment = None
         if hasattr(builtins, 'SENTRY_ENVIRONMENT'):
             sentry_environment = builtins.SENTRY_ENVIRONMENT  # type: ignore
+        sentry_default_integrations = True
+        if hasattr(builtins, 'SENTRY_DEFAULT_INTEGRATIONS'):
+            sentry_default_integrations = builtins.SENTRY_DEFAULT_INTEGRATIONS  # type: ignore
         import sentry_sdk
         sentry_sdk.init(
             dsn=creds.sentry_dsn,  # type: ignore
             environment=sentry_environment,  # type: ignore
-            integrations=integrations
+            integrations=integrations,
+            sentry_default_integrations=sentry_default_integrations
         )
     else:
         log.warning(f'Add sentry_dsn to CredsConfig in __main__ to enable Sentry.io ticketing.')
