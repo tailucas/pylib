@@ -112,7 +112,7 @@ else:
             dsn=creds.sentry_dsn,  # type: ignore
             environment=sentry_environment,  # type: ignore
             integrations=integrations,
-            sentry_default_integrations=sentry_default_integrations
+            default_integrations=sentry_default_integrations
         )
     else:
         log.warning(f'Add sentry_dsn to CredsConfig in __main__ to enable Sentry.io ticketing.')
