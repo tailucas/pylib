@@ -7,7 +7,7 @@ import time
 import traceback
 
 from datetime import datetime
-
+from sentry_sdk import Hub
 from zmq.error import ZMQError
 
 from .aws.metrics import post_count_metric
@@ -30,7 +30,11 @@ def die(exception=None):
     global shutting_down
     global interruptable_sleep
     global trigger_exception
-    log.debug(f'Shutting down...')
+    log.debug(f'Shutting down Sentry...')
+    client = Hub.current.client
+    if client is not None:
+        client.close(timeout=2.0)
+    log.debug(f'Shutting down application...')
     shutting_down = True
     interruptable_sleep.set()
     # enforce latch so as not to unset later due to __main__ shutdown
