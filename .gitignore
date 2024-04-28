@@ -5,3 +5,4 @@ dist/
 pylib/pylib.egg-info/
 .venv/
 *.code-workspace
+.python-version
