@@ -69,23 +69,26 @@ else:
     op_connect_server_env = 'OP_CONNECT_SERVER'
     if op_connect_server_env in os.environ:
         if hasattr(builtins, 'creds_config'):
-            app_creds_config = builtins.creds_config
-            import onepasswordconnectsdk
-            from onepasswordconnectsdk.client import (
-                Client,
-                new_client_from_environment
-            )
-            op_connect_server = os.environ[op_connect_server_env]
-            creds_client: Client = new_client_from_environment(url=op_connect_server)
-            creds_vaults = creds_client.get_vaults()
-            if creds_vaults:
-                for vault in creds_vaults:
-                    log.info(f"Credential vault {vault.name} contains {vault.items} credentials.")
-            else:
-                log.error(f'No vaults found on 1Password server {op_connect_server}. Fix or remove environment variable {op_connect_server_env}.')
-                sys.exit(1)
-            creds = onepasswordconnectsdk.load(client=creds_client, config=app_creds_config)
-            builtins.creds = creds  # type: ignore
+            try:
+                app_creds_config = builtins.creds_config
+                import onepasswordconnectsdk
+                from onepasswordconnectsdk.client import (
+                    Client,
+                    new_client_from_environment
+                )
+                op_connect_server = os.environ[op_connect_server_env]
+                creds_client: Client = new_client_from_environment(url=op_connect_server)
+                creds_vaults = creds_client.get_vaults()
+                if creds_vaults:
+                    for vault in creds_vaults:
+                        log.info(f"Credential vault {vault.name} contains {vault.items} credentials.")
+                else:
+                    log.error(f'No vaults found on 1Password server {op_connect_server}. Fix or remove environment variable {op_connect_server_env}.')
+                    sys.exit(1)
+                creds = onepasswordconnectsdk.load(client=creds_client, config=app_creds_config)
+                builtins.creds = creds  # type: ignore
+            except ModuleNotFoundError:
+                log.error('1Password configuration is set but onepasswordconnectsdk is not available or missing from package configuration.')
         else:
             log.warning(f'Assign CredsConfig to builtins.creds_config in __main__ to enable 1Password credential services.')
     else:
