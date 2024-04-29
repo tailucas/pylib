@@ -32,7 +32,7 @@ log = logging.getLogger(APP_NAME)  # type: ignore
 
 
 BLOCKED_CONNECTION_TIMEOUT = 5
-PUBLISH_RETRIES = 2
+PUBLISH_RETRIES = 3
 
 
 class MQConnection(AppThread):
@@ -82,29 +82,33 @@ class MQConnection(AppThread):
                 # try again
                 if tries < PUBLISH_RETRIES:
                     log.warning(f'Retrying on lost stream during publish: {e!s}')
-                    continue
                 else:
                     raise RuntimeWarning('Publish failure after retry.') from e
             except ConnectionClosedByBroker as e:
                 raise ResourceWarning() from e
             finally:
-                tries += 1
                 if close_channel or not success:
                     log.debug(f'Closing potentially stale channel (successful attempt? {success})...')
                     self._close_channel()
-                    if close_connection or not success:
-                        log.debug(f'Closing potentially stale connection (successful attempt? {success})...')
-                        self._close_connection()
+                    if tries > 1:
+                        if close_connection or not success:
+                            log.debug(f'Closing potentially stale connection (successful attempt? {success})...')
+                            self._close_connection()
+                tries += 1
         if not success:
             raise AssertionError('No success after publish attempt.')
 
     def _setup_connection(self):
         if self._mq_connection is None or self._mq_connection.is_closed:
+            if self._mq_connection:
+                log.info(f'Recreating RabbitMQ connection...')
             self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
 
     def _setup_channel(self):
         self._setup_connection()
         if self._mq_channel is None or self._mq_channel.is_closed:
+            if self._mq_channel:
+                log.info(f'Recreating RabbitMQ channel...')
             self._mq_channel = self._mq_connection.channel()
             self._mq_channel.exchange_declare(exchange=self._mq_exchange_name, exchange_type=self._mq_exchange_type, arguments=self._mq_arguments)
             mq_result = self._mq_channel.queue_declare('', exclusive=True)
@@ -112,18 +116,18 @@ class MQConnection(AppThread):
             log.info(f'Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}.')
 
     def _close_connection(self):
-        if self._mq_connection:
-            log.info(f'Closing RabbitMQ connection for {self.name}...')
+        if self._mq_connection and self._mq_connection.is_open:
+            log.info(f'Closing RabbitMQ connection...')
             try:
                 self._mq_connection.close()
             except Exception:
                 log.debug(self.__class__.__name__, exc_info=True)
 
     def _close_channel(self):
-        if self._mq_channel:
-            log.info(f'Stopping RabbitMQ channel for {self.name}...')
+        if self._mq_channel and self._mq_channel.is_open:
+            log.info(f'Closing RabbitMQ channel...')
             try:
-                self._mq_channel.stop_consuming()
+                self._mq_channel.close()
             except Exception:
                 log.debug(self.__class__.__name__, exc_info=True)
 
@@ -156,17 +160,18 @@ class ZMQListener(MQConnection):
 
     # noinspection PyBroadException
     def run(self):
+        self.name = f'{self.__class__.__name__} ({self._zmq_url})'
         with exception_handler(connect_url=self._zmq_url, and_raise=False, shutdown_on_error=True) as zmq_socket:
             self.processor = zmq_socket
             try:
                 self._setup_channel()
-                log.info(f'Ready for RabbitMQ messages in {self.name}.')
+                log.info(f'Ready for RabbitMQ messages.')
                 self._mq_channel.start_consuming()
             except (AMQPConnectionError, ConnectionClosedByBroker, StreamLostError) as e:
                 # handled error due to already shutting down
                 raise ResourceWarning('Consumer interrupted.') from e
             finally:
-                log.info(f'RabbitMQ listener for {self.name} has finished.')
+                log.info(f'RabbitMQ listener has finished.')
 
     def callback(self, ch, method, properties, body):
         topic = method.routing_key
@@ -194,7 +199,7 @@ class ZMQListener(MQConnection):
 class RabbitMQRelay(AppThread):
 
     def __init__(self, zmq_url, mq_server_address, mq_exchange_name, mq_topic_filter, mq_exchange_type):
-        AppThread.__init__(self, name=self.__class__.__name__)
+        AppThread.__init__(self, name=f'{self.__class__.__name__} ({zmq_url})')
         self._source_zmq_url = zmq_url
         self._source_socket_type = zmq.PULL
 
