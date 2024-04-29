@@ -1,0 +1,15 @@
+{
+    "build": { "dockerfile": "Dockerfile" },
+    "postCreateCommand": "bash .devcontainer/dev-env-deps.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+            ]
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {}
+    },
+    "workspaceFolder": "${localWorkspaceFolder}",
+    "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind"
+}
