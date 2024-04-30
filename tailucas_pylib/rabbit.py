@@ -71,10 +71,12 @@ class MQConnection(AppThread):
             except AMQPConnectionError as e:
                 raise ResourceWarning('Problem setting up connection or channel.') from e
             try:
+                message_body = make_payload(data=event_payload)
+                log.info(f'Sending {len(message_body)} bytes to exchange {self._mq_exchange_name} with routing {routing_key} to queue {self._mq_queue_name}.')
                 self._mq_channel.basic_publish(
                     exchange=self._mq_exchange_name,
                     routing_key=routing_key,
-                    body=make_payload(data=event_payload))
+                    body=message_body)
                 success = True
                 # exit loop
                 break
