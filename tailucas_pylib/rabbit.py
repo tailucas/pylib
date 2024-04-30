@@ -36,8 +36,8 @@ PUBLISH_RETRIES = 3
 
 
 class MQConnection(AppThread):
-    def __init__(self, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic', mq_arguments=None):
-        AppThread.__init__(self, name=self.__class__.__name__)
+    def __init__(self, name, mq_server_address, mq_exchange_name, mq_topic_filter='#', mq_exchange_type='topic', mq_arguments=None):
+        AppThread.__init__(self, name=name)
 
         if isinstance(mq_server_address, str):
             self._mq_server_list = [mq_server_address]
@@ -141,6 +141,7 @@ class ZMQListener(MQConnection):
     def __init__(self, zmq_url, mq_server_address, mq_exchange_name, mq_topic_filter, mq_exchange_type):
         MQConnection.__init__(
             self,
+            name=f'{self.__class__.__name__} ({zmq_url})',
             mq_server_address=mq_server_address,
             mq_exchange_name=mq_exchange_name,
             mq_topic_filter=mq_topic_filter,
@@ -160,7 +161,6 @@ class ZMQListener(MQConnection):
 
     # noinspection PyBroadException
     def run(self):
-        self.name = f'{self.__class__.__name__} ({self._zmq_url})'
         with exception_handler(connect_url=self._zmq_url, and_raise=False, shutdown_on_error=True) as zmq_socket:
             self.processor = zmq_socket
             try:
