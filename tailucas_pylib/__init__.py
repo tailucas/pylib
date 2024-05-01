@@ -66,7 +66,7 @@ else:
     # 1Password credentials
     creds = None
     app_creds_config = None
-    op_connect_server_env = 'OP_CONNECT_SERVER'
+    op_connect_server_env = 'OP_CONNECT_HOST'
     if op_connect_server_env in os.environ:
         if hasattr(builtins, 'creds_config'):
             try:
