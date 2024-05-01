@@ -76,17 +76,22 @@ else:
                     Client,
                     new_client_from_environment
                 )
-                op_connect_server = os.environ[op_connect_server_env]
-                creds_client: Client = new_client_from_environment(url=op_connect_server)
+                creds_client: Client = new_client_from_environment()
                 creds_vaults = creds_client.get_vaults()
+                creds_vault_id = os.environ['OP_VAULT']
+                op_connect_server = os.environ[op_connect_server_env]
+                vault_found = False
                 if creds_vaults:
                     for vault in creds_vaults:
-                        log.info(f"Credential vault {vault.name} contains {vault.items} credentials.")
-                else:
-                    log.error(f'No vaults found on 1Password server {op_connect_server}. Fix or remove environment variable {op_connect_server_env}.')
+                        log.info(f"Credential vault on 1Password server {op_connect_server} {vault.name} ({vault.id}) contains {vault.items} credentials.")
+                        if creds_vault_id == vault.id:
+                            vault_found = True
+                if not vault_found:
+                    log.error(f'No vault matching ID {creds_vault_id} found on 1Password server {op_connect_server}. See https://github.com/1Password/connect-sdk-python/')
                     sys.exit(1)
                 creds = onepasswordconnectsdk.load(client=creds_client, config=app_creds_config)
                 builtins.creds = creds  # type: ignore
+                builtins.creds_vault_id = creds_vault_id # type: ignore
             except ModuleNotFoundError:
                 log.error('1Password configuration is set but onepasswordconnectsdk is not available or missing from package configuration.')
         else:
