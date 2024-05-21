@@ -1,19 +1,21 @@
+import builtins
+import logging
+from unittest.mock import Mock
+
 import pytest
 from pytest_mock import MockerFixture
-from unittest.mock import MagicMock, Mock, patch
+from zmq.error import ContextTerminated, ZMQError
 
-import builtins
 builtins.PYTEST = True
-import logging
-
-from zmq.error import ZMQError, ContextTerminated
-
-app_name = 'testapp'
+app_name = "testapp"
 builtins.APP_NAME = app_name
 
 from pylib.zmq import Closable
 
-def validate(exception_name, caplog, log_exception=True, sentry_mock=None, sleep_mock=None):
+
+def validate(
+    exception_name, caplog, log_exception=True, sentry_mock=None, sleep_mock=None
+):
     logged_debug = False
     logged_exception = False
     for record in caplog.records:
@@ -35,8 +37,8 @@ def validate(exception_name, caplog, log_exception=True, sentry_mock=None, sleep
 
 def test_handler(caplog, mocker: MockerFixture):
     caplog.set_level(logging.DEBUG, logger=app_name)
-    sentry = mocker.patch('sentry_sdk.capture_exception')
-    sleeper = mocker.patch('time.sleep')
+    sentry = mocker.patch("sentry_sdk.capture_exception")
+    sleeper = mocker.patch("time.sleep")
 
     from pylib.handler import exception_handler
 
@@ -51,12 +53,13 @@ def test_handler(caplog, mocker: MockerFixture):
     # ZMQ-specific
     exception_method.side_effect = ContextTerminated()
     with pytest.raises(ContextTerminated):
-        with exception_handler(closable=Closable(name='foo')):
+        with exception_handler(closable=Closable(name="foo")):
             exception_method()
     validate(
         exception_name=exception_method.side_effect.__class__.__name__,
         caplog=caplog,
-        log_exception=False)
+        log_exception=False,
+    )
 
     # ZMQ-generic
     exception_method.side_effect = ZMQError()
@@ -64,8 +67,8 @@ def test_handler(caplog, mocker: MockerFixture):
         with exception_handler():
             exception_method()
     validate(
-        exception_name=exception_method.side_effect.__class__.__name__,
-        caplog=caplog)
+        exception_name=exception_method.side_effect.__class__.__name__, caplog=caplog
+    )
 
     # generic exception
     exception_method.side_effect = ValueError()
@@ -75,4 +78,5 @@ def test_handler(caplog, mocker: MockerFixture):
     validate(
         exception_name=exception_method.side_effect.__class__.__name__,
         caplog=caplog,
-        sentry_mock=sentry)
+        sentry_mock=sentry,
+    )

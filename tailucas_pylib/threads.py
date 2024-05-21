@@ -1,20 +1,19 @@
-import cronitor
 import logging
 import signal
 import sys
 import threading
 import time
 import traceback
-
 from datetime import datetime
+
+import cronitor
 from sentry_sdk import Hub
 from zmq.error import ZMQError
 
 from .aws.metrics import post_count_metric
 from .zmq import try_close, zmq_sockets
 
-
-log = logging.getLogger(APP_NAME)  # type: ignore
+log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
@@ -30,11 +29,11 @@ def die(exception=None):
     global shutting_down
     global interruptable_sleep
     global trigger_exception
-    log.debug(f'Shutting down Sentry...')
+    log.debug("Shutting down Sentry...")
     client = Hub.current.client
     if client is not None:
         client.close(timeout=2.0)
-    log.debug(f'Shutting down application...')
+    log.debug("Shutting down application...")
     shutting_down = True
     interruptable_sleep.set()
     # enforce latch so as not to unset later due to __main__ shutdown
@@ -46,11 +45,11 @@ def bye():
     global trigger_exception
     exit_cause = trigger_exception
     exit_code = 0
-    exit_message = f'Shutdown complete.'
+    exit_message = "Shutdown complete."
     if exit_cause is not None:
-        exit_message += f' Exception was {exit_cause!s}.'
+        exit_message += f" Exception was {exit_cause!s}."
         exit_code = 1
-    exit_message += f' Exiting with code {exit_code}.'
+    exit_message += f" Exiting with code {exit_code}."
     log.info(exit_message)
     # flush loggers
     logging.shutdown()
@@ -63,11 +62,13 @@ def thread_nanny(signal_handler):
     global interruptable_sleep
     global threads_tracked
     global shutting_down
-    shutting_down_grace_secs = APP_CONFIG.getint('app', 'shutting_down_grace_secs', fallback=30)  # type: ignore
+    shutting_down_grace_secs = APP_CONFIG.getint(  # noqa: F821
+        "app", "shutting_down_grace_secs", fallback=30
+    )  # type: ignore
     shutting_down_time = None
     monitor = None
-    if APP_CONFIG.has_option('app', 'cronitor_monitor_key'):  # type: ignore
-        monitor = cronitor.Monitor(APP_CONFIG.get('app', 'cronitor_monitor_key'))  # type: ignore
+    if APP_CONFIG.has_option("app", "cronitor_monitor_key"):  # type: ignore  # noqa: F821
+        monitor = cronitor.Monitor(APP_CONFIG.get("app", "cronitor_monitor_key"))  # type: ignore  # noqa: F821
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -81,36 +82,40 @@ def thread_nanny(signal_handler):
                     code = []
                     stack = sys._current_frames()[thread_info.ident]
                     for filename, lineno, name, line in traceback.extract_stack(stack):
-                        code.append('File: "%s", line %d, in %s' % (filename, lineno, name))
+                        code.append(
+                            'File: "%s", line %d, in %s' % (filename, lineno, name)
+                        )
                         if line:
                             code.append("  %s" % (line.strip()))
                     for line in code:
                         log.debug(line)
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
-            state = 'ok'
+            state = "ok"
             if len(thread_deficit) > 0:
-                error_msg = f'A thread has died. Expected threads are [{threads_tracked}], ' \
-                            f'missing is [{thread_deficit}].'
+                error_msg = (
+                    f"A thread has died. Expected threads are [{threads_tracked}], "
+                    f"missing is [{thread_deficit}]."
+                )
                 log.warning(error_msg)
-                post_count_metric('Fatals')
+                post_count_metric("Fatals")
                 die(exception=ResourceWarning(error_msg))
-                state = 'fail'
+                state = "fail"
             elif datetime.now().minute % 5 == 0:
                 # zero every 5 minutes
-                post_count_metric('Fatals', 0)
+                post_count_metric("Fatals", 0)
             if monitor is not None:
                 try:
                     monitor.ping(
-                        host=DEVICE_NAME, # type: ignore
+                        host=DEVICE_NAME,  # type: ignore  # noqa: F821
                         state=state,
                         metrics={
-                            'count': len(threads_alive),
-                            'error_count': len(thread_deficit)
-                        }
+                            "count": len(threads_alive),
+                            "error_count": len(thread_deficit),
+                        },
                     )
                 except Exception as e:
-                    log.warning(f'Problem sending cronitor ping: {e!s}')
+                    log.warning(f"Problem sending cronitor ping: {e!s}")
             # don't block on the long sleep
             interruptable_sleep.wait(60)
         else:
@@ -119,23 +124,27 @@ def thread_nanny(signal_handler):
             now = int(time.time())
             if shutting_down_time is None:
                 shutting_down_time = now
-            if (now - shutting_down_time > shutting_down_grace_secs):
+            if now - shutting_down_time > shutting_down_grace_secs:
                 if log.level != logging.DEBUG:
-                    log.warning(f"Shutting-down duration has exceeded {shutting_down_grace_secs}s. Switching to debug logging...")
+                    log.warning(
+                        f"Shutting-down duration has exceeded {shutting_down_grace_secs}s. Switching to debug logging..."
+                    )
                     log.setLevel(logging.DEBUG)
                 # close zmq sockets that are still alive (and blocking shutdown)
                 try:
-                    for s,l in zmq_sockets.items(): # type: ignore
+                    for s, loc in zmq_sockets.items():  # type: ignore
                         try:
                             if s and not s.closed:
-                                log.warning(f'Closing lingering socket {s!r} created at {l}.')
+                                log.warning(
+                                    f"Closing lingering socket {s!r} created at {loc}."
+                                )
                                 try_close(s)
                         except ZMQError:
-                            log.debug('ZMQ error on closing socket.', exc_info=True)
+                            log.debug("ZMQ error on closing socket.", exc_info=True)
                             # not interesting in this context
                             continue
                 except RuntimeError:
                     # protect against "Set changed size during iteration", try again later
-                    log.debug('Issue on closing lingering sockets.', exc_info=True)
+                    log.debug("Issue on closing lingering sockets.", exc_info=True)
         # never spin
         time.sleep(2)

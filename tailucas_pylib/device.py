@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import Optional
+
+from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
 
@@ -29,16 +30,16 @@ class Device(BaseModel):
     storage_path: Optional[str] = None
     storage_url: Optional[str] = None
     timestamp: Optional[int] = None
-    type_: Optional[Annotated[str, Field(alias='type')]] = None
+    type_: Optional[Annotated[str, Field(alias="type")]] = None
     uptime: Optional[int] = None
 
     def __str__(self):
-        str_rep = ''
+        str_rep = ""
         for name, value in vars(self).items():
             if len(str_rep) > 0:
-                str_rep += ','
+                str_rep += ","
             if not isinstance(value, bytes):
-                str_rep += f'{name}={value}'
+                str_rep += f"{name}={value}"
             else:
-                str_rep += f'{name}={len(value)} bytes'
+                str_rep += f"{name}={len(value)} bytes"
         return str_rep
