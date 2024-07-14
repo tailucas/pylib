@@ -39,7 +39,7 @@ if __name__ == "__main__":
     item_name = None
     if argc >= 3:
         item_name = sys.argv[1]
-        section_names = sys.argv[2].split()
+        section_names = sys.argv[2:]
     elif argc == 1:
         cred_schema = json.loads(sys.stdin.readline())
     else:
