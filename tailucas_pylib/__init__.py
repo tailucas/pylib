@@ -1,7 +1,11 @@
 import builtins
 import logging.handlers
+import os
 import os.path
+import socket
 import sys
+
+from urllib.parse import urlparse
 
 if hasattr(builtins, "PYTEST"):
     pass
@@ -17,22 +21,31 @@ else:
     log.propagate = False
     # DEBUG logging until startup complete
     log.setLevel(logging.DEBUG)
-    # define the log format
-    formatter = logging.Formatter("%(name)s %(threadName)s [%(levelname)s] %(message)s")
     log_handler = None
-    if os.path.exists("/dev/log"):
+
+    syslog_server = None
+    try:
+        syslog_address = os.environ["SYSLOG_ADDRESS"]
+        log.warning(f'Logging will be sent directly to remote address {syslog_address}')
+        syslog_server = urlparse(syslog_address)
+    except KeyError:
+        pass
+    if syslog_server and len(syslog_server.netloc) > 0:
+        protocol = None
+        if syslog_server.scheme == 'udp':
+            protocol = socket.SOCK_DGRAM
+        log_handler = logging.handlers.SysLogHandler(address=(syslog_server.hostname, syslog_server.port), socktype=protocol)
+    elif os.path.exists("/dev/log"):
         log_handler = logging.handlers.SysLogHandler(address="/dev/log")
-        log_handler.setFormatter(formatter)
-        log.addHandler(log_handler)
-    if sys.stdout.isatty() or (
-        "SUPERVISOR_ENABLED" in os.environ and log_handler is None
-    ):
-        log.warning(
-            "Using console logging because there is a tty or under supervisord."
-        )
+    elif sys.stdout.isatty() or "SUPERVISOR_ENABLED" in os.environ:
+        log.warning("Using console logging because there is a tty or under supervisord.")
         log_handler = logging.StreamHandler(stream=sys.stdout)
+    if log_handler:
+        # define the log format
+        formatter = logging.Formatter("%(name)s %(threadName)s [%(levelname)s] %(message)s")
         log_handler.setFormatter(formatter)
         log.addHandler(log_handler)
+
     builtins.log = log  # type: ignore
     builtins.log_handler = log_handler  # type: ignore
 
