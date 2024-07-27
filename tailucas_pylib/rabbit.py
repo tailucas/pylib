@@ -80,7 +80,7 @@ class MQConnection(AppThread):
                 self._setup_channel()
             except AMQPConnectionError as e:
                 raise ResourceWarning(
-                    "Problem setting up connection or channel."
+                    f'Problem setting up connection or channel: {repr(e)}.'
                 ) from e
             try:
                 message_body = make_payload(data=event_payload)
@@ -211,7 +211,7 @@ class ZMQListener(MQConnection):
                 StreamLostError,
             ) as e:
                 # handled error due to already shutting down
-                raise ResourceWarning("Consumer interrupted.") from e
+                raise ResourceWarning(f'Consumer interrupted: {repr(e)}') from e
             finally:
                 log.info("RabbitMQ listener has finished.")
 
