@@ -14,6 +14,7 @@ class Device(BaseModel):
     event_detail: Optional[str] = None
     group_name: Optional[str] = None
     image: Optional[bytes] = None
+    image_timestamp: Optional[str] = None
     input_label: Optional[str] = None
     input_location: Optional[str] = None
     is_input: Optional[bool] = None
