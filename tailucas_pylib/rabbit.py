@@ -217,7 +217,7 @@ class ZMQListener(MQConnection):
 
     def callback(self, ch, method, properties, body):
         topic = method.routing_key
-        log.debug(f"[{topic}]: {body}")
+        log.debug(f"[{topic}]: {len(body)} bytes.")
         topic_parts = topic.split(".")
         if len(topic_parts) < 3:
             log.warning(
