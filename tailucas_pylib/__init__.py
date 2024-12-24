@@ -1,4 +1,5 @@
 import builtins
+import locale
 import logging.handlers
 import os
 import os.path
@@ -63,6 +64,12 @@ else:
     if current_work_dir != WORK_DIR:
         log.warning(f"Changing working directory from {current_work_dir} to {WORK_DIR}")
         os.chdir(WORK_DIR)
+
+    # locale settings
+    if "LC_ALL" in os.environ.keys():
+        locale_lc_all = os.environ["LC_ALL"]
+        log.info(f'Using locale LC_ALL, set to {locale_lc_all}.')
+        locale.setlocale(locale.LC_ALL, locale_lc_all)
 
     from configparser import ConfigParser
 
