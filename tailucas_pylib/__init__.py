@@ -19,10 +19,14 @@ else:
 
     # do not propagate to console logging
     log.propagate = False
-    # DEBUG logging until startup complete
-    log.setLevel(logging.DEBUG)
-    log_handler = None
+    try:
+        log_level_name = os.environ["LOG_LEVEL"]
+        log.setLevel(log_level_name.upper())
+    except KeyError:
+        # DEBUG logging until startup complete
+        log.setLevel(logging.DEBUG)
 
+    log_handler = None
     syslog_server = None
     try:
         syslog_address = os.environ["SYSLOG_ADDRESS"]
