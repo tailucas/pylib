@@ -41,20 +41,20 @@ if __name__ == "__main__":
         item_name = sys.argv[1]
         section_names = sys.argv[2:]
     elif argc == 1:
-        cred_schema = json.loads(sys.stdin.readline())
+        cred_schema = sys.stdin.readline().rstrip().split('/')
     else:
         err(f'Unexpected arguments in {sys.argv[1:]}')
     if item_name is None:
-        if (len(cred_schema) > 1):
-            err(f'Only a single credential specification supported. {list(cred_schema)} provided.')
-        key_field = list(cred_schema)[0]
+        key_item = cred_schema[0]
+        if len(cred_schema) == 2:
+            value_item = f'.{cred_schema[1]}'
+        elif len(cred_schema) > 2:
+            value_item = '.'.join(cred_schema[1:])
         try:
-            creds = OP.load_dict(client=creds_client, config=cred_schema)
+            creds = OP.load_dict(client=creds_client, config={"s": {"opitem": key_item, "opfield": value_item}})
         except ConfigurationError as e:
             err(f'{e!s}')
-        if key_field not in creds:
-            err(f'Expected [{key_field}] field in server response.')
-        out(msg=creds[key_field], code=0)
+        out(msg=creds["s"], code=0)
     else:
         key_value_pairs = dict()
         for section_name in section_names:

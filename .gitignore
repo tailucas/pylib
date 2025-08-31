@@ -2,7 +2,7 @@
 .vscode/
 __pycache__/
 dist/
-pylib/pylib.egg-info/
+tailucas_pylib.egg-info/
 .venv/
 *.code-workspace
 .python-version
