@@ -9,7 +9,7 @@ from .handler import exception_handler
 from .threads import shutting_down, threads_tracked
 from .zmq import Closable
 
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
+from .config import log
 
 
 class AppThread(Thread):
@@ -29,12 +29,12 @@ class ZmqRelay(AppThread, Closable):
         self._sink_zmq_url = sink_zmq_url
 
     def process_message(self, sink_socket):
-        data = self.socket.recv_pyobj()
+        data = self.socket.recv_pyobj() # type: ignore
         payload = make_payload(data=data)
         # do not info on heartbeats
-        if "device_info" not in data:
+        if "device_info" not in data: # type: ignore
             log.debug(
-                f"Relaying {len(data)} bytes from {self.socket_url} to {self._sink_zmq_url} ({len(payload)} bytes)"
+                f"Relaying {len(data)} bytes from {self.socket_url} to {self._sink_zmq_url} ({len(payload)} bytes)" # type: ignore
             )
         sink_socket.send(payload)
 
@@ -57,7 +57,7 @@ class ZmqWorker(AppThread):
         AppThread.__init__(self, name=name)
         self._worker_zmq_url = worker_zmq_url
 
-    async def process_message(self, message: Dict) -> Dict:
+    def process_message(self, message: Dict) -> Dict:
         raise NotImplementedError()
 
     def startup(self):
@@ -73,5 +73,5 @@ class ZmqWorker(AppThread):
         ) as zmq_socket:
             while not shutting_down:
                 message = zmq_socket.recv_pyobj()
-                response = self.process_message(message=message)
+                response = self.process_message(message=message) # type: ignore
                 zmq_socket.send_pyobj(response)

@@ -11,7 +11,7 @@ FAKE_SECTION = 'FAKESECTION'
 
 def load_config(fp):
     cfg = ConfigParser()
-    cfg.optionxform = str
+    cfg.optionxform = str # type: ignore
     # prepend with fake header
     cfg.read_file([f'[{FAKE_SECTION}]\n' + os.linesep] + fp.readlines())
     return cfg
@@ -22,7 +22,7 @@ def err(msg, code=1):
     exit(code)
 
 
-if __name__ == "__main__":
+def main():
     overlay_config = None
     if len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
         with open(sys.argv[1], 'r') as fp:
@@ -72,3 +72,6 @@ if __name__ == "__main__":
         print(f'[{section}]')
         for option, value in list(sections[section].items()):
             print(f'{option}={value}')
+
+if __name__ == "__main__":
+    main()

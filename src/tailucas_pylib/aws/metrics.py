@@ -1,9 +1,9 @@
 import logging
 
 from ..datetime import make_timestamp
+from ..config import APP_NAME, DEVICE_NAME_BASE, log
 from . import boto3_session
 
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
 
 app_metrics = None
 if boto3_session is not None:
@@ -13,7 +13,7 @@ else:
 
 
 def post_count_metric(
-    metric_name, count=1, unit="Count", dimensions=None, device_name=DEVICE_NAME_BASE  # noqa: F821
+    metric_name, count=1, unit="Count", dimensions=None, device_name=DEVICE_NAME_BASE
 ):  # type: ignore
     global app_metrics
     if app_metrics is None:
@@ -22,7 +22,7 @@ def post_count_metric(
     metric_dimensions = [
         {
             "Name": "Application",
-            "Value": APP_NAME,  # type: ignore  # noqa: F821
+            "Value": APP_NAME,
         },
         {"Name": "Device", "Value": device_name},
     ]

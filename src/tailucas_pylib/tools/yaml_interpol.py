@@ -4,8 +4,6 @@ import os
 import sys
 import yaml
 
-from collections import OrderedDict
-
 
 def err(msg, code=1):
     sys.stderr.write(msg + '\n')
@@ -23,7 +21,7 @@ def update_section(yaml_section, section_namespace, replacement):
         replacement=replacement)
 
 
-if __name__ == "__main__":
+def main():
     yaml_config = None
     yaml_section_namespace_input = None
     # read the YAML configuration file and overlay section name
@@ -34,6 +32,9 @@ if __name__ == "__main__":
     # read the overlay configuration from STDIN as JSON
     overlay_config = json.loads(sys.stdin.readline())
     # derive yaml namespace
-    yaml_section_namespace = yaml_section_namespace_input.split('/')
+    yaml_section_namespace = yaml_section_namespace_input.split('/') # type: ignore
     update_section(yaml_section=yaml_config, section_namespace=yaml_section_namespace, replacement=overlay_config)
     print(yaml.safe_dump(yaml_config))
+
+if __name__ == "__main__":
+    main()

@@ -2,9 +2,8 @@ import logging
 import signal
 import subprocess
 
+from .config import log
 from .threads import die
-
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
 
 
 def exec_cmd(cmd):

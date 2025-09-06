@@ -12,11 +12,10 @@ from sentry_sdk import capture_exception
 
 from .. import threads
 from ..bluetooth import ping_bluetooth_devices
+from ..config import log, APP_NAME
 from ..data import make_payload
 from ..handler import exception_handler
 from .metrics import post_count_metric
-
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
 
 
 class SWFActivityWaiter(Thread):
@@ -87,7 +86,7 @@ def swf_exception_handler(err: Exception, tb_list: StackSummary):
 class HelloWorldActivities(object):
     @activity(version="1.0", start_to_close_timeout=5 * SECONDS)
     def get_name(self):
-        return APP_NAME  # type: ignore  # noqa: F821
+        return APP_NAME
 
     @activity(version="1.1", start_to_close_timeout=5 * SECONDS)
     def print_greeting(self, greeting, name):
@@ -100,7 +99,7 @@ class HelloWorldWorkflow(WorkflowDefinition):
     @execute(version="1.1", execution_start_to_close_timeout=1 * MINUTES)
     def execute(self, greeting):
         name = yield HelloWorldActivities.get_name()
-        with activity_options(task_list="notifier"):
+        with activity_options(task_list="notifier"): # type: ignore
             yield TTSActivity.say(f"Testing {name}")
         response = yield HelloWorldActivities.print_greeting(greeting, name)
         return_(response)
@@ -137,7 +136,7 @@ class BluetoothActivity(object):
                 }
             )
         return make_payload(
-            timestamp=None, data={"active_devices": active_devices}, msgpack=False
+            timestamp=None, data={"active_devices": active_devices}, pack=False
         )
 
 

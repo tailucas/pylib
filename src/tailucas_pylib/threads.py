@@ -6,14 +6,16 @@ import time
 import traceback
 from datetime import datetime
 
+from .config import log, app_config, log, DEVICE_NAME, creds
+
 import cronitor
+
 from sentry_sdk import Hub
 from zmq.error import ZMQError
 
 from .aws.metrics import post_count_metric
 from .zmq import try_close, zmq_sockets
 
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
@@ -62,13 +64,18 @@ def thread_nanny(signal_handler):
     global interruptable_sleep
     global threads_tracked
     global shutting_down
-    shutting_down_grace_secs = APP_CONFIG.getint(  # noqa: F821
+    shutting_down_grace_secs = app_config.getint(  # noqa: F821
         "app", "shutting_down_grace_secs", fallback=30
     )  # type: ignore
     shutting_down_time = None
     monitor = None
-    if APP_CONFIG.has_option("app", "cronitor_monitor_key"):  # type: ignore  # noqa: F821
-        monitor = cronitor.Monitor(APP_CONFIG.get("app", "cronitor_monitor_key"))  # type: ignore  # noqa: F821
+    if app_config.has_option("app", "cronitor_monitor_key"):  # type: ignore  # noqa: F821
+        cronitor_api_key_creds_path = app_config.get('creds', 'cronitor')
+        log.info(f'Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}...')
+        cronitor.api_key = creds.get_creds(cronitor_api_key_creds_path) # type: ignore
+        cronitor_key = app_config.get("app", "cronitor_monitor_key")
+        log.info(f'Loading Cronitor {cronitor_key}...')
+        monitor = cronitor.Monitor(key=cronitor_key)
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -80,7 +87,7 @@ def thread_nanny(signal_handler):
                 # print non-daemon threads that linger
                 if shutting_down and not thread_info.daemon:
                     code = []
-                    stack = sys._current_frames()[thread_info.ident]
+                    stack = sys._current_frames()[thread_info.ident] # type: ignore
                     for filename, lineno, name, line in traceback.extract_stack(stack):
                         code.append(
                             'File: "%s", line %d, in %s' % (filename, lineno, name)
@@ -107,7 +114,7 @@ def thread_nanny(signal_handler):
             if monitor is not None:
                 try:
                     monitor.ping(
-                        host=DEVICE_NAME,  # type: ignore  # noqa: F821
+                        host=DEVICE_NAME,
                         state=state,
                         metrics={
                             "count": len(threads_alive),

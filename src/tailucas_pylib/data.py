@@ -4,8 +4,7 @@ import msgpack
 import simplejson as json
 
 from .datetime import make_timestamp
-
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
+from .config import log
 
 
 def make_payload(timestamp=None, data=None, pack=True):

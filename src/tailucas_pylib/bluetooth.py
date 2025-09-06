@@ -3,8 +3,7 @@ import logging
 from sentry_sdk import capture_exception
 
 from .process import exec_cmd
-
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
+from .config import log
 
 
 def bluetooth_init():
@@ -55,7 +54,7 @@ def ping_bluetooth_devices(owner_device_list):
         elif isinstance(owner_device_list, list):
             owner_devices = owner_device_list
         else:
-            raise f"Unsupported type {type(owner_device_list)} for parameters {owner_device_list}."
+            raise Exception(f"Unsupported type {type(owner_device_list)} for parameters {owner_device_list}.")
         log.info(f"DEBUG: l2ping using {owner_devices}.")
         for owner, device in owner_devices:
             sample_value = l2ping(owner, device)

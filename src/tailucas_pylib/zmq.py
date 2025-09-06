@@ -7,7 +7,7 @@ import zmq
 from zmq.asyncio import Context as AsyncioContext
 from zmq.error import ZMQError
 
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
+from .config import log
 
 zmq_sockets = WeakKeyDictionary()
 zmq_context = zmq.Context()
@@ -15,6 +15,11 @@ zmq_context.setsockopt(zmq.LINGER, 0)
 # asyncio capabilities
 
 zmq_async_context = None
+
+
+URL_WORKER_APP = "inproc://app"
+URL_WORKER_PUBLISHER = "inproc://publisher"
+URL_WORKER_RELAY = "inproc://app-relay"
 
 
 def zmq_socket(socket_type: int, is_async: Optional[bool] = False):

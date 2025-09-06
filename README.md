@@ -15,9 +15,10 @@ This package was created by factoring out many reusable code artifacts from my [
 * [aws.__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/aws/__init__.py): If AWS environment variables are set, global boto and boto3 session objects are instantiated.
 * [aws.metrics](https://github.com/tailucas/pylib/blob/master/pylib/aws/metrics.py): CloudWatch metric helper.
 * [aws.swf](https://github.com/tailucas/pylib/blob/master/pylib/aws/swf.py): Client-side interface to [botoflow][botoflow-url] with interfaces specific to a number of prior projects. Examples of this use are in respective *swf* branches of some projects. This mechanism has been since replaced with message passing via [RabbitMQ][rabbit-url].
-* [__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/__init__.py): A lot of module bootstrap with a pitiful attempt to support unit testing. At application startup, a choice is made between logging to a configured logger or to the terminal if one exists, to support a scenario where the application is run interactively. A standard application configuration file is loaded with a Python ConfigParser and then a credentials client is loaded based on [1Password][1p-url]. The choice of 1Password is motivated by their secrets automation features and because I happened to use their service already. I have been tempted to try Bitwarden also but there has not been a need yet to create this abstraction. Next, the [Sentry][sentry-url] client is loaded with whatever extras the given application might specify. Then Python builtins are ~~ab~~used to store some globals for use throughout the package and application.
+* [__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/__init__.py): A lot of module bootstrap with a pitiful attempt to support unit testing. At application startup, a choice is made between logging to a configured logger or to the terminal if one exists, to support a scenario where the application is run interactively. A standard application configuration file is loaded with a Python ConfigParser and then a credentials client is loaded based on [1Password][1p-url]. The choice of 1Password is motivated by their secrets automation features and because I happened to use their service already. I have been tempted to try Bitwarden also but there has not been a need yet to create this abstraction. Next, the [Sentry][sentry-url] client is loaded with whatever extras the given application might specify. Some useful globals are stored within `config.py`.
 * [app](https://github.com/tailucas/pylib/blob/master/pylib/app.py): A few of my applications use [ZeroMQ][zmq-url] for "lockless" IPCs between Python threads and so it became apparent that some helpers were needed to support common patterns. [ZmqRelay](https://github.com/tailucas/pylib/blob/a950b0f5fd9e539899e046bbcf5dbad4a02a1347/pylib/app.py#LL26C7-L26C15) is one such example where an application thread can be used to receive some message on which processing is done, and then forward it to another ZeroMQ channel. The main thread logic is contained with a context manager which handles failures and shutdown gracefully.
 * [app.bluetooth](https://github.com/tailucas/pylib/blob/master/pylib/bluetooth.py): Bluetooth helper functions that make use of [hcitool](https://linux.die.net/man/1/hcitool) *l2ping*.
+* `app.creds` Credential helper that provides a consistent interface between the [1Password Connect Server](https://github.com/1Password/connect-sdk-python) or [1Password Service Account](https://github.com/1Password/onepassword-sdk-python) modes, depending on your preference.
 * [app.data](https://github.com/tailucas/pylib/blob/master/pylib/data.py): Simple utility to make a common IPC or network payload using [MessagePack][msgpack-url].
 * [app.datetime](https://github.com/tailucas/pylib/blob/master/pylib/datetime.py): Date and timestamp manipulation with time zone normalization.
 * [app.handler](https://github.com/tailucas/pylib/blob/a950b0f5fd9e539899e046bbcf5dbad4a02a1347/pylib/handler.py#L16): A useful Python context manager to handle a variety of failure conditions.
@@ -34,11 +35,38 @@ Handy stand-alone tools:
 
 ### Package Structure
 
-A crude attempt to visualize the package structure with [pyreverse](https://pypi.org/project/pyreverse/).
+The package is now organized under `src/tailucas_pylib/` with the following key modules:
 
-![packages](/../../../../tailucas/tailucas.github.io/blob/main/assets/pylib/packages.png)
+* **Core Modules:**
+  - `__init__.py`: Bootstrap module with logging, configuration, and credential setup
+  - `config.py`: Global configuration management
+  - `creds.py`: 1Password credential management with both Connect and Service Account support
 
-![classes](/../../../../tailucas/tailucas.github.io/blob/main/assets/pylib/comms_classes.png)
+* **Application Framework:**
+  - `app.py`: Thread management with ZMQ relay and worker patterns
+  - `threads.py`: Thread monitoring and lifecycle management
+  - `handler.py`: Exception handling context manager
+  - `process.py`: Signal handling and process utilities
+
+* **Communication:**
+  - `rabbit.py`: RabbitMQ integration with ZMQ bridging
+  - `zmq.py`: ZeroMQ socket management and utilities
+
+* **Utilities:**
+  - `data.py`: MessagePack payload creation
+  - `datetime.py`: Timezone-aware datetime utilities
+  - `device.py`: Pydantic device model
+  - `bluetooth.py`: Bluetooth device detection via hcitool
+
+* **AWS Integration:**
+  - `aws/__init__.py`: Boto3 session management
+  - `aws/metrics.py`: CloudWatch metrics publishing
+  - `aws/swf.py`: Simple Workflow Service integration (deprecated)
+
+* **Command-line Tools:**
+  - `tools/config_interpol.py`: Configuration interpolation
+  - `tools/cred_tool.py`: Credential retrieval utility
+  - `tools/yaml_interpol.py`: YAML template processing
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -48,7 +76,7 @@ Technologies that help make this package useful:
 
 [![1Password][1p-shield]][1p-url]
 [![Amazon AWS][aws-shield]][aws-url]
-[![Poetry][poetry-shield]][poetry-url]
+[![uv][uv-shield]][uv-url]
 [![Python][python-shield]][python-url]
 [![RabbitMQ][rabbit-shield]][rabbit-url]
 [![Sentry][sentry-shield]][sentry-url]
@@ -63,6 +91,24 @@ Also:
 
 * [Botoflow][botoflow-url]
 
+Core Technologies:
+- **Python 3.8+** - Primary runtime
+- **1Password Connect/Service Account** - Credential management
+- **ZeroMQ** - Inter-process communication
+- **RabbitMQ** - Message queuing
+- **MessagePack** - Binary serialization
+- **Pydantic** - Data validation and modeling
+- **Sentry** - Error tracking and monitoring
+
+AWS Integration:
+- **Boto3** - AWS SDK
+- **CloudWatch** - Metrics and monitoring
+- **Simple Workflow Service** - Workflow orchestration (deprecated)
+
+Development Tools:
+- **uv** - Dependency management
+- **Cronitor** - Cron job monitoring
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -73,11 +119,11 @@ Here is some detail about the intended use of this package.
 
 ### Prerequisites
 
-A [Python][python-url] project or runtime environment. Since this project is already initialized with [Poetry][poetry-url] dependency management, I recommend that you continue to use it. Beyond the Python dependencies defined in the [Poetry configuration](pyproject.toml), the package init carries hardcoded dependencies on [Sentry][sentry-url] and [1Password][1p-url] in order to function. Unless you want these and are effectively extending my [base project][baseapp-url], you're likely better off forking this package and cutting out what you do not need.
+A [Python][python-url] project or runtime environment. Since this project is already initialized with [uv][vu-url] dependency management, I recommend that you continue to use it. Beyond the Python dependencies defined in the [configuration](pyproject.toml), the package init carries hardcoded dependencies on [Sentry][sentry-url] and [1Password][1p-url] in order to function. Unless you want these and are effectively extending my [base project][baseapp-url], you're likely better off forking this package and cutting out what you do not need.
 
 ### Installation
 
-This project is intended to be used as a [Git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) because it is not yet structured or built to be vended from the [Python Package Index](https://pypi.org/). One of my [companion projects][baseapp-url] illustrates [how easily](https://github.com/tailucas/base-app/blob/723bbef3a4f5380d722dae52bcb52537b4e44bc1/pyproject.toml#L16) the project can be added to the dependency closure of a project using Poetry which also greatly diminished the need to publish to online package indexes.
+This package is published to the [Python Package index](https://pypi.org/project/tailucas-pylib/) from time to time.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -88,7 +134,6 @@ I have [various projects][tailucas-url] that use this tool chain. For example, m
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- LICENSE -->
 ## License
 
@@ -96,15 +141,12 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
 * [Template on which this README is based](https://github.com/othneildrew/Best-README-Template)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Ftailucas%2Fpylib%2F&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visits&edge_flat=true)](https://hits.seeyoufarm.com)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
@@ -129,8 +171,8 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 [botoflow-url]: https://github.com/boto/botoflow
 [cronitor-url]: https://cronitor.io/
 [msgpack-url]: https://msgpack.org/
-[poetry-url]: https://python-poetry.org/
-[poetry-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=Poetry&color=60A5FA&logo=Poetry&logoColor=FFFFFF&label=
+[uv-url]: https://docs.astral.sh/uv/
+[uv-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=uv&color=60A5FA&logo=uv&logoColor=FFFFFF&label=
 [python-url]: https://www.python.org/
 [python-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=Python&color=3776AB&logo=Python&logoColor=FFFFFF&label=
 [rabbit-url]: https://www.rabbitmq.com/

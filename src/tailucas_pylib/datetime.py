@@ -5,7 +5,7 @@ import dateutil.parser
 import pytz
 from dateutil import tz
 
-log = logging.getLogger(APP_NAME)  # type: ignore  # noqa: F821
+from .config import log
 
 
 ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
@@ -26,7 +26,7 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
         except ValueError:
             # try integer representation
             try:
-                timestamp = datetime.utcfromtimestamp(int(timestamp)).replace(
+                timestamp = datetime.utcfromtimestamp(int(timestamp)).replace( # type: ignore
                     tzinfo=pytz.utc
                 )
                 log.debug(f"Parsed integer timestamp is {timestamp}")
@@ -56,7 +56,7 @@ def make_timestamp(timestamp=None, as_tz=pytz.utc, make_string=False):
 def make_unix_timestamp(timestamp=None):
     return int(
         (
-            make_timestamp(timestamp=timestamp).replace(tzinfo=None)
+            make_timestamp(timestamp=timestamp).replace(tzinfo=None) # type: ignore
             - datetime(1970, 1, 1)
         ).total_seconds()
     )
