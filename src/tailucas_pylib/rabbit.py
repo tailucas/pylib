@@ -1,5 +1,3 @@
-import logging
-
 import msgpack
 import pika
 import zmq
@@ -13,7 +11,7 @@ from sentry_sdk.integrations.logging import ignore_logger
 
 from . import threads
 from .app import AppThread
-from .config import log
+from . import log
 from .data import make_payload
 from .handler import exception_handler
 
@@ -78,17 +76,17 @@ class MQConnection(AppThread):
                 self._setup_channel()
             except AMQPConnectionError as e:
                 raise ResourceWarning(
-                    f'Problem setting up connection or channel: {repr(e)}.'
+                    f"Problem setting up connection or channel: {repr(e)}."
                 ) from e
             try:
                 message_body = make_payload(data=event_payload)
                 log.info(
-                    f"Sending {len(message_body)} bytes to exchange {self._mq_exchange_name} with routing {routing_key} to queue {self._mq_queue_name}." # type: ignore
+                    f"Sending {len(message_body)} bytes to exchange {self._mq_exchange_name} with routing {routing_key} to queue {self._mq_queue_name}."  # type: ignore
                 )
-                self._mq_channel.basic_publish( # type: ignore
+                self._mq_channel.basic_publish(  # type: ignore
                     exchange=self._mq_exchange_name,
                     routing_key=routing_key,
-                    body=message_body, # type: ignore
+                    body=message_body,  # type: ignore
                 )
                 success = True
                 # exit loop
@@ -130,7 +128,7 @@ class MQConnection(AppThread):
         if self._mq_channel is None or self._mq_channel.is_closed:
             if self._mq_channel:
                 log.info("Recreating RabbitMQ channel...")
-            self._mq_channel = self._mq_connection.channel() # type: ignore
+            self._mq_channel = self._mq_connection.channel()  # type: ignore
             self._mq_channel.exchange_declare(
                 exchange=self._mq_exchange_name,
                 exchange_type=self._mq_exchange_type,
@@ -184,12 +182,12 @@ class ZMQListener(MQConnection):
 
     def _setup_channel(self):
         MQConnection._setup_channel(self)
-        self._mq_channel.queue_bind( # type: ignore
+        self._mq_channel.queue_bind(  # type: ignore
             exchange=self._mq_exchange_name,
             queue=self._mq_queue_name,
             routing_key=self._mq_topic_filter,
         )
-        self._mq_channel.basic_consume( # type: ignore
+        self._mq_channel.basic_consume(  # type: ignore
             queue=self._mq_queue_name, on_message_callback=self.callback, auto_ack=True
         )
 
@@ -202,14 +200,14 @@ class ZMQListener(MQConnection):
             try:
                 self._setup_channel()
                 log.info("Ready for RabbitMQ messages.")
-                self._mq_channel.start_consuming() # type: ignore
+                self._mq_channel.start_consuming()  # type: ignore
             except (
                 AMQPConnectionError,
                 ConnectionClosedByBroker,
                 StreamLostError,
             ) as e:
                 # handled error due to already shutting down
-                raise ResourceWarning(f'Consumer interrupted: {repr(e)}') from e
+                raise ResourceWarning(f"Consumer interrupted: {repr(e)}") from e
             finally:
                 log.info("RabbitMQ listener has finished.")
 
@@ -279,7 +277,7 @@ class RabbitMQRelay(AppThread):
             self._mq_channel.basic_publish(
                 exchange=self._mq_config_exchange,
                 routing_key=event_topic,
-                body=make_payload(data=event_payload), # type: ignore
+                body=make_payload(data=event_payload),  # type: ignore
             )
         except (ConnectionClosedByBroker, StreamLostError) as e:
             raise ResourceWarning() from e

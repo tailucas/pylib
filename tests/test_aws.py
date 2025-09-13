@@ -1,4 +1,3 @@
-import pytest
 
 from tailucas_pylib.aws import get_boto_session
 from tailucas_pylib.aws.metrics import post_count_metric
@@ -16,5 +15,10 @@ def test_session_caching(caplog):
 
 def test_post_metric(caplog):
     caplog.set_level("WARNING")
-    post_count_metric("TestMetric", count=1, dimensions={"TestDimension": "TestValue"}, device_name="TestDevice")
+    post_count_metric(
+        "TestMetric",
+        count=1,
+        dimensions={"TestDimension": "TestValue"},
+        device_name="TestDevice",
+    )
     assert "Problem posting metric" not in caplog.text

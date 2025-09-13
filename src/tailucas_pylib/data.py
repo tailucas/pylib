@@ -3,12 +3,12 @@ import logging
 import msgpack
 import simplejson as json
 
-from .datetime import make_timestamp
-from .config import log
+from .datetime import make_iso_timestamp
+from . import log
 
 
 def make_payload(timestamp=None, data=None, pack=True):
-    payload = {"timestamp": make_timestamp(timestamp=timestamp, make_string=True)}
+    payload = {"timestamp": make_iso_timestamp(timestamp=timestamp)}
     if data is not None and len(data) > 0:
         if isinstance(data, dict):
             payload.update(data)

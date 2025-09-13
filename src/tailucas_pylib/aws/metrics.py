@@ -1,5 +1,5 @@
 from ..datetime import make_timestamp
-from ..config import APP_NAME, DEVICE_NAME_BASE, log
+from .. import APP_NAME, DEVICE_NAME_BASE, log
 from . import get_boto_session
 
 

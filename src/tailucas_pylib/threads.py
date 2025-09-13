@@ -4,9 +4,8 @@ import sys
 import threading
 import time
 import traceback
-from datetime import datetime
 
-from .config import log, app_config, log, DEVICE_NAME, creds
+from . import app_config, log, DEVICE_NAME, creds
 
 import cronitor
 
@@ -36,7 +35,7 @@ def die(exception=None):
     if sentry_client:
         if exception is not None:
             trigger_exception = exception
-            log.info(f'Sending exception to Sentry: {exception!s}')
+            log.info(f"Sending exception to Sentry: {exception!s}")
             capture_exception(error=exception)
         log.debug("Flusing Sentry...")
         sentry_client.flush(timeout=2.0)
@@ -74,11 +73,13 @@ def thread_nanny(signal_handler):
     shutting_down_time = None
     monitor = None
     if app_config.has_option("app", "cronitor_monitor_key"):  # type: ignore  # noqa: F821
-        cronitor_api_key_creds_path = app_config.get('creds', 'cronitor')
-        log.info(f'Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}...')
-        cronitor.api_key = creds.get_creds(cronitor_api_key_creds_path) # type: ignore
+        cronitor_api_key_creds_path = app_config.get("creds", "cronitor")
+        log.info(
+            f"Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}..."
+        )
+        cronitor.api_key = creds.get_creds(cronitor_api_key_creds_path)  # type: ignore
         cronitor_key = app_config.get("app", "cronitor_monitor_key")
-        log.info(f'Loading Cronitor {cronitor_key}...')
+        log.info(f"Loading Cronitor {cronitor_key}...")
         monitor = cronitor.Monitor(key=cronitor_key)
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
@@ -91,7 +92,7 @@ def thread_nanny(signal_handler):
                 # print non-daemon threads that linger
                 if shutting_down and not thread_info.daemon:
                     code = []
-                    stack = sys._current_frames()[thread_info.ident] # type: ignore
+                    stack = sys._current_frames()[thread_info.ident]  # type: ignore
                     for filename, lineno, name, line in traceback.extract_stack(stack):
                         code.append(
                             'File: "%s", line %d, in %s' % (filename, lineno, name)

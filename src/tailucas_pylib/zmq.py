@@ -1,5 +1,4 @@
 import inspect
-import logging
 from typing import Optional
 from weakref import WeakKeyDictionary
 
@@ -7,7 +6,7 @@ import zmq
 from zmq.asyncio import Context as AsyncioContext
 from zmq.error import ZMQError
 
-from .config import log
+from . import log
 
 zmq_sockets = WeakKeyDictionary()
 zmq_context = zmq.Context()

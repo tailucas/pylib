@@ -1,4 +1,3 @@
-import logging
 from threading import Thread
 from typing import Dict
 
@@ -9,7 +8,7 @@ from .handler import exception_handler
 from .threads import shutting_down, threads_tracked
 from .zmq import Closable
 
-from .config import log
+from . import log
 
 
 class AppThread(Thread):
@@ -29,12 +28,12 @@ class ZmqRelay(AppThread, Closable):
         self._sink_zmq_url = sink_zmq_url
 
     def process_message(self, sink_socket):
-        data = self.socket.recv_pyobj() # type: ignore
+        data = self.socket.recv_pyobj()  # type: ignore
         payload = make_payload(data=data)
         # do not info on heartbeats
-        if "device_info" not in data: # type: ignore
+        if "device_info" not in data:  # type: ignore
             log.debug(
-                f"Relaying {len(data)} bytes from {self.socket_url} to {self._sink_zmq_url} ({len(payload)} bytes)" # type: ignore
+                f"Relaying {len(data)} bytes from {self.socket_url} to {self._sink_zmq_url} ({len(payload)} bytes)"  # type: ignore
             )
         sink_socket.send(payload)
 
@@ -73,5 +72,5 @@ class ZmqWorker(AppThread):
         ) as zmq_socket:
             while not shutting_down:
                 message = zmq_socket.recv_pyobj()
-                response = self.process_message(message=message) # type: ignore
+                response = self.process_message(message=message)  # type: ignore
                 zmq_socket.send_pyobj(response)

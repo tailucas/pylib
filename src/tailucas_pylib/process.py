@@ -2,7 +2,7 @@ import logging
 import signal
 import subprocess
 
-from .config import log
+from . import log
 from .threads import die
 
 

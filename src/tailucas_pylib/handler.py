@@ -1,4 +1,3 @@
-import logging
 from typing import ContextManager, Optional
 
 import zmq
@@ -6,7 +5,7 @@ from sentry_sdk import capture_exception
 from zmq.error import ContextTerminated
 
 from . import threads
-from .config import log
+from . import log
 from .threads import die
 from .zmq import try_close, zmq_socket
 
@@ -31,7 +30,8 @@ class exception_handler(ContextManager):
 
     def __enter__(self):
         self._zmq_socket = zmq_socket(
-            socket_type=self._socket_type, is_async=self._is_async # type: ignore
+            socket_type=self._socket_type,  # type: ignore
+            is_async=self._is_async,  # type: ignore
         )
         if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
             log.debug(
