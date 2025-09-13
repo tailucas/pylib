@@ -1,12 +1,11 @@
 [project]
 name = "tailucas-pylib"
-version = "0.5.0"
+version = "0.5.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "boto3>=1.40.21",
-    "botoflow>=0.8",
     "cronitor>=4.7.1",
     "msgpack>=1.1.1",
     "onepassword-sdk>=0.3.1",

@@ -31,7 +31,7 @@ def main():
     else:
         err(f'Unexpected arguments in {sys.argv[1:]}')
     if item_name is None:
-        cred = creds.get_creds(cred_path)
+        cred = creds.get_creds(cred_path) # type: ignore
         out(msg=str(cred), code=0)
     else:
         cred = creds.get_fields_from_sections(item_name, section_names) # type: ignore

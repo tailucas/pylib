@@ -10,10 +10,10 @@ from .config import log, app_config, log, DEVICE_NAME, creds
 
 import cronitor
 
-from sentry_sdk import Hub
-from zmq.error import ZMQError
+from sentry_sdk.client import BaseClient as SentryClient
+from sentry_sdk import capture_exception, get_client
 
-from .aws.metrics import post_count_metric
+from zmq.error import ZMQError
 from .zmq import try_close, zmq_sockets
 
 
@@ -31,16 +31,20 @@ def die(exception=None):
     global shutting_down
     global interruptable_sleep
     global trigger_exception
-    log.debug("Shutting down Sentry...")
-    client = Hub.current.client
-    if client is not None:
-        client.close(timeout=2.0)
+    # enforce latch so as not to unset later due to __main__ shutdown
+    sentry_client: SentryClient = get_client()
+    if sentry_client:
+        if exception is not None:
+            trigger_exception = exception
+            log.info(f'Sending exception to Sentry: {exception!s}')
+            capture_exception(error=exception)
+        log.debug("Flusing Sentry...")
+        sentry_client.flush(timeout=2.0)
+        log.debug("Shutting down Sentry...")
+        sentry_client.close(timeout=1.0)
     log.debug("Shutting down application...")
     shutting_down = True
     interruptable_sleep.set()
-    # enforce latch so as not to unset later due to __main__ shutdown
-    if exception is not None:
-        trigger_exception = exception
 
 
 def bye():
@@ -105,12 +109,8 @@ def thread_nanny(signal_handler):
                     f"missing is [{thread_deficit}]."
                 )
                 log.warning(error_msg)
-                post_count_metric("Fatals")
                 die(exception=ResourceWarning(error_msg))
                 state = "fail"
-            elif datetime.now().minute % 5 == 0:
-                # zero every 5 minutes
-                post_count_metric("Fatals", 0)
             if monitor is not None:
                 try:
                     monitor.ping(

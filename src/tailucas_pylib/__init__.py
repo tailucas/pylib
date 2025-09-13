@@ -9,6 +9,7 @@ import socket
 import sys
 
 from locale import Error as LocaleError
+from typing import List
 from urllib.parse import urlparse
 
 from .config import (
@@ -17,8 +18,6 @@ from .config import (
 )
 
 log = logging.getLogger(APP_NAME)
-# do not propagate to console logging
-log.propagate = False
 try:
     log_level_name = os.environ["LOG_LEVEL"]
     log.setLevel(log_level_name.upper())
@@ -50,6 +49,7 @@ elif sys.stdout.isatty() or "SUPERVISOR_ENABLED" in os.environ:
     log.warning(
         "Using console logging because there is a tty or under supervisord.")
     log_handler = logging.StreamHandler(stream=sys.stdout)
+
 if log_handler:
     # define the log format
     formatter = logging.Formatter(

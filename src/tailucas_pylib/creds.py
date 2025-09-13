@@ -7,7 +7,8 @@ from .config import (
     APP_NAME,
     log,
     creds_use_connect_client,
-    creds_use_service_client
+    creds_use_service_client,
+    CredsProvider
 )
 
 
@@ -18,7 +19,7 @@ environ["ENV_IS_ASYNC_CLIENT"] = "true"
 OP_SERVICE_ACCOUNT_TOKEN = getenv("OP_SERVICE_ACCOUNT_TOKEN")
 
 
-class Creds:
+class Creds(CredsProvider):
     def __init__(self):
         self.connect_client = None
         self.service_client = None # type: ignore
@@ -76,7 +77,7 @@ class Creds:
             if not vault_found:
                 raise Exception(f"No vault matching ID {OP_VAULT} found in 1Password service. See https://github.com/1Password/onepassword-sdk-python/")
 
-    def get_creds(self, creds_path):
+    def get_creds(self, creds_path) -> str:
         if self.connect_client and creds_use_connect_client:
             from onepasswordconnectsdk.models import Item, SummaryItem, Field, Section
             from onepasswordconnectsdk.errors import FailedToRetrieveItemException
@@ -93,7 +94,7 @@ class Creds:
                 if len(creds_path_parts) == 1:
                     item_fields: List[Field] = item.fields # type: ignore
                     if len(item_fields) == 1:
-                        return item_fields[0].value
+                        return item_fields[0].value # type: ignore
                     else:
                         field_titles = []
                         for item_field in item_fields:
@@ -108,7 +109,7 @@ class Creds:
                         else:
                             field_labels[item_field.label] += 1
                         if item_field.label == creds_path_parts[1]:
-                            return item_field.value
+                            return item_field.value # type: ignore
                     raise AssertionError(f'Ambiguous field specification in {creds_path}. Available: {field_labels!s}')
                 elif len(creds_path_parts) == 3:
                     item_sections: List[Section] = item.sections # type: ignore
@@ -129,7 +130,7 @@ class Creds:
                         if item_field.section is None:
                             continue
                         if item_field.section.id == section_id and item_field.label == creds_path_parts[2]:
-                            return item_field.value
+                            return item_field.value # type: ignore
                     raise AssertionError(f'Ambiguous field specification in {creds_path}. Available: {field_labels!s}')
             except FailedToRetrieveItemException as e:
                 get_items_result = self.connect_client.get_items(OP_VAULT) # type: ignore
@@ -141,8 +142,6 @@ class Creds:
                 for item_summary in items_summary:
                     item_titles.append(item_summary.title)
                 raise AssertionError(f"Failed to retrieve item {creds_path} from vault {OP_VAULT} on 1Password connect server {OP_CONNECT_HOST}: {e!s} (available: {item_titles!s})")
-            if item.fields:
-                return item.fields
         elif self.service_client and creds_use_service_client:
             value = self.service_client.secrets.resolve(f'op://{OP_VAULT}/{creds_path}')
             if asyncio.iscoroutine(value):
@@ -152,7 +151,7 @@ class Creds:
             raise AssertionError(f'No credential client available for {creds_path}.')
         raise AssertionError(f'No credential retrieved for {creds_path}')
 
-    def get_fields_from_sections(self, item_title, section_names: List[str]):
+    def get_fields_from_sections(self, item_title, section_names: List[str]) -> dict[str, str]:
         key_value_pairs = dict()
         if self.connect_client and creds_use_connect_client:
             from onepasswordconnectsdk.models import Item, Field, Section

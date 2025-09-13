@@ -54,21 +54,6 @@ wheels = [
 ]
 
 [[package]]
-name = "botoflow"
-version = "0.8"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "botocore" },
-    { name = "dill" },
-    { name = "retrying" },
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/ac/339cee6cb0a59f6dfea2fabc1543fb28cab1a904d0a64559e73c3f4ffec6/botoflow-0.8.tar.gz", hash = "sha256:9eb588b9a78ad32998e4dfe5bda43c777a07679e6c501a0b40b5db51e8072349", size = 62523, upload-time = "2016-11-16T02:13:52.979Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/9e/a2a20a1700a7f26a3393a0a7857af3bc9f2e0330c2d6bddc9be2b32cc50a/botoflow-0.8-py2.py3-none-any.whl", hash = "sha256:63974a2e49974d7284674062f001b74bc3482bbdb4cf5b13e04ca1de66296f0a", size = 113473, upload-time = "2016-11-16T02:13:49.045Z" },
-]
-
-[[package]]
 name = "certifi"
 version = "2025.8.3"
 source = { registry = "https://pypi.org/simple" }
@@ -195,15 +180,6 @@ dependencies = [
     { name = "urllib3" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4c/65/249875d610cb5d9bd19ec2a045e194bafd15000581f1a73c99594479b7be/cronitor-4.7.1.tar.gz", hash = "sha256:46acf135f610f888e2d19c6a61f1c9b6f4fd52758f078e8d346d6acc0492e0b5", size = 17075, upload-time = "2024-04-18T15:59:07.458Z" }
-
-[[package]]
-name = "dill"
-version = "0.4.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/12/80/630b4b88364e9a8c8c5797f4602d0f76ef820909ee32f0bacb9f90654042/dill-0.4.0.tar.gz", hash = "sha256:0633f1d2df477324f53a895b02c901fb961bdbf65a17122586ea7019292cbcf0", size = 186976, upload-time = "2025-04-16T00:41:48.867Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/3d/9373ad9c56321fdab5b41197068e1d8c25883b3fea29dd361f9b55116869/dill-0.4.0-py3-none-any.whl", hash = "sha256:44f54bf6412c2c8464c14e8243eb163690a9800dbe2c367330883b19c7561049", size = 119668, upload-time = "2025-04-16T00:41:47.671Z" },
-]
 
 [[package]]
 name = "h11"
@@ -628,15 +604,6 @@ wheels = [
 ]
 
 [[package]]
-name = "retrying"
-version = "1.4.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c8/5a/b17e1e257d3e6f2e7758930e1256832c9ddd576f8631781e6a072914befa/retrying-1.4.2.tar.gz", hash = "sha256:d102e75d53d8d30b88562d45361d6c6c934da06fab31bd81c0420acb97a8ba39", size = 11411, upload-time = "2025-08-03T03:35:25.189Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/f3/6cd296376653270ac1b423bb30bd70942d9916b6978c6f40472d6ac038e7/retrying-1.4.2-py3-none-any.whl", hash = "sha256:bbc004aeb542a74f3569aeddf42a2516efefcdaff90df0eb38fbfbf19f179f59", size = 10859, upload-time = "2025-08-03T03:35:23.829Z" },
-]
-
-[[package]]
 name = "rfc3986"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -743,11 +710,10 @@ wheels = [
 
 [[package]]
 name = "tailucas-pylib"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
-    { name = "botoflow" },
     { name = "cronitor" },
     { name = "msgpack" },
     { name = "onepassword-sdk" },
@@ -770,7 +736,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.40.21" },
-    { name = "botoflow", specifier = ">=0.8" },
     { name = "cronitor", specifier = ">=4.7.1" },
     { name = "msgpack", specifier = ">=1.1.1" },
     { name = "onepassword-sdk", specifier = ">=0.3.1" },

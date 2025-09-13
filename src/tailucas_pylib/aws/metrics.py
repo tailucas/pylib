@@ -1,37 +1,35 @@
-import logging
-
 from ..datetime import make_timestamp
 from ..config import APP_NAME, DEVICE_NAME_BASE, log
-from . import boto3_session
+from . import get_boto_session
 
 
-app_metrics = None
-if boto3_session is not None:
-    app_metrics = boto3_session.client("cloudwatch")
-else:
-    log.warning("AWS boto3_session is not set. CloudWatch metrics will be unavailable.")
+METRIC_NAMESPACE = "automation"
+
+
+_app_metrics = None
 
 
 def post_count_metric(
     metric_name, count=1, unit="Count", dimensions=None, device_name=DEVICE_NAME_BASE
 ):  # type: ignore
-    global app_metrics
-    if app_metrics is None:
-        return
+    global _app_metrics
+    if _app_metrics is None:
+        _app_metrics = get_boto_session().client("cloudwatch")
     # define default dimensions
     metric_dimensions = [
         {
             "Name": "Application",
             "Value": APP_NAME,
         },
-        {"Name": "Device", "Value": device_name},
     ]
+    if device_name:
+        metric_dimensions.append({"Name": "Device", "Value": device_name})
     if isinstance(dimensions, dict):
         for k, v in list(dimensions.items()):
             metric_dimensions.append({"Name": k, "Value": v})
     try:
-        app_metrics.put_metric_data(
-            Namespace="automation",
+        _app_metrics.put_metric_data(
+            Namespace=METRIC_NAMESPACE,
             MetricData=[
                 {
                     "MetricName": metric_name,
