@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from .creds import Creds
 
 APP_NAME = getenv("APP_NAME", "test")
-WORK_DIR = getenv("WORK_DIR", "/tmp")
+WORK_DIR = getenv("WORK_DIR", "/opt/app")
 DEVICE_NAME = getenv("DEVICE_NAME")
 DEVICE_NAME_BASE = None
 
@@ -61,12 +61,14 @@ if log_handler:
 # use parent of this module's top-level __init__.py
 
 app_path = Path(os.path.abspath(os.path.dirname(__file__))).parent
-log.debug(f"Running from {app_path}, using working directory {WORK_DIR}")
-# assert working directory for assumptions made (such as PyDrive)
-current_work_dir = os.getcwd()
-if current_work_dir != WORK_DIR:
-    log.warning(f"Changing working directory from {current_work_dir} to {WORK_DIR}")
-    os.chdir(WORK_DIR)
+log.debug(f"Running from {app_path}")
+if os.path.exists(WORK_DIR):
+    log.debug(f"Using working directory {WORK_DIR}")
+    # assert working directory for assumptions made (such as PyDrive)
+    current_work_dir = os.getcwd()
+    if current_work_dir != WORK_DIR:
+        log.warning(f"Changing working directory from {current_work_dir} to {WORK_DIR}")
+        os.chdir(WORK_DIR)
 
 # locale settings
 local_env = "LC_ALL"
