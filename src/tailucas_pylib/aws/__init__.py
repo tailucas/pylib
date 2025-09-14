@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from os import getenv
 
 from botocore.exceptions import ClientError
 
@@ -30,7 +31,7 @@ def get_boto_session() -> Session:
     elif _boto_session_expiry <= datetime.now(timezone.utc):
         refresh_boto_session = True
 
-    role_session_name = f"{APP_NAME}-session"
+    role_session_name = getenv("AWS_ROLE_ARN", f"{APP_NAME}-session")
     if not refresh_boto_session and _boto_session is not None:
         log.info(
             f"Using existing role session {role_session_name} with expiry of {_boto_session_expiry}..."

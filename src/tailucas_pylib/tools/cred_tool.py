@@ -2,18 +2,8 @@
 import json
 import sys
 
+from . import err, out
 from .. import creds
-
-
-def out(msg, code=None):
-    sys.stdout.write(msg)
-    if code:
-        exit(int(code))
-
-
-def err(msg, code=1):
-    sys.stderr.write(msg + "\n")
-    exit(code)
 
 
 def main():

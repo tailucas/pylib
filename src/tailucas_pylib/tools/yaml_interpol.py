@@ -5,11 +5,6 @@ import sys
 import yaml
 
 
-def err(msg, code=1):
-    sys.stderr.write(msg + "\n")
-    exit(code)
-
-
 def update_section(yaml_section, section_namespace, replacement):
     if len(section_namespace) == 1:
         yaml_section[section_namespace[0]] = replacement

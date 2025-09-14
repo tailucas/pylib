@@ -6,6 +6,8 @@ from collections import OrderedDict
 from configparser import ConfigParser, InterpolationMissingOptionError, NoOptionError
 
 
+from . import err
+
 FAKE_SECTION = "FAKESECTION"
 
 
@@ -15,11 +17,6 @@ def load_config(fp):
     # prepend with fake header
     cfg.read_file([f"[{FAKE_SECTION}]\n" + os.linesep] + fp.readlines())
     return cfg
-
-
-def err(msg, code=1):
-    sys.stderr.write(msg + "\n")
-    exit(code)
 
 
 def main():
