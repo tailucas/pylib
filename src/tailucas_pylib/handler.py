@@ -65,7 +65,7 @@ class exception_handler(ContextManager):
             if not threads.shutting_down:
                 log.warning(self.__class__.__name__, exc_info=True)
                 if self._shutdown_on_error:
-                    die(exception=exc_type)
+                    die(exception=exc_val)
             else:
                 # log the exception as informational if in debug mode
                 log.debug(self.__class__.__name__, exc_info=True)
@@ -74,7 +74,7 @@ class exception_handler(ContextManager):
                 log.exception(self.__class__.__name__)
                 capture_exception(error=(exc_type, exc_val, tb))
                 if self._shutdown_on_error:
-                    die(exception=exc_type)
+                    die(exception=exc_val)
             else:
                 # log the exception as informational if in debug mode
                 log.debug(self.__class__.__name__, exc_info=True)

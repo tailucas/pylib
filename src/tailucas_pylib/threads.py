@@ -31,12 +31,10 @@ def die(exception=None):
     global interruptable_sleep
     global trigger_exception
     # enforce latch so as not to unset later due to __main__ shutdown
+    if trigger_exception is None:
+        trigger_exception = exception
     sentry_client: SentryClient = get_client()
     if sentry_client:
-        if exception is not None:
-            trigger_exception = exception
-            log.info(f"Sending exception to Sentry: {exception!s}")
-            capture_exception(error=exception)
         log.debug("Flusing Sentry...")
         sentry_client.flush(timeout=2.0)
         log.debug("Shutting down Sentry...")
