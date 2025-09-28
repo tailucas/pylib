@@ -1,13 +1,12 @@
 [project]
 name = "tailucas-pylib"
-version = "0.5.6"
+version = "0.5.7"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "boto3>=1.40.21",
     "cronitor>=4.7.1",
-    "msgpack>=1.1.1",
     "onepassword-sdk>=0.3.1",
     "onepasswordconnectsdk>=1.5.1",
     "pika>=1.3.2",
@@ -18,6 +17,7 @@ dependencies = [
     "pyzmq>=27.0.2",
     "sentry-sdk>=2.35.1",
     "simplejson>=3.20.1",
+    "u-msgpack-python>=2.8.0",
 ]
 
 [build-system]

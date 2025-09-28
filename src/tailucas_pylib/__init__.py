@@ -25,14 +25,13 @@ try:
     log_level_name = os.environ["LOG_LEVEL"]
     log.setLevel(log_level_name.upper())
 except KeyError:
-    # DEBUG logging until startup complete
-    log.setLevel(logging.DEBUG)
+    pass
 
 log_handler: Handler = None  # type: ignore
 syslog_server = None
 try:
     syslog_address = os.environ["SYSLOG_ADDRESS"]
-    log.warning(f"Logging will be sent directly to remote address {syslog_address}")
+    log.debug(f"Logging will be sent directly to remote address {syslog_address}")
     syslog_server = urlparse(syslog_address)
 except KeyError:
     pass
@@ -49,7 +48,7 @@ if syslog_server and len(syslog_server.netloc) > 0:
 elif os.path.exists("/dev/log"):
     log_handler = logging.handlers.SysLogHandler(address="/dev/log")
 elif sys.stdout.isatty() or "SUPERVISOR_ENABLED" in os.environ:
-    log.warning("Using console logging because there is a tty or under supervisord.")
+    log.debug("Using console logging because there is a tty or under supervisord.")
     log_handler = logging.StreamHandler(stream=sys.stdout)
 
 if log_handler:
@@ -97,7 +96,7 @@ if os.path.exists(app_config_path) and os.path.getsize(app_config_path) > 0:
         device_name_base = "-".join(device_name_parts[0:2])
     DEVICE_NAME_BASE = device_name_base  # type: ignore
 else:
-    log.warning(
+    log.debug(
         f'Setting DEVICE_NAME and DEVICE_NAME_BASE to "{APP_NAME}" due to missing configuration.'
     )
     DEVICE_NAME = APP_NAME

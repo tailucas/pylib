@@ -10,7 +10,7 @@ from . import app_config, log, DEVICE_NAME, creds
 import cronitor
 
 from sentry_sdk.client import BaseClient as SentryClient
-from sentry_sdk import capture_exception, get_client
+from sentry_sdk import get_client
 
 from zmq.error import ZMQError
 from .zmq import try_close, zmq_sockets

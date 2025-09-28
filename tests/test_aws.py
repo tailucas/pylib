@@ -1,4 +1,3 @@
-
 from tailucas_pylib.aws import get_boto_session
 from tailucas_pylib.aws.metrics import post_count_metric
 

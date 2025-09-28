@@ -1,7 +1,7 @@
-import msgpack
 import pika
+import umsgpack as msgpack
 import zmq
-from msgpack.exceptions import UnpackException
+from umsgpack import UnpackException
 from pika.exceptions import (
     AMQPConnectionError,
     ConnectionClosedByBroker,

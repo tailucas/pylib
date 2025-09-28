@@ -1,5 +1,3 @@
-
-
 def test_tool_import_config_interpol():
     pass
 

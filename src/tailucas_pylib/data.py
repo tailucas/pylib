@@ -1,6 +1,6 @@
 import logging
 
-import msgpack
+import umsgpack as msgpack
 import simplejson as json
 
 from .datetime import make_iso_timestamp
