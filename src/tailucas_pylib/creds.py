@@ -25,18 +25,20 @@ def get_secret_or_env(var_name: str) -> str:
 
 
 class Creds:
-    def __init__(self):
+    def __init__(
+        self, use_connect_client: bool = True, use_service_client: bool = True
+    ):
         self.op_vault: str = get_secret_or_env("OP_VAULT")
         self.op_connect_host: str = getenv("OP_CONNECT_HOST")  # type: ignore
         creds_use_connect_client = getenv(
-            "CREDS_USE_CONNECT_CLIENT", "true"
+            "CREDS_USE_CONNECT_CLIENT", str(use_connect_client)
         ).lower() in (
             "true",
             "1",
             "t",
         )
         creds_use_service_client = getenv(
-            "CREDS_USE_SERVICE_CLIENT", "true"
+            "CREDS_USE_SERVICE_CLIENT", str(use_service_client)
         ).lower() in (
             "true",
             "1",
@@ -221,7 +223,9 @@ class Creds:
                 self.service_client.items.list(self.op_vault)
             )  # type: ignore
             for cred_item in creds_items:
-                item: Item = self.service_client.items.get(self.op_vault, cred_item.id)  # type: ignore
+                item: Item = asyncio.run(
+                    self.service_client.items.get(self.op_vault, cred_item.id)
+                )
                 if item.title != item_title:
                     continue
                 op_sections = dict()

@@ -1,11 +1,14 @@
 import pytest
 
 
-@pytest.fixture(scope="session")
-def setup_creds():
+@pytest.fixture(scope="session", params=["use_connect_client", "use_service_client"])
+def setup_creds(request):
     from tailucas_pylib.creds import Creds
 
-    creds = Creds()
+    creds = Creds(
+        use_connect_client=(request.param == "use_connect_client"),
+        use_service_client=(request.param == "use_service_client"),
+    )
     creds.validate_creds()
     return creds
 
@@ -61,19 +64,23 @@ def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
         assert result == file_contents
 
 
-def test_assertions(monkeypatch):
+def test_assertions():
     from tailucas_pylib.creds import Creds
 
-    monkeypatch.setenv("CREDS_USE_CONNECT_CLIENT", "false")
-    monkeypatch.setenv("CREDS_USE_SERVICE_CLIENT", "false")
     with pytest.raises(AssertionError, match="No 1Password client created"):
-        creds = Creds()
+        creds = Creds(use_connect_client=False, use_service_client=False)
         creds.validate_creds()
 
 
-def test_get_creds_connect_server(setup_creds, monkeypatch):
-    monkeypatch.setenv("CREDS_USE_CONNECT_CLIENT", "true")
-    monkeypatch.setenv("CREDS_USE_SERVICE_CLIENT", "false")
+def test_single_active_client(setup_creds):
+    if setup_creds.connect_client:
+        assert setup_creds.service_client is None
+    if setup_creds.service_client:
+        assert setup_creds.connect_client is None
+
+
+@pytest.mark.parametrize("setup_creds", ["use_connect_client"], indirect=True)
+def test_get_creds_connect_server(setup_creds):
     with pytest.raises(AssertionError, match="Ambiguous field specification"):
         setup_creds.get_creds("Test")
     with pytest.raises(
@@ -81,30 +88,15 @@ def test_get_creds_connect_server(setup_creds, monkeypatch):
         match="Section nosection not found in item Test/nosection/noitem in vault",
     ):
         setup_creds.get_creds("Test/nosection/noitem")
+
+
+def test_get_creds_service_account(setup_creds):
     assert setup_creds.get_creds("Test/username") == "testuser"
     assert setup_creds.get_creds("Test/password") == "testpass"
     assert setup_creds.get_creds("Test/testsection1/password") == "testsection1pass"
 
 
-def test_get_creds_service_account(setup_creds, monkeypatch):
-    monkeypatch.setenv("CREDS_USE_CONNECT_CLIENT", "false")
-    monkeypatch.setenv("CREDS_USE_SERVICE_CLIENT", "true")
-    assert setup_creds.get_creds("Test/username") == "testuser"
-    assert setup_creds.get_creds("Test/password") == "testpass"
-    assert setup_creds.get_creds("Test/testsection1/password") == "testsection1pass"
-
-
-def test_get_fields_from_sections_connect_server(setup_creds, monkeypatch):
-    monkeypatch.setenv("CREDS_USE_CONNECT_CLIENT", "true")
-    monkeypatch.setenv("CREDS_USE_SERVICE_CLIENT", "false")
-    assert setup_creds.get_fields_from_sections(
-        "Test", ["testsection2", "testsection3"]
-    ) == {"FOO": "foovalue", "BAR": "barvalue"}
-
-
-def test_get_fields_from_sections_service_account(setup_creds, monkeypatch):
-    monkeypatch.setenv("CREDS_USE_CONNECT_CLIENT", "false")
-    monkeypatch.setenv("CREDS_USE_SERVICE_CLIENT", "true")
+def test_get_fields_from_sections(setup_creds):
     assert setup_creds.get_fields_from_sections(
         "Test", ["testsection2", "testsection3"]
     ) == {"FOO": "foovalue", "BAR": "barvalue"}
