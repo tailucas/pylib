@@ -10,26 +10,25 @@ log: Logger = logging.getLogger(APP_NAME)
 
 
 CONTAINER_SECRETS_PATH = "/run/secrets"
+OP_CONNECT_HOST_VAR = "OP_CONNECT_HOST"
+OP_VAULT_VAR = "OP_VAULT"
+OP_CONNECT_TOKEN_VAR = "OP_CONNECT_TOKEN"
+OP_SERVICE_ACCOUNT_TOKEN_VAR = "OP_SERVICE_ACCOUNT_TOKEN"
 
 
-def get_secret_or_env(var_name: str) -> str:
-    if not path.exists(CONTAINER_SECRETS_PATH):
-        var_val = getenv(var_name)
-        if not var_val:
-            raise AssertionError(f"Environment variable {var_name} is unset.")
-        else:
-            return var_val
+def get_secret_or_env(var_name: str) -> str | None:
     secret_file = f"{CONTAINER_SECRETS_PATH}/{var_name.lower()}"
-    with open(secret_file, "r") as f:
-        return f.read()
+    if path.isfile(secret_file):
+        with open(secret_file, "r") as f:
+            return f.read()
+    return getenv(var_name)
 
 
 class Creds:
     def __init__(
         self, use_connect_client: bool = True, use_service_client: bool = True
     ):
-        self.op_vault: str = get_secret_or_env("OP_VAULT")
-        self.op_connect_host: str = getenv("OP_CONNECT_HOST")  # type: ignore
+        self.op_connect_host: str = getenv(OP_CONNECT_HOST_VAR)  # type: ignore
         creds_use_connect_client = getenv(
             "CREDS_USE_CONNECT_CLIENT", str(use_connect_client)
         ).lower() in (
@@ -46,23 +45,28 @@ class Creds:
         )
         self.connect_client = None  # type: ignore
         self.service_client = None  # type: ignore
+        self.op_vault: str | None = get_secret_or_env(OP_VAULT_VAR)
         if self.op_vault is None:
             raise AssertionError("Environment variable self.op_vault is unset.")
-        if creds_use_connect_client and self.op_connect_host:
+        op_connect_token: str | None = get_secret_or_env(OP_CONNECT_TOKEN_VAR)
+        if creds_use_connect_client and self.op_connect_host and op_connect_token:
             from onepasswordconnectsdk.client import Client as ConnectClient
             from onepasswordconnectsdk.client import new_client
 
             self.connect_client: ConnectClient = new_client(
                 url=self.op_connect_host,
-                token=get_secret_or_env("OP_CONNECT_TOKEN"),
+                token=op_connect_token,
                 is_async=False,
             )  # type: ignore
-        if creds_use_service_client:
+        service_account_token: str | None = get_secret_or_env(
+            OP_SERVICE_ACCOUNT_TOKEN_VAR
+        )
+        if creds_use_service_client and service_account_token:
             from onepassword import Client as ServiceClient
 
             self.service_client: ServiceClient = asyncio.run(
                 ServiceClient.authenticate(
-                    auth=get_secret_or_env("OP_SERVICE_ACCOUNT_TOKEN"),
+                    auth=service_account_token,
                     integration_name=APP_NAME,
                     integration_version="v1.0.0",
                 )
@@ -118,8 +122,9 @@ class Creds:
             try:
                 creds_path_parts = creds_path.split("/")
                 item: Item = self.connect_client.get_item(
-                    creds_path_parts[0], self.op_vault
-                )  # type: ignore
+                    creds_path_parts[0],
+                    self.op_vault,  # type: ignore
+                )
                 if len(creds_path_parts) == 1:
                     item_fields: List[Field] = item.fields  # type: ignore
                     if len(item_fields) == 1:
@@ -174,8 +179,8 @@ class Creds:
                     )
             except FailedToRetrieveItemException as e:
                 items_summary: List[SummaryItem] = self.connect_client.get_items(
-                    self.op_vault
-                )  # type: ignore
+                    self.op_vault  # type: ignore
+                )
                 item_titles = []
                 for item_summary in items_summary:
                     item_titles.append(item_summary.title)
@@ -220,11 +225,11 @@ class Creds:
             from onepassword.types import ItemOverview, Item, ItemSection, ItemField
 
             creds_items: List[ItemOverview] = asyncio.run(
-                self.service_client.items.list(self.op_vault)
-            )  # type: ignore
+                self.service_client.items.list(self.op_vault)  # type: ignore
+            )
             for cred_item in creds_items:
                 item: Item = asyncio.run(
-                    self.service_client.items.get(self.op_vault, cred_item.id)
+                    self.service_client.items.get(self.op_vault, cred_item.id)  # type: ignore
                 )
                 if item.title != item_title:
                     continue

@@ -18,7 +18,7 @@ def test_get_secret_or_env_returns_env_when_no_secrets_dir(monkeypatch):
     from tailucas_pylib.creds import get_secret_or_env
 
     # simulate no container secrets directory present
-    monkeypatch.setattr(os.path, "exists", lambda p: False)
+    monkeypatch.setattr(os.path, "isfile", lambda p: False)
     var_name = "MY_TEST_VAR"
     var_value = "env_value_123"
     monkeypatch.setenv(var_name, var_value)
@@ -32,15 +32,11 @@ def test_get_secret_or_env_raises_when_env_missing_and_no_secrets_dir(monkeypatc
     from tailucas_pylib.creds import get_secret_or_env
 
     # simulate no container secrets directory present
-    monkeypatch.setattr(os.path, "exists", lambda p: False)
+    monkeypatch.setattr(os.path, "isfile", lambda p: False)
     var_name = "UNSET_TEST_VAR"
     # ensure env var is not present
     monkeypatch.delenv(var_name, raising=False)
-
-    with pytest.raises(
-        AssertionError, match=f"Environment variable {var_name} is unset."
-    ):
-        get_secret_or_env(var_name)
+    assert get_secret_or_env(var_name) == None
 
 
 def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
@@ -48,7 +44,7 @@ def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
     from tailucas_pylib.creds import get_secret_or_env, CONTAINER_SECRETS_PATH
 
     # simulate container secrets directory present
-    monkeypatch.setattr(os.path, "exists", lambda p: True)
+    monkeypatch.setattr(os.path, "isfile", lambda p: True)
 
     var_name = "MySecretName"
     file_contents = "super_secret_value"

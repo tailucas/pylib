@@ -704,7 +704,7 @@ wheels = [
 
 [[package]]
 name = "tailucas-pylib"
-version = "0.5.8"
+version = "0.5.9"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
