@@ -1,5 +1,7 @@
 import pytest
 
+from os import path
+
 
 @pytest.fixture(scope="session", params=["use_connect_client", "use_service_client"])
 def setup_creds(request):
@@ -36,7 +38,7 @@ def test_get_secret_or_env_raises_when_env_missing_and_no_secrets_dir(monkeypatc
     var_name = "UNSET_TEST_VAR"
     # ensure env var is not present
     monkeypatch.delenv(var_name, raising=False)
-    assert get_secret_or_env(var_name) == None
+    assert get_secret_or_env(var_name) is None
 
 
 def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
@@ -48,7 +50,7 @@ def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
 
     var_name = "MySecretName"
     file_contents = "super_secret_value"
-    expected_path = f"{CONTAINER_SECRETS_PATH}/{var_name.lower()}"
+    expected_path = path.join(CONTAINER_SECRETS_PATH, var_name.lower())
 
     # fake open that asserts the path used matches expected_path and returns the contents
     from unittest.mock import patch, mock_open

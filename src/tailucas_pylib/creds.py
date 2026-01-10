@@ -17,10 +17,12 @@ OP_SERVICE_ACCOUNT_TOKEN_VAR = "OP_SERVICE_ACCOUNT_TOKEN"
 
 
 def get_secret_or_env(var_name: str) -> str | None:
-    secret_file = f"{CONTAINER_SECRETS_PATH}/{var_name.lower()}"
+    secret_file = path.join(CONTAINER_SECRETS_PATH, var_name.lower())
     if path.isfile(secret_file):
         with open(secret_file, "r") as f:
+            log.info(f"Reading secret for {var_name} from {secret_file}.")
             return f.read()
+    log.info(f"Reading secret for {var_name} from environment variable.")
     return getenv(var_name)
 
 
@@ -47,7 +49,7 @@ class Creds:
         self.service_client = None  # type: ignore
         self.op_vault: str | None = get_secret_or_env(OP_VAULT_VAR)
         if self.op_vault is None:
-            raise AssertionError("Environment variable self.op_vault is unset.")
+            raise AssertionError(f"Secret {OP_VAULT_VAR} is not set in environment or secrets.")
         op_connect_token: str | None = get_secret_or_env(OP_CONNECT_TOKEN_VAR)
         if creds_use_connect_client and self.op_connect_host and op_connect_token:
             from onepasswordconnectsdk.client import Client as ConnectClient
@@ -73,7 +75,7 @@ class Creds:
             )
         if not self.connect_client and not self.service_client:
             raise AssertionError(
-                "No 1Password client created. Set OP_CONNECT_TOKEN or OP_SERVICE_ACCOUNT_TOKEN or define container secrets in {CONTAINER_SECRET_PATH}."
+                f"No 1Password client created. Either set environment variables ({OP_CONNECT_TOKEN_VAR} and {OP_CONNECT_HOST_VAR}, or {OP_SERVICE_ACCOUNT_TOKEN_VAR}) or define container secrets in {CONTAINER_SECRETS_PATH}."
             )
 
     def validate_creds(self):
