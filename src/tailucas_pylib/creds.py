@@ -49,7 +49,9 @@ class Creds:
         self.service_client = None  # type: ignore
         self.op_vault: str | None = get_secret_or_env(OP_VAULT_VAR)
         if self.op_vault is None:
-            raise AssertionError(f"Secret {OP_VAULT_VAR} is not set in environment or secrets.")
+            log.warning(
+                f"Secret {OP_VAULT_VAR} is not set in environment or container secrets."
+            )
         op_connect_token: str | None = get_secret_or_env(OP_CONNECT_TOKEN_VAR)
         if creds_use_connect_client and self.op_connect_host and op_connect_token:
             from onepasswordconnectsdk.client import Client as ConnectClient
@@ -73,12 +75,8 @@ class Creds:
                     integration_version="v1.0.0",
                 )
             )
-        if not self.connect_client and not self.service_client:
-            raise AssertionError(
-                f"No 1Password client created. Either set environment variables ({OP_CONNECT_TOKEN_VAR} and {OP_CONNECT_HOST_VAR}, or {OP_SERVICE_ACCOUNT_TOKEN_VAR}) or define container secrets in {CONTAINER_SECRETS_PATH}."
-            )
 
-    def validate_creds(self):
+    def validate_creds(self, assertion_check=False):
         if self.connect_client:
             from onepasswordconnectsdk.models import Vault
 
@@ -115,6 +113,12 @@ class Creds:
                 raise Exception(
                     f"No vault matching ID {self.op_vault} found in 1Password service. See https://github.com/1Password/onepassword-sdk-python/"
                 )
+        if not self.connect_client and not self.service_client:
+            message = f"No 1Password client created. Either set environment variables ({OP_CONNECT_TOKEN_VAR} and {OP_CONNECT_HOST_VAR}, or {OP_SERVICE_ACCOUNT_TOKEN_VAR}) or define container secrets in {CONTAINER_SECRETS_PATH}."
+            if assertion_check:
+                raise AssertionError(message)
+            else:
+                log.warning(message)
 
     def get_creds(self, creds_path) -> str:
         if self.connect_client:

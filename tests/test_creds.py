@@ -67,7 +67,7 @@ def test_assertions():
 
     with pytest.raises(AssertionError, match="No 1Password client created"):
         creds = Creds(use_connect_client=False, use_service_client=False)
-        creds.validate_creds()
+        creds.validate_creds(assertion_check=True)
 
 
 def test_single_active_client(setup_creds):
