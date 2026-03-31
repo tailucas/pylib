@@ -45,7 +45,7 @@ if syslog_server and len(syslog_server.netloc) > 0:
         )
     else:
         log.error("Invalid SYSLOG_ADDRESS: hostname or port is missing.")
-elif os.path.exists("/dev/log"):
+elif os.path.exists("/dev/log") and not os.path.isdir("/dev/log"):
     log_handler = logging.handlers.SysLogHandler(address="/dev/log")
 elif sys.stdout.isatty() or "SUPERVISOR_ENABLED" in os.environ:
     log.debug("Using console logging because there is a tty or under supervisord.")
@@ -87,16 +87,17 @@ app_config_path = os.path.join(WORK_DIR, "app.conf")
 if os.path.exists(app_config_path) and os.path.getsize(app_config_path) > 0:
     log.info(f"Loading application configuration from {app_config_path}")
     app_config.read([app_config_path])
-    device_name = app_config.get("app", "device_name")
-    DEVICE_NAME = device_name  # type: ignore
-    device_name_base = device_name
-    device_name_parts = device_name.split("-")
-    if len(device_name_parts) > 2:
-        # throw away any suffixes
-        device_name_base = "-".join(device_name_parts[0:2])
-    DEVICE_NAME_BASE = device_name_base  # type: ignore
-else:
-    log.debug(
+    if app_config.has_option("app", "device_name"):
+        device_name = app_config.get("app", "device_name")
+        DEVICE_NAME = device_name  # type: ignore
+        device_name_base = device_name
+        device_name_parts = device_name.split("-")
+        if len(device_name_parts) > 2:
+            # throw away any suffixes
+            device_name_base = "-".join(device_name_parts[0:2])
+        DEVICE_NAME_BASE = device_name_base  # type: ignore
+if DEVICE_NAME is None:
+    log.warning(
         f'Setting DEVICE_NAME and DEVICE_NAME_BASE to "{APP_NAME}" due to missing configuration.'
     )
     DEVICE_NAME = APP_NAME
