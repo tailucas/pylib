@@ -45,10 +45,7 @@ if syslog_server and len(syslog_server.netloc) > 0:
         )
     else:
         log.error("Invalid SYSLOG_ADDRESS: hostname or port is missing.")
-elif os.path.exists("/dev/log") and not os.path.isdir("/dev/log"):
-    log_handler = logging.handlers.SysLogHandler(address="/dev/log")
-elif sys.stdout.isatty() or "SUPERVISOR_ENABLED" in os.environ:
-    log.debug("Using console logging because there is a tty or under supervisord.")
+else:
     log_handler = logging.StreamHandler(stream=sys.stdout)
 
 if log_handler:
