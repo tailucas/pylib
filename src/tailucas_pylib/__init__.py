@@ -4,6 +4,7 @@ from os import getenv
 from pathlib import Path
 
 import locale
+import logging
 import logging.handlers
 import os
 import os.path
@@ -29,9 +30,9 @@ except KeyError:
 
 log_handler: Handler = None  # type: ignore
 syslog_server = None
+_syslog_warning = None
 try:
     syslog_address = os.environ["SYSLOG_ADDRESS"]
-    log.debug(f"Logging will be sent directly to remote address {syslog_address}")
     syslog_server = urlparse(syslog_address)
 except KeyError:
     pass
@@ -44,15 +45,42 @@ if syslog_server and len(syslog_server.netloc) > 0:
             address=(syslog_server.hostname, syslog_server.port), socktype=protocol
         )
     else:
-        log.error("Invalid SYSLOG_ADDRESS: hostname or port is missing.")
-else:
-    log_handler = logging.StreamHandler(stream=sys.stdout)
+        _syslog_warning = "Invalid SYSLOG_ADDRESS: hostname or port is missing."
+
+# define the log format
+formatter = logging.Formatter("%(name)s %(threadName)s [%(levelname)s] %(message)s")
 
 if log_handler:
-    # define the log format
-    formatter = logging.Formatter("%(name)s %(threadName)s [%(levelname)s] %(message)s")
     log_handler.setFormatter(formatter)
     log.addHandler(log_handler)
+else:
+    # Route DEBUG and INFO to stdout
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    stdout_handler.setFormatter(formatter)
+    # This filter ensures that only levels below WARNING are emitted to stdout, except DEBUG
+    stdout_handler.addFilter(
+        lambda record: (
+            record.levelno < logging.WARNING or record.levelno != logging.DEBUG
+        )
+    )
+    log.addHandler(stdout_handler)
+
+    # Route WARNING and above to stderr, including DEBUG
+    stderr_handler = logging.StreamHandler(stream=sys.stderr)
+    stderr_handler.setFormatter(formatter)
+    stdout_handler.addFilter(
+        lambda record: (
+            record.levelno >= logging.WARNING or record.levelno == logging.DEBUG
+        )
+    )
+    log.addHandler(stderr_handler)
+
+
+if syslog_server:
+    log.debug(f"Logging will be sent directly to remote address {syslog_address}")
+elif _syslog_warning:
+    log.warning(_syslog_warning)
+
 
 # use parent of this module's top-level __init__.py
 
@@ -70,7 +98,7 @@ if os.path.exists(WORK_DIR):
 local_env = "LC_ALL"
 locale_lc_all = os.getenv(local_env)
 if locale_lc_all:
-    log.info(f"Using locale LC_ALL, set to {locale_lc_all}.")
+    log.debug(f"Using locale LC_ALL, set to {locale_lc_all}.")
     try:
         locale.setlocale(locale.LC_ALL, locale_lc_all)
     except LocaleError as e:
@@ -82,7 +110,7 @@ app_config: ConfigParser = ConfigParser()
 app_config.optionxform = str  # type: ignore
 app_config_path = os.path.join(WORK_DIR, "app.conf")
 if os.path.exists(app_config_path) and os.path.getsize(app_config_path) > 0:
-    log.info(f"Loading application configuration from {app_config_path}")
+    log.debug(f"Loading application configuration from {app_config_path}")
     app_config.read([app_config_path])
     if app_config.has_option("app", "device_name"):
         device_name = app_config.get("app", "device_name")

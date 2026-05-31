@@ -20,9 +20,9 @@ def get_secret_or_env(var_name: str) -> str | None:
     secret_file = path.join(CONTAINER_SECRETS_PATH, var_name.lower())
     if path.isfile(secret_file):
         with open(secret_file, "r") as f:
-            log.info(f"Reading secret for {var_name} from {secret_file}.")
+            log.debug(f"Reading secret for {var_name} from {secret_file}.")
             return f.read()
-    log.info(f"Reading secret for {var_name} from environment variable.")
+    log.debug(f"Reading secret for {var_name} from environment variable.")
     return getenv(var_name)
 
 
@@ -83,7 +83,7 @@ class Creds:
             creds_vaults: List[Vault] = self.connect_client.get_vaults()
             vault_found = False
             for vault in creds_vaults:
-                log.info(
+                log.debug(
                     f"Credential vault on 1Password server {self.op_connect_host} {vault.name} ({vault.id}) contains {vault.items} credentials."
                 )
                 if self.op_vault == vault.id:
@@ -101,7 +101,7 @@ class Creds:
             vault_found = False
             vaults: List[VaultOverview] = asyncio.run(self.service_client.vaults.list())
             for vault in vaults:
-                log.info(
+                log.debug(
                     f"Credential vault on 1Password service {vault.title} ({vault.id})."
                 )
                 if self.op_vault == vault.id:
