@@ -60,7 +60,7 @@ else:
     # This filter ensures that only levels below WARNING are emitted to stdout, except DEBUG
     stdout_handler.addFilter(
         lambda record: (
-            record.levelno < logging.WARNING or record.levelno != logging.DEBUG
+            record.levelno < logging.WARNING and record.levelno != logging.DEBUG
         )
     )
     log.addHandler(stdout_handler)
