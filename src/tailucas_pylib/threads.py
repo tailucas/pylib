@@ -5,7 +5,7 @@ import threading
 import time
 import traceback
 
-from . import app_config, log, DEVICE_NAME, creds
+from . import app_config, log, DEVICE_NAME
 
 import cronitor
 
@@ -75,6 +75,10 @@ def thread_nanny(signal_handler):
         log.info(
             f"Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}..."
         )
+        from .creds import Creds  # type: ignore
+
+        creds = Creds()  # type: ignore
+        creds.validate_creds()  # type: ignore
         cronitor.api_key = creds.get_creds(cronitor_api_key_creds_path)  # type: ignore
         cronitor_key = app_config.get("app", "cronitor_monitor_key")
         log.info(f"Loading Cronitor {cronitor_key}...")

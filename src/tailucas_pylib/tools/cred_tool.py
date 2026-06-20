@@ -3,7 +3,7 @@ import json
 import sys
 
 from . import err, out
-from .. import creds
+from ..creds import Creds  # type: ignore
 
 
 def main():
@@ -20,6 +20,8 @@ def main():
         section_names = sys.argv[2:]
     else:
         err(f"Unexpected arguments in {sys.argv[1:]}")
+    creds = Creds()  # type: ignore
+    creds.validate_creds()  # type: ignore
     if item_name is None:
         cred = creds.get_creds(cred_path)  # type: ignore
         out(msg=str(cred), code=0)

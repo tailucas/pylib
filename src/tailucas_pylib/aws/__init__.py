@@ -3,7 +3,8 @@ from os import getenv
 
 from botocore.exceptions import ClientError
 
-from .. import log, APP_NAME, creds
+from .. import log, APP_NAME
+from ..creds import Creds  # type: ignore
 
 from boto3 import Session
 
@@ -15,15 +16,27 @@ _sts_client = None
 _boto_session: Session = None  # type: ignore
 _boto_session_expiry: datetime = None  # type: ignore
 
+_creds = None  # type: ignore
+
 
 def get_boto_session() -> Session:
-    global _region, _akid, _role_arn, _sts_client, _boto_session, _boto_session_expiry
+    global \
+        _region, \
+        _akid, \
+        _role_arn, \
+        _sts_client, \
+        _boto_session, \
+        _boto_session_expiry, \
+        _creds
+    if _creds is None:
+        _creds = Creds()  # type: ignore
+        _creds.validate_creds()  # type: ignore
     if _region is None:
-        _region = creds.get_creds(f"AWS.{APP_NAME}/AWS_REGION")
+        _region = _creds.get_creds(f"AWS.{APP_NAME}/AWS_REGION")
     if _akid is None:
-        _akid = creds.get_creds(f"AWS.{APP_NAME}/AWS_ACCESS_KEY_ID")
+        _akid = _creds.get_creds(f"AWS.{APP_NAME}/AWS_ACCESS_KEY_ID")
     if _role_arn is None:
-        _role_arn = creds.get_creds(f"AWS.{APP_NAME}/AWS_ROLE_ARN")
+        _role_arn = _creds.get_creds(f"AWS.{APP_NAME}/AWS_ROLE_ARN")
 
     refresh_boto_session = False
     if _boto_session is None:
@@ -44,7 +57,7 @@ def get_boto_session() -> Session:
             log.info(
                 f"Creating AWS STS session using {_akid[:5]}...{_akid[-5:]} in region {_region}..."
             )
-            sak = creds.get_creds(f"AWS.{APP_NAME}/AWS_SECRET_ACCESS_KEY")
+            sak = _creds.get_creds(f"AWS.{APP_NAME}/AWS_SECRET_ACCESS_KEY")
             temp_session = Session(
                 aws_access_key_id=_akid, aws_secret_access_key=sak, region_name=_region
             )

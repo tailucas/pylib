@@ -6,7 +6,8 @@ from os import getenv
 from os.path import expanduser, exists, isdir, dirname
 
 from . import err, outl as out
-from .. import creds, APP_NAME
+from .. import APP_NAME
+from ..creds import Creds  # type: ignore
 from ..aws import get_boto_session
 
 
@@ -27,6 +28,8 @@ AWS_SHARED_CREDENTIALS_FILE = test_dir(
 
 
 def main():
+    creds = Creds()  # type: ignore
+    creds.validate_creds()  # type: ignore
     aws_settings = creds.get_fields_from_sections(f"AWS.{APP_NAME}", ["config"])
     aws_config = ConfigParser()
     aws_config["default"] = {"region": aws_settings["AWS_REGION"], "output": "json"}

@@ -14,8 +14,6 @@ import sys
 from locale import Error as LocaleError
 from urllib.parse import urlparse
 
-from .creds import Creds
-
 APP_NAME = getenv("APP_NAME", "test")
 WORK_DIR = getenv("WORK_DIR", "/opt/app")
 DEVICE_NAME = getenv("DEVICE_NAME")
@@ -127,6 +125,3 @@ if DEVICE_NAME is None:
     )
     DEVICE_NAME = APP_NAME
     DEVICE_NAME_BASE = APP_NAME
-
-creds = Creds()
-creds.validate_creds()
