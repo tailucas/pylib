@@ -1,32 +1,18 @@
 [project]
 name = "tailucas-pylib"
-version = "0.7.0"
+version = "0.7.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = [
-    "python-dateutil>=2.9.0.post0",
-    "pyyaml>=6.0.2",
-]
+dependencies = ["python-dateutil>=2.9.0.post0", "pytz>=2025.2", "pyyaml>=6.0.2"]
 
 [project.optional-dependencies]
-aws = [
-    "boto3>=1.40.21",
-]
-creds = [
-    "onepassword-sdk>=0.3.1",
-    "onepasswordconnectsdk>=1.5.1",
-]
-dto = [
-    "pydantic>=2.11.7",
-]
-monitoring = [
-    "cronitor>=4.7.1",
-    "sentry-sdk>=2.35.1",
-]
+aws = ["boto3>=1.40.21", "onepassword-sdk>=0.3.1", "onepasswordconnectsdk>=1.5.1"]
+creds = ["onepassword-sdk>=0.3.1", "onepasswordconnectsdk>=1.5.1"]
+dto = ["pydantic>=2.11.7"]
+monitoring = ["cronitor>=4.7.1", "sentry-sdk>=2.35.1"]
 mq = [
     "pika>=1.3.2",
-    "pytz>=2025.2",
     "pyzmq>=27.0.2",
     "simplejson>=3.20.1",
     "u-msgpack-python>=2.8.0",
@@ -37,19 +23,43 @@ requires = ["uv_build>=0.8.14,<0.9.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-  {include-group = "lint"},
-  {include-group = "test"}
-]
-lint = [
-  "ruff"
-]
-test = [
-  "pytest"
-]
+dev = [{ include-group = "lint" }, { include-group = "test" }]
+lint = ["ruff"]
+test = ["coverage[toml]", "hatch", "pytest", "pytest-cov", "pytest-mock"]
 
 [tool.uv]
 default-groups = "all"
+
+# TODO: figure out how to get feature matrix working
+[tool.hatch.envs.default]
+installer = "uv"
+
+[tool.hatch.envs.test]
+dependency-groups = ["test"]
+
+[tool.hatch.envs.test.scripts]
+run = "pytest -v"
+
+# uv run hatch run test-aws:run
+[tool.hatch.envs.test-aws]
+template = "test"
+dependencies = ["tailucas-pylib[aws]"]
+
+[tool.hatch.envs.test-creds]
+template = "test"
+dependencies = ["tailucas-pylib[creds]"]
+
+[tool.hatch.envs.test-dto]
+template = "test"
+dependencies = ["tailucas-pylib[dto]"]
+
+[tool.hatch.envs.test-monitoring]
+template = "test"
+dependencies = ["tailucas-pylib[monitoring]"]
+
+[tool.hatch.envs.test-mq]
+template = "test"
+dependencies = ["tailucas-pylib[mq]"]
 
 [project.scripts]
 aws_configure = "tailucas_pylib.tools.aws_configure:main"

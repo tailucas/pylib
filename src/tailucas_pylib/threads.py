@@ -7,15 +7,6 @@ import traceback
 
 from . import app_config, log, DEVICE_NAME
 
-import cronitor
-
-from sentry_sdk.client import BaseClient as SentryClient
-from sentry_sdk import get_client
-
-from zmq.error import ZMQError
-from .zmq import try_close, zmq_sockets
-
-
 # threads to interrupt
 interruptable_sleep = threading.Event()
 # threads to nanny
@@ -33,12 +24,19 @@ def die(exception=None):
     # enforce latch so as not to unset later due to __main__ shutdown
     if trigger_exception is None:
         trigger_exception = exception
-    sentry_client: SentryClient = get_client()
-    if sentry_client:
-        log.debug("Flusing Sentry...")
-        sentry_client.flush(timeout=2.0)
-        log.debug("Shutting down Sentry...")
-        sentry_client.close(timeout=1.0)
+    try:
+        from sentry_sdk.client import BaseClient as SentryClient
+        from sentry_sdk import get_client
+
+        sentry_client: SentryClient = get_client()
+        if sentry_client:
+            log.debug("Flusing Sentry...")
+            sentry_client.flush(timeout=2.0)
+            log.debug("Shutting down Sentry...")
+            sentry_client.close(timeout=1.0)
+    except ImportError:
+        # sentry not installed, nothing to do
+        pass
     log.debug("Shutting down application...")
     shutting_down = True
     interruptable_sleep.set()
@@ -79,6 +77,8 @@ def thread_nanny(signal_handler):
 
         creds = Creds()  # type: ignore
         creds.validate_creds()  # type: ignore
+        import cronitor
+
         cronitor.api_key = creds.get_creds(cronitor_api_key_creds_path)  # type: ignore
         cronitor_key = app_config.get("app", "cronitor_monitor_key")
         log.info(f"Loading Cronitor {cronitor_key}...")
@@ -142,6 +142,9 @@ def thread_nanny(signal_handler):
                     log.setLevel(logging.DEBUG)
                 # close zmq sockets that are still alive (and blocking shutdown)
                 try:
+                    from zmq.error import ZMQError
+                    from .zmq import try_close, zmq_sockets
+
                     for s, loc in zmq_sockets.items():  # type: ignore
                         try:
                             if s and not s.closed:
@@ -156,5 +159,8 @@ def thread_nanny(signal_handler):
                 except RuntimeError:
                     # protect against "Set changed size during iteration", try again later
                     log.debug("Issue on closing lingering sockets.", exc_info=True)
+                except ImportError:
+                    # zmq not installed, nothing to do
+                    pass
         # never spin
         time.sleep(2)

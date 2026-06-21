@@ -1,14 +1,6 @@
 import pytest
 
 from datetime import datetime, timedelta
-import pytz
-from pytz import timezone
-
-from tailucas_pylib.datetime import (
-    make_timestamp,
-    make_iso_timestamp,
-    make_unix_timestamp,
-)
 
 
 @pytest.fixture(scope="session")
@@ -18,6 +10,7 @@ def setup_datetime_datetime_notz():
 
 @pytest.fixture(scope="session")
 def setup_datetime_datetime():
+    pytz = pytest.importorskip("pytz")
     return datetime(1985, 10, 26, 1, 21, 0, tzinfo=pytz.utc)
 
 
@@ -29,13 +22,15 @@ def setup_datetime_string():
 def test_make_timestamp(
     setup_datetime_datetime_notz, setup_datetime_datetime, setup_datetime_string
 ):
+    pytz = pytest.importorskip("pytz")
+    from tailucas_pylib.datetime import make_timestamp
     assert make_timestamp() is not None
     assert (
         make_timestamp(timestamp=setup_datetime_datetime_notz)
         == setup_datetime_datetime
     )
     edt_timestamp: datetime = make_timestamp(
-        timestamp=setup_datetime_datetime_notz, as_tz=timezone("US/Eastern")
+        timestamp=setup_datetime_datetime_notz, as_tz=pytz.timezone("US/Eastern")
     )
     assert edt_timestamp.year == 1985
     assert edt_timestamp.month == 10
@@ -52,6 +47,8 @@ def test_make_timestamp(
 def test_make_iso_timestamp(
     setup_datetime_datetime_notz, setup_datetime_datetime, setup_datetime_string
 ):
+    pytz = pytest.importorskip("pytz")
+    from tailucas_pylib.datetime import make_iso_timestamp
     assert make_iso_timestamp() is not None
     assert (
         make_iso_timestamp(timestamp=setup_datetime_datetime) == "1985-10-26T01:21:00Z"
@@ -59,13 +56,14 @@ def test_make_iso_timestamp(
     assert make_iso_timestamp(timestamp=setup_datetime_string) == "1985-10-26T01:21:00Z"
     assert (
         make_iso_timestamp(
-            timestamp=setup_datetime_datetime_notz, as_tz=timezone("US/Eastern")
+            timestamp=setup_datetime_datetime_notz, as_tz=pytz.timezone("US/Eastern")
         )
         == "1985-10-25T21:21:00-04:00"
     )
 
 
 def test_make_unix_timestamp(setup_datetime_datetime, setup_datetime_string):
+    from tailucas_pylib.datetime import make_unix_timestamp
     assert make_unix_timestamp() > 0
     assert make_unix_timestamp(timestamp=setup_datetime_datetime) == 499137660
     assert make_unix_timestamp(timestamp=setup_datetime_string) == 499137660

@@ -5,6 +5,7 @@ from os import path
 
 @pytest.fixture(scope="session", params=["use_connect_client", "use_service_client"])
 def setup_creds(request):
+    pytest.importorskip("onepasswordconnectsdk.client")
     from tailucas_pylib.creds import Creds
 
     creds = Creds(
