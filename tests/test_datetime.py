@@ -67,3 +67,36 @@ def test_make_unix_timestamp(setup_datetime_datetime, setup_datetime_string):
     assert make_unix_timestamp() > 0
     assert make_unix_timestamp(timestamp=setup_datetime_datetime) == 499137660
     assert make_unix_timestamp(timestamp=setup_datetime_string) == 499137660
+
+
+def test_make_timestamp_with_float():
+    """Test make_timestamp with a float (epoch) timestamp."""
+    from tailucas_pylib.datetime import make_timestamp
+
+    result = make_timestamp(timestamp=499137660.0)
+    assert result is not None
+
+
+def test_make_timestamp_with_int():
+    """Test make_timestamp with an integer (epoch) timestamp."""
+    from tailucas_pylib.datetime import make_timestamp
+
+    result = make_timestamp(timestamp=499137660)
+    assert result is not None
+
+
+def test_make_timestamp_with_invalid_string_fallback_to_epoch():
+    """Test make_timestamp falls back to int parsing when date parsing fails."""
+    from tailucas_pylib.datetime import make_timestamp
+
+    # "499137660" is not a valid date string but is a valid epoch int
+    result = make_timestamp(timestamp="499137660")
+    assert result is not None
+
+
+def test_make_timestamp_with_fully_invalid_string():
+    """Test make_timestamp falls back to 'now' when all parsing fails."""
+    from tailucas_pylib.datetime import make_timestamp
+
+    result = make_timestamp(timestamp="not-a-date-and-not-a-number")
+    assert result is not None
