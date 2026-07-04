@@ -1,5 +1,4 @@
 import inspect
-from typing import Optional
 from weakref import WeakKeyDictionary
 
 import zmq
@@ -8,7 +7,7 @@ from zmq.error import ZMQError
 
 from . import log
 
-zmq_sockets = WeakKeyDictionary()
+zmq_sockets: WeakKeyDictionary = WeakKeyDictionary()  # type: ignore[type-arg]
 zmq_context = zmq.Context()
 zmq_context.setsockopt(zmq.LINGER, 0)
 # asyncio capabilities
@@ -21,7 +20,7 @@ URL_WORKER_PUBLISHER = "inproc://publisher"
 URL_WORKER_RELAY = "inproc://app-relay"
 
 
-def zmq_socket(socket_type: int, is_async: Optional[bool] = False):
+def zmq_socket(socket_type: int, is_async: bool | None = False):
     call_stack = inspect.stack()
     locations = []
     for fi in call_stack:
@@ -72,7 +71,7 @@ def try_close(socket):
         log.warning("Ignoring socket error when closing socket.", exc_info=True)
 
 
-class Closable(object):
+class Closable:
     @property
     def socket(self):
         return self._socket
@@ -86,18 +85,19 @@ class Closable(object):
         return self._socket_url
 
     def __init__(
-        self, connect_url: str, socket_type=zmq.PULL, is_async: Optional[bool] = False
+        self, connect_url: str, socket_type=zmq.PULL, is_async: bool | None = False
     ):
         self._socket = None
         self._socket_url: str = connect_url
         self._socket_type: int = socket_type
-        self._is_async: Optional[bool] = is_async
+        self._is_async: bool | None = is_async
 
     def get_socket(self):
         if self._socket is None:
             self._socket = zmq_socket(
                 socket_type=self._socket_type, is_async=self._is_async
             )
+            assert self._socket is not None
             if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
                 log.debug(
                     f"Binding {self._socket_type} ({zmq.PULL=}, {zmq.PUB=}, {zmq.REP=}) ZMQ socket to {self._socket_url}."

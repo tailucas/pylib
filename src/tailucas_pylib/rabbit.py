@@ -1,17 +1,16 @@
 import pika
 import umsgpack as msgpack
 import zmq
-from umsgpack import UnpackException
 from pika.exceptions import (
     AMQPConnectionError,
     ConnectionClosedByBroker,
     StreamLostError,
 )
 from sentry_sdk.integrations.logging import ignore_logger
+from umsgpack import UnpackException
 
-from . import threads
+from . import log, threads
 from .app import AppThread
-from . import log
 from .data import make_payload
 from .handler import exception_handler
 
@@ -48,7 +47,7 @@ class MQConnection(AppThread):
         else:
             raise AssertionError(f"Unsupported argument type: {mq_server_address}")
 
-        pika_parameters = list()
+        pika_parameters = []
         for source in self._mq_server_list:
             pika_parameters.append(
                 pika.ConnectionParameters(
@@ -105,12 +104,11 @@ class MQConnection(AppThread):
                         f"Closing potentially stale channel (successful attempt? {success})..."
                     )
                     self._close_channel()
-                    if tries > 1:
-                        if close_connection or not success:
-                            log.debug(
-                                f"Closing potentially stale connection (successful attempt? {success})..."
-                            )
-                            self._close_connection()
+                    if tries > 1 and (close_connection or not success):
+                        log.debug(
+                            f"Closing potentially stale connection (successful attempt? {success})..."
+                        )
+                        self._close_connection()
                 tries += 1
         if not success:
             raise AssertionError("No success after publish attempt.")
@@ -226,7 +224,7 @@ class ZMQListener(MQConnection):
         try:
             device_event = msgpack.unpackb(body)
         except UnpackException:
-            log.exception("Bad message: {}".format(body))
+            log.exception(f"Bad message: {body}")
             return
         try:
             self.processor.send_pyobj({topic_parts[2]: device_event})

@@ -1,6 +1,6 @@
 [project]
 name = "tailucas-pylib"
-version = "0.7.1"
+version = "0.7.2"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,11 +24,36 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
-lint = ["ruff"]
+lint = ["ruff", "mypy"]
 test = ["coverage[toml]", "hatch", "pytest", "pytest-cov", "pytest-mock"]
 
 [tool.uv]
 default-groups = "all"
+
+[tool.coverage.run]
+source = ["src/tailucas_pylib"]
+branch = true
+omit = ["src/tailucas_pylib/tools/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_also = [
+    "def __repr__",
+    "if self\\.debug",
+    "if settings\\.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "@(typing\\.)?overload",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=term-missing --cov-report=html --cov-report=xml"
+testpaths = ["tests"]
 
 # TODO: figure out how to get feature matrix working
 [tool.hatch.envs.default]
@@ -66,3 +91,44 @@ aws_configure = "tailucas_pylib.tools.aws_configure:main"
 config_interpol = "tailucas_pylib.tools.config_interpol:main"
 cred_tool = "tailucas_pylib.tools.cred_tool:main"
 yaml_interpol = "tailucas_pylib.tools.yaml_interpol:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501", # line-too-long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tailucas_pylib"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+check_untyped_defs = true
+no_implicit_optional = false
+warn_return_any = false
+warn_unused_ignores = false
+show_error_codes = true

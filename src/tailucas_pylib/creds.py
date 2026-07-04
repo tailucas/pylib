@@ -1,9 +1,7 @@
 import asyncio
 import logging
-
 from logging import Logger
 from os import getenv, path
-from typing import List
 
 APP_NAME = getenv("APP_NAME", "test")
 log: Logger = logging.getLogger(APP_NAME)
@@ -19,7 +17,7 @@ OP_SERVICE_ACCOUNT_TOKEN_VAR = "OP_SERVICE_ACCOUNT_TOKEN"
 def get_secret_or_env(var_name: str) -> str | None:
     secret_file = path.join(CONTAINER_SECRETS_PATH, var_name.lower())
     if path.isfile(secret_file):
-        with open(secret_file, "r") as f:
+        with open(secret_file) as f:
             log.debug(f"Reading secret for {var_name} from {secret_file}.")
             return f.read()
     log.debug(f"Reading secret for {var_name} from environment variable.")
@@ -57,18 +55,18 @@ class Creds:
             from onepasswordconnectsdk.client import Client as ConnectClient
             from onepasswordconnectsdk.client import new_client
 
-            self.connect_client: ConnectClient = new_client(
+            self.connect_client: ConnectClient = new_client(  # type: ignore[no-redef]
                 url=self.op_connect_host,
                 token=op_connect_token,
                 is_async=False,
-            )  # type: ignore
+            )
         service_account_token: str | None = get_secret_or_env(
             OP_SERVICE_ACCOUNT_TOKEN_VAR
         )
         if creds_use_service_client and service_account_token:
             from onepassword import Client as ServiceClient
 
-            self.service_client: ServiceClient = asyncio.run(
+            self.service_client: ServiceClient = asyncio.run(  # type: ignore[no-redef]
                 ServiceClient.authenticate(
                     auth=service_account_token,
                     integration_name=APP_NAME,
@@ -80,7 +78,7 @@ class Creds:
         if self.connect_client:
             from onepasswordconnectsdk.models import Vault
 
-            creds_vaults: List[Vault] = self.connect_client.get_vaults()
+            creds_vaults: list[Vault] = self.connect_client.get_vaults()
             vault_found = False
             for vault in creds_vaults:
                 log.debug(
@@ -99,7 +97,7 @@ class Creds:
             from onepassword.types import VaultOverview
 
             vault_found = False
-            vaults: List[VaultOverview] = asyncio.run(self.service_client.vaults.list())
+            vaults: list[VaultOverview] = asyncio.run(self.service_client.vaults.list())
             for vault in vaults:
                 log.debug(
                     f"Credential vault on 1Password service {vault.title} ({vault.id})."
@@ -122,8 +120,8 @@ class Creds:
 
     def get_creds(self, creds_path) -> str:
         if self.connect_client:
-            from onepasswordconnectsdk.models import Item, SummaryItem, Field, Section
             from onepasswordconnectsdk.errors import FailedToRetrieveItemException
+            from onepasswordconnectsdk.models import Field, Item, Section, SummaryItem
 
             try:
                 creds_path_parts = creds_path.split("/")
@@ -132,7 +130,7 @@ class Creds:
                     self.op_vault,  # type: ignore
                 )
                 if len(creds_path_parts) == 1:
-                    item_fields: List[Field] = item.fields  # type: ignore
+                    item_fields: list[Field] = item.fields  # type: ignore
                     if len(item_fields) == 1:
                         return item_fields[0].value  # type: ignore
                     else:
@@ -143,8 +141,8 @@ class Creds:
                             f"Ambiguous field specification in {creds_path}. Available: {field_titles!s}"
                         )
                 elif len(creds_path_parts) == 2:
-                    field_labels = dict()
-                    item_fields: List[Field] = item.fields  # type: ignore
+                    field_labels = {}
+                    item_fields: list[Field] = item.fields  # type: ignore
                     for item_field in item_fields:
                         if item_field.label not in field_labels:
                             field_labels[item_field.label] = 1
@@ -156,7 +154,7 @@ class Creds:
                         f"Ambiguous field specification in {creds_path}. Available: {field_labels!s}"
                     )
                 elif len(creds_path_parts) == 3:
-                    item_sections: List[Section] = item.sections  # type: ignore
+                    item_sections: list[Section] = item.sections  # type: ignore
                     section_id = None
                     for item_section in item_sections:
                         if item_section.label == creds_path_parts[1]:
@@ -166,8 +164,8 @@ class Creds:
                         raise AssertionError(
                             f"Section {creds_path_parts[1]} not found in item {creds_path} in vault {self.op_vault} on 1Password connect server {self.op_connect_host}."
                         )
-                    item_fields: List[Field] = item.fields  # type: ignore
-                    field_labels = dict()
+                    item_fields: list[Field] = item.fields  # type: ignore
+                    field_labels = {}
                     for item_field in item_fields:
                         if item_field.label not in field_labels:
                             field_labels[item_field.label] = 1
@@ -184,7 +182,7 @@ class Creds:
                         f"Ambiguous field specification in {creds_path}. Available: {field_labels!s}"
                     )
             except FailedToRetrieveItemException as e:
-                items_summary: List[SummaryItem] = self.connect_client.get_items(
+                items_summary: list[SummaryItem] = self.connect_client.get_items(
                     self.op_vault  # type: ignore
                 )
                 item_titles = []
@@ -192,7 +190,7 @@ class Creds:
                     item_titles.append(item_summary.title)
                 raise AssertionError(
                     f"Failed to retrieve item {creds_path} from vault {self.op_vault} on 1Password connect server {self.op_connect_host}: {e!s} (available: {item_titles!s})"
-                )
+                ) from e
         elif self.service_client:
             return asyncio.run(
                 self.service_client.secrets.resolve(
@@ -204,14 +202,14 @@ class Creds:
         raise AssertionError(f"No credential retrieved for {creds_path}")
 
     def get_fields_from_sections(
-        self, item_title, section_names: List[str]
+        self, item_title, section_names: list[str]
     ) -> dict[str, str]:
-        key_value_pairs = dict()
+        key_value_pairs = {}
         if self.connect_client:
-            from onepasswordconnectsdk.models import Item, Field, Section
+            from onepasswordconnectsdk.models import Field, Item, Section
 
             item: Item = self.connect_client.get_item(item_title, self.op_vault)  # type: ignore
-            item_sections: List[Section] = item.sections  # type: ignore
+            item_sections: list[Section] = item.sections  # type: ignore
             if item_sections is None:
                 raise AssertionError(
                     f"No sections found in item {item_title} in vault {self.op_vault} on 1Password connect server {self.op_connect_host}."
@@ -220,7 +218,7 @@ class Creds:
             for item_section in item_sections:
                 if item_section.label in section_names:  # type: ignore
                     section_ids.append(item_section.id)
-            item_fields: List[Field] = item.fields  # type: ignore
+            item_fields: list[Field] = item.fields  # type: ignore
             for item_field in item_fields:  # type: ignore
                 if item_field.section is None:  # type: ignore
                     continue
@@ -228,20 +226,20 @@ class Creds:
                     key_value_pairs[item_field.label] = item_field.value  # type: ignore
             return key_value_pairs
         elif self.service_client:
-            from onepassword.types import ItemOverview, Item, ItemSection, ItemField
+            from onepassword.types import Item, ItemField, ItemOverview, ItemSection
 
-            creds_items: List[ItemOverview] = asyncio.run(
+            creds_items: list[ItemOverview] = asyncio.run(
                 self.service_client.items.list(self.op_vault)  # type: ignore
             )
             for cred_item in creds_items:
-                item: Item = asyncio.run(
+                item: Item = asyncio.run(  # type: ignore[no-redef]
                     self.service_client.items.get(self.op_vault, cred_item.id)  # type: ignore
                 )
                 if item.title != item_title:
                     continue
-                op_sections = dict()
+                op_sections = {}
                 if len(item.sections) > 0:
-                    item_sections: List[ItemSection] = item.sections
+                    item_sections: list[ItemSection] = item.sections  # type: ignore[no-redef]
                     for item_section in item_sections:
                         op_sections[item_section.id] = item_section.title
                 item_field: ItemField = None  # type: ignore

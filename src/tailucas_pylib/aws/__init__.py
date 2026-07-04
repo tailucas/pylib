@@ -1,13 +1,11 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from os import getenv
 
+from boto3 import Session
 from botocore.exceptions import ClientError
 
-from .. import log, APP_NAME
+from .. import APP_NAME, log
 from ..creds import Creds  # type: ignore
-
-from boto3 import Session
-
 
 _region = None
 _akid = None
@@ -39,9 +37,7 @@ def get_boto_session() -> Session:
         _role_arn = _creds.get_creds(f"AWS.{APP_NAME}/AWS_ROLE_ARN")
 
     refresh_boto_session = False
-    if _boto_session is None:
-        refresh_boto_session = True
-    elif _boto_session_expiry <= datetime.now(timezone.utc):
+    if _boto_session is None or _boto_session_expiry <= datetime.now(UTC):
         refresh_boto_session = True
 
     role_session_name = getenv("AWS_ROLE_ARN", f"{APP_NAME}-session")

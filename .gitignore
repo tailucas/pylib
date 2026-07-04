@@ -5,3 +5,6 @@ dist/
 tailucas_pylib.egg-info/
 .venv/
 *.code-workspace
+htmlcov/
+.coverage
+coverage.xml

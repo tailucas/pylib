@@ -1,6 +1,6 @@
-import pytest
-
 from os import path
+
+import pytest
 
 
 @pytest.fixture(scope="session", params=["use_connect_client", "use_service_client"])
@@ -18,6 +18,7 @@ def setup_creds(request):
 
 def test_get_secret_or_env_returns_env_when_no_secrets_dir(monkeypatch):
     import os
+
     from tailucas_pylib.creds import get_secret_or_env
 
     # simulate no container secrets directory present
@@ -32,6 +33,7 @@ def test_get_secret_or_env_returns_env_when_no_secrets_dir(monkeypatch):
 
 def test_get_secret_or_env_raises_when_env_missing_and_no_secrets_dir(monkeypatch):
     import os
+
     from tailucas_pylib.creds import get_secret_or_env
 
     # simulate no container secrets directory present
@@ -44,7 +46,8 @@ def test_get_secret_or_env_raises_when_env_missing_and_no_secrets_dir(monkeypatc
 
 def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
     import os
-    from tailucas_pylib.creds import get_secret_or_env, CONTAINER_SECRETS_PATH
+
+    from tailucas_pylib.creds import CONTAINER_SECRETS_PATH, get_secret_or_env
 
     # simulate container secrets directory present
     monkeypatch.setattr(os.path, "isfile", lambda p: True)
@@ -54,12 +57,12 @@ def test_get_secret_or_env_reads_secret_file_and_validates_path(monkeypatch):
     expected_path = path.join(CONTAINER_SECRETS_PATH, var_name.lower())
 
     # fake open that asserts the path used matches expected_path and returns the contents
-    from unittest.mock import patch, mock_open
+    from unittest.mock import mock_open, patch
 
     with patch("builtins.open", mock_open(read_data=file_contents)) as mock_file:
         # assert open(expected_path).read() == file_contents
         result = get_secret_or_env(var_name)
-        mock_file.assert_called_with(expected_path, "r")
+        mock_file.assert_called_with(expected_path)
         assert result == file_contents
 
 

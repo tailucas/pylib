@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
-from botocore.credentials import Credentials
 from configparser import ConfigParser
 from os import getenv
-from os.path import expanduser, exists, isdir, dirname
+from os.path import dirname, exists, expanduser, isdir
 
-from . import err, outl as out
+from botocore.credentials import Credentials
+
 from .. import APP_NAME
-from ..creds import Creds  # type: ignore
 from ..aws import get_boto_session
+from ..creds import Creds  # type: ignore
+from . import err
+from . import outl as out
 
 
 def test_dir(path):

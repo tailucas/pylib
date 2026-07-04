@@ -1,8 +1,3 @@
-from configparser import ConfigParser
-from logging import Logger, Handler
-from os import getenv
-from pathlib import Path
-
 import locale
 import logging
 import logging.handlers
@@ -10,8 +5,11 @@ import os
 import os.path
 import socket
 import sys
-
+from configparser import ConfigParser
 from locale import Error as LocaleError
+from logging import Handler, Logger
+from os import getenv
+from pathlib import Path
 from urllib.parse import urlparse
 
 APP_NAME = getenv("APP_NAME", "test")

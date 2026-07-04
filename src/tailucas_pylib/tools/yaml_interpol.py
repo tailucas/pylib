@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+
 import yaml
 
 
@@ -23,7 +24,7 @@ def main():
     # read the YAML configuration file and overlay section name
     if len(sys.argv) == 3 and os.path.isfile(sys.argv[2]):
         yaml_section_namespace_input = sys.argv[1]
-        with open(sys.argv[2], "r") as fp:
+        with open(sys.argv[2]) as fp:
             yaml_config = yaml.safe_load(fp)
     # read the overlay configuration from STDIN as JSON
     overlay_config = json.loads(sys.stdin.readline())

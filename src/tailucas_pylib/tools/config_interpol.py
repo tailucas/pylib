@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import os
 import sys
-
 from collections import OrderedDict
 from configparser import ConfigParser, InterpolationMissingOptionError, NoOptionError
-
 
 from . import err
 
@@ -22,10 +20,10 @@ def load_config(fp):
 def main():
     overlay_config = None
     if len(sys.argv) == 2 and os.path.isfile(sys.argv[1]):
-        with open(sys.argv[1], "r") as fp:
+        with open(sys.argv[1]) as fp:
             overlay_config = load_config(fp)
     config = load_config(sys.stdin)
-    sections = OrderedDict()
+    sections: OrderedDict[str, dict[str, str]] = OrderedDict()
     try:
         for section in config.sections():
             # we don't use config.items() here to avoid emitting the defaults too
@@ -43,10 +41,8 @@ def main():
                     value = config.get(section=section, option=option, vars=os.environ)
                 # store this now
                 if section not in sections:
-                    sections[section] = dict()
-                if option not in sections[section]:
-                    sections[section][option] = dict()
-                sections[section][option] = value
+                    sections[section] = {}
+                sections[section][option] = str(value)
         if overlay_config:
             # now supplement the overlay options
             for section in overlay_config.sections():
@@ -56,10 +52,8 @@ def main():
                         section=section, option=option, vars=os.environ
                     )
                     if section not in sections:
-                        sections[section] = dict()
-                    if option not in sections[section]:
-                        sections[section][option] = dict()
-                    sections[section][option] = value
+                        sections[section] = {}
+                    sections[section][option] = str(value)
     except InterpolationMissingOptionError as e:
         err(e.message)
     except NoOptionError:

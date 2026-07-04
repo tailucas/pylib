@@ -1,24 +1,23 @@
-from typing import ContextManager, Optional
+from contextlib import AbstractContextManager as ContextManager
 
 import zmq
 from sentry_sdk import capture_exception
 from zmq.error import ContextTerminated
 
-from . import threads
-from . import log
+from . import log, threads
 from .threads import die
 from .zmq import try_close, zmq_socket
 
 
-class exception_handler(ContextManager):
+class exception_handler(ContextManager["exception_handler"]):
     def __init__(
         self,
         connect_url: str,
-        socket_type: Optional[int] = zmq.PUSH,
-        and_raise: Optional[bool] = True,
-        close_on_exit: Optional[bool] = True,
-        shutdown_on_error: Optional[bool] = False,
-        is_async: Optional[bool] = False,
+        socket_type: int | None = zmq.PUSH,
+        and_raise: bool | None = True,
+        close_on_exit: bool | None = True,
+        shutdown_on_error: bool | None = False,
+        is_async: bool | None = False,
     ):
         self._zmq_socket = None
         self._zmq_url = connect_url
@@ -31,8 +30,9 @@ class exception_handler(ContextManager):
     def __enter__(self):
         self._zmq_socket = zmq_socket(
             socket_type=self._socket_type,  # type: ignore
-            is_async=self._is_async,  # type: ignore
+            is_async=self._is_async,
         )
+        assert self._zmq_socket is not None
         if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
             log.debug(
                 f"Binding {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}"
@@ -46,11 +46,10 @@ class exception_handler(ContextManager):
         return self._zmq_socket
 
     def __exit__(self, exc_type, exc_val, tb):
-        if self._close_on_exit or (
+        if (self._close_on_exit or (
             exc_type and issubclass(exc_type, ContextTerminated)
-        ):
-            if self._zmq_socket:
-                try_close(self._zmq_socket)
+        )) and self._zmq_socket:
+            try_close(self._zmq_socket)
         if exc_type is None:
             return True
         log.debug(f"Handling {exc_type.__name__} with flags...")

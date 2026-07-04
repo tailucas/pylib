@@ -1,14 +1,12 @@
 from threading import Thread
-from typing import Dict
 
 import zmq
 
+from . import log
 from .data import make_payload
 from .handler import exception_handler
 from .threads import shutting_down, threads_tracked
 from .zmq import Closable
-
-from . import log
 
 
 class AppThread(Thread):
@@ -56,7 +54,7 @@ class ZmqWorker(AppThread):
         AppThread.__init__(self, name=name)
         self._worker_zmq_url = worker_zmq_url
 
-    def process_message(self, message: Dict) -> Dict:
+    def process_message(self, message: dict[str, object]) -> dict[str, object]:
         raise NotImplementedError()
 
     def startup(self):

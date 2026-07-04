@@ -5,12 +5,12 @@ import threading
 import time
 import traceback
 
-from . import app_config, log, DEVICE_NAME
+from . import DEVICE_NAME, app_config, log
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
 # threads to nanny
-threads_tracked = set()
+threads_tracked: set[str] = set()
 # shutdown flag
 shutting_down = False
 # shutdown trigger exception
@@ -25,8 +25,8 @@ def die(exception=None):
     if trigger_exception is None:
         trigger_exception = exception
     try:
-        from sentry_sdk.client import BaseClient as SentryClient
         from sentry_sdk import get_client
+        from sentry_sdk.client import BaseClient as SentryClient
 
         sentry_client: SentryClient = get_client()
         if sentry_client:
@@ -97,10 +97,10 @@ def thread_nanny(signal_handler):
                     stack = sys._current_frames()[thread_info.ident]  # type: ignore
                     for filename, lineno, name, line in traceback.extract_stack(stack):
                         code.append(
-                            'File: "%s", line %d, in %s' % (filename, lineno, name)
+                            f'File: "{filename}", line {lineno}, in {name}'
                         )
                         if line:
-                            code.append("  %s" % (line.strip()))
+                            code.append(f"  {line.strip()}")
                     for line in code:
                         log.debug(line)
         if not shutting_down:
@@ -143,6 +143,7 @@ def thread_nanny(signal_handler):
                 # close zmq sockets that are still alive (and blocking shutdown)
                 try:
                     from zmq.error import ZMQError
+
                     from .zmq import try_close, zmq_sockets
 
                     for s, loc in zmq_sockets.items():  # type: ignore

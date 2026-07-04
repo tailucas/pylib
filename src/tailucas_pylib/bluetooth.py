@@ -1,7 +1,7 @@
 from sentry_sdk import capture_exception
 
-from .process import exec_cmd
 from . import log
+from .process import exec_cmd
 
 
 def bluetooth_init():
@@ -38,8 +38,8 @@ def l2ping(owner, device):
 
 
 def ping_bluetooth_devices(owner_device_list):
-    owner_devices = list()
-    ping_response = dict()
+    owner_devices = []
+    ping_response = {}
     try:
         log.debug(owner_device_list)
         if isinstance(owner_device_list, str):

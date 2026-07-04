@@ -10,63 +10,40 @@
 
 ### Overview
 
-This package was created by factoring out many reusable code artifacts from my [various projects][tailucas-url] over a number of years. Since this work was not a part of a group effort, the test coverage is predictably abysmal :raised_eyebrow: and Python documentation notably absent :expressionless:. For each of my projects, which derive from a common Docker application [found here][baseapp-url], this package provides some specific and relatively powerful features to enable rapid offshoots for new ideas. Here is what functionality this package provides:
+This package was created by factoring out many reusable code artifacts from my [various projects][tailucas-url] over a number of years. Since this work was not a part of a group effort, the test coverage is predictably abysmal :raised_eyebrow: and Python documentation notably absent :expressionless:. For each of my projects, which derive from a common Docker application [found here][baseapp-url], this package provides some specific and relatively powerful features to enable rapid offshoots for new ideas.
 
-* [aws.__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/aws/__init__.py): If AWS environment variables are set, global boto and boto3 session objects are instantiated.
-* [aws.metrics](https://github.com/tailucas/pylib/blob/master/pylib/aws/metrics.py): CloudWatch metric helper.
-* [aws.swf](https://github.com/tailucas/pylib/blob/master/pylib/aws/swf.py): Client-side interface to [botoflow][botoflow-url] with interfaces specific to a number of prior projects. Examples of this use are in respective *swf* branches of some projects. This mechanism has been since replaced with message passing via [RabbitMQ][rabbit-url].
-* [__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/__init__.py): A lot of module bootstrap with a pitiful attempt to support unit testing. At application startup, a choice is made between logging to a configured logger or to the terminal if one exists, to support a scenario where the application is run interactively. A standard application configuration file is loaded with a Python ConfigParser and then a credentials client is loaded based on [1Password][1p-url]. The choice of 1Password is motivated by their secrets automation features and because I happened to use their service already. I have been tempted to try Bitwarden also but there has not been a need yet to create this abstraction. Next, the [Sentry][sentry-url] client is loaded with whatever extras the given application might specify. Some useful globals are stored within `config.py`.
-* [app](https://github.com/tailucas/pylib/blob/master/pylib/app.py): A few of my applications use [ZeroMQ][zmq-url] for "lockless" IPCs between Python threads and so it became apparent that some helpers were needed to support common patterns. [ZmqRelay](https://github.com/tailucas/pylib/blob/a950b0f5fd9e539899e046bbcf5dbad4a02a1347/pylib/app.py#LL26C7-L26C15) is one such example where an application thread can be used to receive some message on which processing is done, and then forward it to another ZeroMQ channel. The main thread logic is contained with a context manager which handles failures and shutdown gracefully.
-* [app.bluetooth](https://github.com/tailucas/pylib/blob/master/pylib/bluetooth.py): Bluetooth helper functions that make use of [hcitool](https://linux.die.net/man/1/hcitool) *l2ping*.
-* `app.creds` Credential helper that provides a consistent interface between the [1Password Connect Server](https://github.com/1Password/connect-sdk-python) or [1Password Service Account](https://github.com/1Password/onepassword-sdk-python) modes, depending on your preference.
-* [app.data](https://github.com/tailucas/pylib/blob/master/pylib/data.py): Simple utility to make a common IPC or network payload using [MessagePack][msgpack-url], using the pure Python [implementation](https://github.com/vsergeev/u-msgpack-python).
-* [app.datetime](https://github.com/tailucas/pylib/blob/master/pylib/datetime.py): Date and timestamp manipulation with time zone normalization.
-* [app.handler](https://github.com/tailucas/pylib/blob/a950b0f5fd9e539899e046bbcf5dbad4a02a1347/pylib/handler.py#L16): A useful Python context manager to handle a variety of failure conditions.
-* [app.process](https://github.com/tailucas/pylib/blob/master/pylib/process.py): Simple signal handler with interaction with application shutdown tracking.
-* [app.rabbit](https://github.com/tailucas/pylib/blob/master/pylib/rabbit.py): A fairly good example of a [RabbitMQ][rabbit-url] application framework with internal IPC handoff to [ZeroMQ][zmq-url] channels for inter-thread communication.
-* [app.threads](https://github.com/tailucas/pylib/blob/master/pylib/threads.py): A useful thread nanny with shutdown debugging and metric support.
-* [app.zmq](https://github.com/tailucas/pylib/blob/master/pylib/zmq.py): Useful helper functions for a [ZeroMQ][zmq-url] enabled application.
-
-Handy stand-alone tools:
-
-* [config_interpol](https://github.com/tailucas/pylib/blob/master/config_interpol): By making creative ~~ab~~use of Python's ConfigParser, this tool designed for the command-line will take a configuration file with variables that are automatically substituted with with either an overlay configuration or environment variables by the same name and output the interpolated configuration. A good example of this tool being used is [here](https://github.com/tailucas/base-app/blob/723bbef3a4f5380d722dae52bcb52537b4e44bc1/base_entrypoint.sh#L5).
-* [cred_tool](https://github.com/tailucas/pylib/blob/master/cred_tool): Useful to fetch an item from [1Password][1p-url].
-* [yaml_interpol](https://github.com/tailucas/pylib/blob/master/yaml_interpol): A script useful to generate docker-compose YAML output from templates. A crude example is [here](https://github.com/tailucas/base-app/blob/723bbef3a4f5380d722dae52bcb52537b4e44bc1/Makefile#LL21C47-L21C47) which fetches application configuration from a 1Password vault. Note that application runtime secrets are only in memory and loaded in [__init__.py](https://github.com/tailucas/pylib/blob/master/pylib/__init__.py). I happen to use 1Password to also store application key-value pairs for use in docker-compose templates.
-
-### Package Structure
-
-The package is now organized under `src/tailucas_pylib/` with the following key modules:
+The package is organized under `src/tailucas_pylib/` with the following key modules:
 
 * **Core Modules:**
-  - `__init__.py`: Bootstrap module with logging, configuration, and credential setup
-  - `config.py`: Global configuration management
-  - `creds.py`: 1Password credential management with both Connect and Service Account support
+  - `__init__.py`: Application bootstrap with logging, locale, configuration (via `app.conf`), and device name setup. Logs to syslog (UDP) or stdout/stderr. Optionally changes working directory to `WORK_DIR`.
+  - `creds.py`: 1Password credential management supporting both [1Password Connect Server](https://github.com/1Password/connect-sdk-python) and [1Password Service Account](https://github.com/1Password/onepassword-sdk-python) modes. Fetches secrets from environment variables or container secrets (`/run/secrets`).
+  - `flags.py`: Feature flag checking backed by a 1Password credential item.
 
 * **Application Framework:**
-  - `app.py`: Thread management with ZMQ relay and worker patterns
-  - `threads.py`: Thread monitoring and lifecycle management
-  - `handler.py`: Exception handling context manager
-  - `process.py`: Signal handling and process utilities
+  - `app.py`: Thread base class with ZMQ relay (`ZmqRelay`) and worker (`ZmqWorker`) patterns for inter-thread communication via [ZeroMQ][zmq-url].
+  - `threads.py`: Thread nanny with shutdown tracking, graceful termination, Cronitor monitoring integration, and lingering socket cleanup.
+  - `handler.py`: Context manager (`exception_handler`) that handles ZMQ connectivity, `ContextTerminated`, `ResourceWarning`, and general exceptions with optional Sentry reporting and graceful shutdown.
+  - `process.py`: Signal handler (`SignalHandler`) with subprocess execution (`exec_cmd`) helpers.
 
 * **Communication:**
-  - `rabbit.py`: RabbitMQ integration with ZMQ bridging
-  - `zmq.py`: ZeroMQ socket management and utilities
+  - `rabbit.py`: [RabbitMQ][rabbit-url] integration with `MQConnection`, `ZMQListener` (consumes RabbitMQ messages and forwards to ZMQ), and `RabbitMQRelay` (bridges ZMQ to RabbitMQ).
+  - `zmq.py`: [ZeroMQ][zmq-url] socket creation, lifecycle management (`Closable`), and graceful context teardown.
 
 * **Utilities:**
-  - `data.py`: MessagePack payload creation
-  - `datetime.py`: Timezone-aware datetime utilities
-  - `device.py`: Pydantic device model
-  - `bluetooth.py`: Bluetooth device detection via hcitool
+  - `data.py`: Builds MessagePack payloads with timestamp and optional data for IPC.
+  - `datetime.py`: Timezone-aware timestamp creation, ISO formatting, and Unix timestamp conversion.
+  - `device.py`: Pydantic data model (`Device`) for device state with optional fields.
+  - `bluetooth.py`: Bluetooth adaptor detection and device ping via `hcitool` / `l2ping`.
 
-* **AWS Integration:**
-  - `aws/__init__.py`: Boto3 session management
-  - `aws/metrics.py`: CloudWatch metrics publishing
-  - `aws/swf.py`: Simple Workflow Service integration (deprecated)
+* **AWS Integration (`aws/`):**
+  - `__init__.py`: Manages cached Boto3 sessions with STS role assumption, credential retrieval from 1Password.
+  - `metrics.py`: Posts CloudWatch count metrics with dimensions.
 
-* **Command-line Tools:**
-  - `tools/config_interpol.py`: Configuration interpolation
-  - `tools/cred_tool.py`: Credential retrieval utility
-  - `tools/yaml_interpol.py`: YAML template processing
+* **Command-line Tools (`tools/`):**
+  - `config_interpol.py`: Interpolates a config file with environment variables or an overlay config, outputting the resolved values.
+  - `cred_tool.py`: Fetches and displays a 1Password credential read from stdin.
+  - `yaml_interpol.py`: Processes YAML templates, substituting values from configuration sections.
+  - `aws_configure.py`: Generates AWS CLI configuration files from 1Password-stored credentials.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

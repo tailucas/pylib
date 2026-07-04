@@ -1,7 +1,6 @@
-from ..datetime import make_timestamp
 from .. import APP_NAME, DEVICE_NAME_BASE, log
+from ..datetime import make_timestamp
 from . import get_boto_session
-
 
 METRIC_NAMESPACE = "automation"
 

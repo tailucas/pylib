@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union
+
 import dateutil.parser
 import pytz
 from dateutil import tz
@@ -8,9 +8,9 @@ from . import log
 
 
 def make_timestamp(
-    timestamp: Optional[Union[float, int, str, datetime]] = None, as_tz=pytz.utc
+    timestamp: float | int | str | datetime | None = None, as_tz=pytz.utc
 ) -> datetime:
-    if isinstance(timestamp, float) or isinstance(timestamp, int):
+    if isinstance(timestamp, float | int):
         timestamp = datetime.fromtimestamp(timestamp, tz=pytz.utc)
     elif isinstance(timestamp, str):
         try:
@@ -33,12 +33,12 @@ def make_timestamp(
         # we use the default specific to the physical locality of the devices
         timestamp = timestamp.replace(tzinfo=local_tz)  # type: ignore
         log.debug(
-            f"Applying local timezone {timestamp.tzname()} to timestamp {timestamp} because no TZ is set."
+            f"Applying local timezone {timestamp.tzname()} to timestamp {timestamp} because no TZ is set."  # type: ignore[union-attr]
         )
         # now adjust to requested TZ
-        new_timestamp = timestamp.astimezone(tz=as_tz)
+        new_timestamp = timestamp.astimezone(tz=as_tz)  # type: ignore[union-attr]
         log.debug(
-            f"{timestamp} adjusted to {new_timestamp} ({timestamp.tzname()} to {as_tz})"
+            f"{timestamp} adjusted to {new_timestamp} ({timestamp.tzname()} to {as_tz})"  # type: ignore[union-attr]
         )
         timestamp = new_timestamp
     log.debug(f"Final timestamp {timestamp}")
@@ -46,7 +46,7 @@ def make_timestamp(
 
 
 def make_iso_timestamp(
-    timestamp: Optional[Union[float, int, str, datetime]] = None, as_tz=pytz.utc
+    timestamp: float | int | str | datetime | None = None, as_tz=pytz.utc
 ) -> str:
     iso_timestamp = (
         make_timestamp(timestamp=timestamp, as_tz=as_tz)
@@ -59,7 +59,7 @@ def make_iso_timestamp(
 
 
 def make_unix_timestamp(
-    timestamp: Optional[Union[float, int, str, datetime]] = None, as_tz=pytz.utc
+    timestamp: float | int | str | datetime | None = None, as_tz=pytz.utc
 ) -> int:
     return int(
         (

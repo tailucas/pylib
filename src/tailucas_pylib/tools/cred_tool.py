@@ -2,8 +2,8 @@
 import json
 import sys
 
-from . import err, out
 from ..creds import Creds  # type: ignore
+from . import err, out
 
 
 def main():

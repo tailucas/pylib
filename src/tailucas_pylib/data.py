@@ -1,10 +1,10 @@
 import logging
 
-import umsgpack as msgpack
 import simplejson as json
+import umsgpack as msgpack
 
-from .datetime import make_iso_timestamp
 from . import log
+from .datetime import make_iso_timestamp
 
 
 def make_payload(timestamp=None, data=None, pack=True):

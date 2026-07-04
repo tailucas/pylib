@@ -1,5 +1,5 @@
-from os import linesep
 import sys
+from os import linesep
 
 
 def err(msg, code=1):
