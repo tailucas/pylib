@@ -3,15 +3,70 @@ from os import path
 import pytest
 
 
+def _mock_service_client():
+    """Build a mock 1Password Service Account client.
+
+    Mirrors the live "Test" item used by the connect-server tests so that the
+    service-account tests run without hitting the rate-limited 1Password API.
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    vault_id = "mockvault"
+    item = MagicMock(
+        id="testitem",
+        title="Test",
+        sections=[
+            MagicMock(id="section1", title="testsection1"),
+            MagicMock(id="section2", title="testsection2"),
+            MagicMock(id="section3", title="testsection3"),
+        ],
+        fields=[
+            MagicMock(title="username", value="testuser", section_id=None),
+            MagicMock(title="password", value="testpass", section_id=None),
+            MagicMock(title="password", value="testsection1pass", section_id="section1"),
+            MagicMock(title="FOO", value="foovalue", section_id="section2"),
+            MagicMock(title="BAR", value="barvalue", section_id="section3"),
+        ],
+    )
+    secrets = {
+        "Test/username": "testuser",
+        "Test/password": "testpass",
+        "Test/testsection1/password": "testsection1pass",
+    }
+    client = MagicMock(name="ServiceClient")
+    client.vaults.list = AsyncMock(return_value=[MagicMock(id=vault_id, title="Mock Vault")])
+    client.secrets.resolve = AsyncMock(
+        side_effect=lambda reference: secrets[reference.split("/", 3)[-1]]
+    )
+    client.items.list = AsyncMock(return_value=[MagicMock(id=item.id, title=item.title)])
+    client.items.get = AsyncMock(return_value=item)
+    return client
+
+
 @pytest.fixture(scope="session", params=["use_connect_client", "use_service_client"])
 def setup_creds(request):
-    pytest.importorskip("onepasswordconnectsdk.client")
     from tailucas_pylib.creds import Creds
 
-    creds = Creds(
-        use_connect_client=(request.param == "use_connect_client"),
-        use_service_client=(request.param == "use_service_client"),
-    )
+    if request.param == "use_service_client":
+        pytest.importorskip("onepassword")
+        from os import environ
+        from unittest.mock import patch
+
+        mock_client = _mock_service_client()
+
+        async def authenticate(auth, integration_name, integration_version):
+            return mock_client
+
+        # token value is irrelevant with a mocked client, but must be set for
+        # the client creation code path to run; patch.dict avoids leaking it
+        with (
+            patch.dict(environ, {"OP_SERVICE_ACCOUNT_TOKEN": "mock-token"}),
+            patch("onepassword.Client.authenticate", authenticate),
+        ):
+            creds = Creds(use_connect_client=False, use_service_client=True)
+    else:
+        pytest.importorskip("onepasswordconnectsdk.client")
+        creds = Creds(use_connect_client=True, use_service_client=False)
     creds.validate_creds()
     return creds
 
@@ -99,6 +154,7 @@ def test_get_creds_service_account(setup_creds):
 
 
 def test_get_fields_from_sections(setup_creds):
-    assert setup_creds.get_fields_from_sections(
-        "Test", ["testsection2", "testsection3"]
-    ) == {"FOO": "foovalue", "BAR": "barvalue"}
+    assert setup_creds.get_fields_from_sections("Test", ["testsection2", "testsection3"]) == {
+        "FOO": "foovalue",
+        "BAR": "barvalue",
+    }

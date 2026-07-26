@@ -11,8 +11,6 @@ def test_flag():
 
 def test_is_flag_enabled_initializes_creds_once():
     """Test that _creds is initialized only on the first call."""
-    pytest.importorskip("onepasswordconnectsdk.client")
-
     # Reset the module-level _creds to None
     import tailucas_pylib.flags as flags_module
 
@@ -35,8 +33,6 @@ def test_is_flag_enabled_initializes_creds_once():
 
 def test_is_flag_enabled_false_value():
     """Test is_flag_enabled returns False for 'false' flag value."""
-    pytest.importorskip("onepasswordconnectsdk.client")
-
     import tailucas_pylib.flags as flags_module
 
     flags_module._creds = None

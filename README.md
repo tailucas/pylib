@@ -69,7 +69,7 @@ Also:
 * [Botoflow][botoflow-url]
 
 Core Technologies:
-- **Python 3.8+** - Primary runtime
+- **Python 3.11+** - Primary runtime
 - **1Password Connect/Service Account** - Credential management
 - **ZeroMQ** - Inter-process communication
 - **RabbitMQ** - Message queuing
@@ -108,6 +108,39 @@ This package is published to the [Python Package index](https://pypi.org/project
 ## Usage
 
 I have [various projects][tailucas-url] that use this tool chain. For example, my [Base Project](https://github.com/tailucas/base-app) which can be run stand-alone but also serves as my [Docker base image](https://hub.docker.com/repository/docker/tailucas/base-app/tags?page=1&ordering=last_updated) from which other projects are derived.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- TESTING -->
+## Testing
+
+Tests use [pytest](https://docs.pytest.org/) with coverage. Some tests exercise live services (1Password Connect Server or Service Account, AWS session setup) and expect the `OP_CONNECT_HOST`, `OP_CONNECT_TOKEN`, `OP_VAULT` and `OP_SERVICE_ACCOUNT_TOKEN` environment variables. For deterministic results regardless of the ambient environment, the suite pins `TZ=UTC` and `APP_NAME=test` itself (see [conftest.py](conftest.py)).
+
+### Quick run (all extras)
+
+```sh
+uv sync --all-extras
+uv run pytest
+```
+
+### Extras matrix
+
+Optional dependencies are organized as extras (`aws`, `creds`, `dto`, `monitoring`, `mq`). Using a [Hatch matrix](https://hatch.pypa.io/latest/config/environment/advanced/#matrix), the full test suite also runs against every combination of these extras: 32 environments, each installing the package with only that combination's dependencies.
+
+```sh
+# list the 32 test environments
+uv run hatch env show
+# run the whole matrix (stops at the first failing environment)
+uv run hatch run test:run
+# run a single combination
+uv run hatch run test.aws-no-creds-dto-no-monitoring-mq:run
+# remove all cached test environments
+uv run hatch env prune
+```
+
+Tests that require an unavailable optional dependency skip themselves via `pytest.importorskip`, so every combination runs as much of the suite as its installed extras allow. Per-environment coverage data is written to `.coverage.<env-name>`.
+
+Note that a full matrix run executes the live 1Password tests many times over, and the 1Password service-account API rate limit is shared across them. An occasional `RateLimitExceeded` failure during a full run is transient; re-run the affected environment to confirm.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

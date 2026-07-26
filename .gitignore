@@ -7,4 +7,5 @@ tailucas_pylib.egg-info/
 *.code-workspace
 htmlcov/
 .coverage
+.coverage.*
 coverage.xml

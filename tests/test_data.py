@@ -2,6 +2,9 @@ import logging
 
 import pytest
 
+pytest.importorskip("simplejson", reason="requires the 'mq' extra")
+pytest.importorskip("umsgpack", reason="requires the 'mq' extra")
+
 
 def test_make_payload_defaults():
     """Test make_payload with no arguments returns packed bytes."""

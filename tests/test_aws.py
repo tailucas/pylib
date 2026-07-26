@@ -1,8 +1,9 @@
 import pytest
 
+pytest.importorskip("boto3", reason="requires the 'aws' extra")
+
 
 def test_session_caching(caplog):
-    pytest.importorskip("boto3")
     from tailucas_pylib.aws import get_boto_session
     caplog.set_level("INFO")
     boto_session = get_boto_session()
@@ -18,7 +19,6 @@ def test_session_caching(caplog):
 
 
 def test_post_metric(caplog):
-    pytest.importorskip("boto3")
     from tailucas_pylib.aws.metrics import post_count_metric
     caplog.set_level("WARNING")
     post_count_metric(

@@ -55,36 +55,41 @@ exclude_also = [
 addopts = "--cov --cov-report=term-missing --cov-report=html --cov-report=xml"
 testpaths = ["tests"]
 
-# TODO: figure out how to get feature matrix working
 [tool.hatch.envs.default]
 installer = "uv"
 
 [tool.hatch.envs.test]
 dependency-groups = ["test"]
 
+[tool.hatch.envs.test.env-vars]
+# keep per-environment coverage data files
+COVERAGE_FILE = ".coverage.{env_name}"
+
 [tool.hatch.envs.test.scripts]
 run = "pytest -v"
 
-# uv run hatch run test-aws:run
-[tool.hatch.envs.test-aws]
-template = "test"
-dependencies = ["tailucas-pylib[aws]"]
+# 2^5 = 32 environments, one per combination of extras
+[[tool.hatch.envs.test.matrix]]
+aws = ["no-aws", "aws"]
+creds = ["no-creds", "creds"]
+dto = ["no-dto", "dto"]
+monitoring = ["no-monitoring", "monitoring"]
+mq = ["no-mq", "mq"]
 
-[tool.hatch.envs.test-creds]
-template = "test"
-dependencies = ["tailucas-pylib[creds]"]
+[tool.hatch.envs.test.overrides.matrix.aws]
+features = [{ value = "aws", if = ["aws"] }]
 
-[tool.hatch.envs.test-dto]
-template = "test"
-dependencies = ["tailucas-pylib[dto]"]
+[tool.hatch.envs.test.overrides.matrix.creds]
+features = [{ value = "creds", if = ["creds"] }]
 
-[tool.hatch.envs.test-monitoring]
-template = "test"
-dependencies = ["tailucas-pylib[monitoring]"]
+[tool.hatch.envs.test.overrides.matrix.dto]
+features = [{ value = "dto", if = ["dto"] }]
 
-[tool.hatch.envs.test-mq]
-template = "test"
-dependencies = ["tailucas-pylib[mq]"]
+[tool.hatch.envs.test.overrides.matrix.monitoring]
+features = [{ value = "monitoring", if = ["monitoring"] }]
+
+[tool.hatch.envs.test.overrides.matrix.mq]
+features = [{ value = "mq", if = ["mq"] }]
 
 [project.scripts]
 aws_configure = "tailucas_pylib.tools.aws_configure:main"
