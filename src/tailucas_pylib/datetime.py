@@ -63,7 +63,6 @@ def make_unix_timestamp(
 ) -> int:
     return int(
         (
-            make_timestamp(timestamp=timestamp, as_tz=as_tz)
-            - datetime(1970, 1, 1, tzinfo=as_tz)
+            make_timestamp(timestamp=timestamp, as_tz=as_tz) - datetime(1970, 1, 1, tzinfo=as_tz)
         ).total_seconds()
     )

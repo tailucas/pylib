@@ -18,14 +18,7 @@ _creds = None  # type: ignore
 
 
 def get_boto_session() -> Session:
-    global \
-        _region, \
-        _akid, \
-        _role_arn, \
-        _sts_client, \
-        _boto_session, \
-        _boto_session_expiry, \
-        _creds
+    global _region, _akid, _role_arn, _sts_client, _boto_session, _boto_session_expiry, _creds
     if _creds is None:
         _creds = Creds()  # type: ignore
         _creds.validate_creds()  # type: ignore
@@ -69,9 +62,7 @@ def get_boto_session() -> Session:
         raise
 
     if assume_role_response is None:
-        raise AssertionError(
-            f"No session token returned for STS call to assume role {_role_arn}"
-        )
+        raise AssertionError(f"No session token returned for STS call to assume role {_role_arn}")
 
     credentials = assume_role_response["Credentials"]
     _boto_session_expiry = credentials["Expiration"]

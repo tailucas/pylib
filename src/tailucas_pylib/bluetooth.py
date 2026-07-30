@@ -10,9 +10,7 @@ def bluetooth_init():
     # hci0    00:09:DD:50:17:18
     out, err, rc = exec_cmd(["hcitool", "dev"])
     if rc != 0 or out is None:
-        raise RuntimeError(
-            f"Cannot query hcitool to find Bluetooth adaptors: {out} {err}"
-        )
+        raise RuntimeError(f"Cannot query hcitool to find Bluetooth adaptors: {out} {err}")
     hcitool = out.decode().rstrip().split("\n")
     if len(hcitool) < 2:
         raise RuntimeError("No Bluetooth adaptors found using hcitool.")

@@ -24,9 +24,7 @@ def test_dir(path):
 
 
 AWS_CONFIG_FILE = test_dir(getenv("AWS_CONFIG_FILE", "~/.aws/config"))
-AWS_SHARED_CREDENTIALS_FILE = test_dir(
-    getenv("AWS_SHARED_CREDENTIALS_FILE", "~/.aws/credentials")
-)
+AWS_SHARED_CREDENTIALS_FILE = test_dir(getenv("AWS_SHARED_CREDENTIALS_FILE", "~/.aws/credentials"))
 
 
 def main():

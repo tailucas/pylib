@@ -46,9 +46,9 @@ class exception_handler(ContextManager["exception_handler"]):
         return self._zmq_socket
 
     def __exit__(self, exc_type, exc_val, tb):
-        if (self._close_on_exit or (
-            exc_type and issubclass(exc_type, ContextTerminated)
-        )) and self._zmq_socket:
+        if (
+            self._close_on_exit or (exc_type and issubclass(exc_type, ContextTerminated))
+        ) and self._zmq_socket:
             try_close(self._zmq_socket)
         if exc_type is None:
             return True

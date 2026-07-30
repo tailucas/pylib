@@ -34,9 +34,7 @@ def main():
                     and overlay_config.has_section(section)
                     and overlay_config.has_option(section, option)
                 ):
-                    value = overlay_config.get(
-                        section=section, option=option, vars=os.environ
-                    )
+                    value = overlay_config.get(section=section, option=option, vars=os.environ)
                 if value is None:
                     value = config.get(section=section, option=option, vars=os.environ)
                 # store this now
@@ -48,9 +46,7 @@ def main():
             for section in overlay_config.sections():
                 # we don't use config.items() here to avoid emitting the defaults too
                 for option in overlay_config.options(section=section):
-                    value = overlay_config.get(
-                        section=section, option=option, vars=os.environ
-                    )
+                    value = overlay_config.get(section=section, option=option, vars=os.environ)
                     if section not in sections:
                         sections[section] = {}
                     sections[section][option] = str(value)

@@ -55,9 +55,7 @@ else:
     stdout_handler.setFormatter(formatter)
     # This filter ensures that only levels below WARNING are emitted to stdout, except DEBUG
     stdout_handler.addFilter(
-        lambda record: (
-            record.levelno < logging.WARNING and record.levelno != logging.DEBUG
-        )
+        lambda record: record.levelno < logging.WARNING and record.levelno != logging.DEBUG
     )
     log.addHandler(stdout_handler)
 
@@ -65,9 +63,7 @@ else:
     stderr_handler = logging.StreamHandler(stream=sys.stderr)
     stderr_handler.setFormatter(formatter)
     stdout_handler.addFilter(
-        lambda record: (
-            record.levelno >= logging.WARNING or record.levelno == logging.DEBUG
-        )
+        lambda record: record.levelno >= logging.WARNING or record.levelno == logging.DEBUG
     )
     log.addHandler(stderr_handler)
 
@@ -98,9 +94,7 @@ if locale_lc_all:
     try:
         locale.setlocale(locale.LC_ALL, locale_lc_all)
     except LocaleError as e:
-        log.warning(
-            f"Cannot apply locale setting {local_env} value {locale_lc_all}: {e!s}"
-        )
+        log.warning(f"Cannot apply locale setting {local_env} value {locale_lc_all}: {e!s}")
 
 app_config: ConfigParser = ConfigParser()
 app_config.optionxform = str  # type: ignore

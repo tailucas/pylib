@@ -117,9 +117,7 @@ class MQConnection(AppThread):
         if self._mq_connection is None or self._mq_connection.is_closed:
             if self._mq_connection:
                 log.info("Recreating RabbitMQ connection...")
-            self._mq_connection = pika.BlockingConnection(
-                parameters=self._pika_parameters
-            )
+            self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
 
     def _setup_channel(self):
         self._setup_connection()

@@ -25,9 +25,7 @@ def get_secret_or_env(var_name: str) -> str | None:
 
 
 class Creds:
-    def __init__(
-        self, use_connect_client: bool = True, use_service_client: bool = True
-    ):
+    def __init__(self, use_connect_client: bool = True, use_service_client: bool = True):
         self.op_connect_host: str = getenv(OP_CONNECT_HOST_VAR)  # type: ignore
         creds_use_connect_client = getenv(
             "CREDS_USE_CONNECT_CLIENT", str(use_connect_client)
@@ -47,9 +45,7 @@ class Creds:
         self.service_client = None  # type: ignore
         self.op_vault: str | None = get_secret_or_env(OP_VAULT_VAR)
         if self.op_vault is None:
-            log.warning(
-                f"Secret {OP_VAULT_VAR} is not set in environment or container secrets."
-            )
+            log.warning(f"Secret {OP_VAULT_VAR} is not set in environment or container secrets.")
         op_connect_token: str | None = get_secret_or_env(OP_CONNECT_TOKEN_VAR)
         if creds_use_connect_client and self.op_connect_host and op_connect_token:
             from onepasswordconnectsdk.client import Client as ConnectClient
@@ -60,9 +56,7 @@ class Creds:
                 token=op_connect_token,
                 is_async=False,
             )
-        service_account_token: str | None = get_secret_or_env(
-            OP_SERVICE_ACCOUNT_TOKEN_VAR
-        )
+        service_account_token: str | None = get_secret_or_env(OP_SERVICE_ACCOUNT_TOKEN_VAR)
         if creds_use_service_client and service_account_token:
             from onepassword import Client as ServiceClient
 
@@ -99,9 +93,7 @@ class Creds:
             vault_found = False
             vaults: list[VaultOverview] = asyncio.run(self.service_client.vaults.list())
             for vault in vaults:
-                log.debug(
-                    f"Credential vault on 1Password service {vault.title} ({vault.id})."
-                )
+                log.debug(f"Credential vault on 1Password service {vault.title} ({vault.id}).")
                 if self.op_vault == vault.id:
                     vault_found = True
             if len(vaults) == 1:
@@ -193,17 +185,13 @@ class Creds:
                 ) from e
         elif self.service_client:
             return asyncio.run(
-                self.service_client.secrets.resolve(
-                    f"op://{self.op_vault}/{creds_path}"
-                )
+                self.service_client.secrets.resolve(f"op://{self.op_vault}/{creds_path}")
             )
         else:
             raise AssertionError(f"No credential client available for {creds_path}.")
         raise AssertionError(f"No credential retrieved for {creds_path}")
 
-    def get_fields_from_sections(
-        self, item_title, section_names: list[str]
-    ) -> dict[str, str]:
+    def get_fields_from_sections(self, item_title, section_names: list[str]) -> dict[str, str]:
         key_value_pairs = {}
         if self.connect_client:
             from onepasswordconnectsdk.models import Field, Item, Section
