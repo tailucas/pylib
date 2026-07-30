@@ -1,4 +1,4 @@
-.PHONY: all check build run dev
+.PHONY: all check build run dev lint
 
 DOCKER_URL := https://docs.docker.com/engine/install
 DOCKER_COMPOSE_URL := https://docs.docker.com/compose/install
@@ -23,3 +23,8 @@ run: build
 
 dev: run
 	devcontainer exec --workspace-folder . bash
+
+lint:
+	uv run ruff check src/
+	uv run ruff format --check src/
+	uv run mypy src/tailucas_pylib/
