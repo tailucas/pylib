@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import traceback
+from os import getenv
 
 from . import DEVICE_NAME, app_config, log
 
@@ -58,6 +59,33 @@ def bye():
     exit(code=exit_code)
 
 
+def _setup_cronitor():
+    cronitor_key = app_config.get("app", "cronitor_monitor_key")
+    if cronitor_key is not None:
+        cronitor_api_key = getenv("CRONITOR_API_KEY")
+        if cronitor_api_key is None:
+            cronitor_api_key_creds_path = app_config.get("creds", "cronitor")
+            if cronitor_api_key_creds_path is not None:
+                log.info(
+                    f"Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}..."
+                )
+                from .creds import Creds  # type: ignore
+
+                creds = Creds()  # type: ignore
+                creds.validate_creds()  # type: ignore
+                cronitor_api_key = creds.get_creds(cronitor_api_key_creds_path)
+        if cronitor_api_key is not None:
+            import cronitor
+
+            cronitor.api_key = cronitor_api_key
+
+            log.info(f"Loading Cronitor {cronitor_key}...")
+            return cronitor.Monitor(key=cronitor_key)
+        else:
+            log.warning(f"Cronitor {cronitor_key} is set but no Cronitor API key is configured.")
+    return None
+
+
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
     global interruptable_sleep
@@ -67,22 +95,7 @@ def thread_nanny(signal_handler):
         "app", "shutting_down_grace_secs", fallback=30
     )  # type: ignore
     shutting_down_time = None
-    monitor = None
-    if app_config.has_option("app", "cronitor_monitor_key"):  # type: ignore  # noqa: F821
-        cronitor_api_key_creds_path = app_config.get("creds", "cronitor")
-        log.info(
-            f"Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}..."
-        )
-        from .creds import Creds  # type: ignore
-
-        creds = Creds()  # type: ignore
-        creds.validate_creds()  # type: ignore
-        import cronitor
-
-        cronitor.api_key = creds.get_creds(cronitor_api_key_creds_path)  # type: ignore
-        cronitor_key = app_config.get("app", "cronitor_monitor_key")
-        log.info(f"Loading Cronitor {cronitor_key}...")
-        monitor = cronitor.Monitor(key=cronitor_key)
+    monitor = _setup_cronitor()
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -96,9 +109,7 @@ def thread_nanny(signal_handler):
                     code = []
                     stack = sys._current_frames()[thread_info.ident]  # type: ignore
                     for filename, lineno, name, line in traceback.extract_stack(stack):
-                        code.append(
-                            f'File: "{filename}", line {lineno}, in {name}'
-                        )
+                        code.append(f'File: "{filename}", line {lineno}, in {name}')
                         if line:
                             code.append(f"  {line.strip()}")
                     for line in code:
@@ -149,9 +160,7 @@ def thread_nanny(signal_handler):
                     for s, loc in zmq_sockets.items():  # type: ignore
                         try:
                             if s and not s.closed:
-                                log.warning(
-                                    f"Closing lingering socket {s!r} created at {loc}."
-                                )
+                                log.warning(f"Closing lingering socket {s!r} created at {loc}.")
                                 try_close(s)
                         except ZMQError:
                             log.debug("ZMQ error on closing socket.", exc_info=True)
