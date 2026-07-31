@@ -1,6 +1,6 @@
 [project]
 name = "tailucas-pylib"
-version = "0.7.3"
+version = "0.7.4"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,7 +28,7 @@ lint = ["ruff", "mypy"]
 test = ["coverage[toml]", "hatch", "pytest", "pytest-cov", "pytest-mock"]
 
 [tool.uv]
-default-groups = "all"
+default-groups = ["lint"]
 
 [tool.coverage.run]
 source = ["src/tailucas_pylib"]
