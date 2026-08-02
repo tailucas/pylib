@@ -1,6 +1,6 @@
 [project]
 name = "tailucas-pylib"
-version = "0.7.4"
+version = "0.7.5"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -58,37 +58,42 @@ testpaths = ["tests"]
 [tool.hatch.envs.default]
 installer = "uv"
 
-[tool.hatch.envs.test]
-dependency-groups = ["test"]
+[tool.hatch.envs.hatch-test]
+dependencies = [
+    "coverage[toml]",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+]
 
-[tool.hatch.envs.test.env-vars]
+[tool.hatch.envs.hatch-test.env-vars]
 # keep per-environment coverage data files
 COVERAGE_FILE = ".coverage.{env_name}"
 
-[tool.hatch.envs.test.scripts]
+[tool.hatch.envs.hatch-test.scripts]
 run = "pytest -v"
 
 # 2^5 = 32 environments, one per combination of extras
-[[tool.hatch.envs.test.matrix]]
+[[tool.hatch.envs.hatch-test.matrix]]
 aws = ["no-aws", "aws"]
 creds = ["no-creds", "creds"]
 dto = ["no-dto", "dto"]
 monitoring = ["no-monitoring", "monitoring"]
 mq = ["no-mq", "mq"]
 
-[tool.hatch.envs.test.overrides.matrix.aws]
+[tool.hatch.envs.hatch-test.overrides.matrix.aws]
 features = [{ value = "aws", if = ["aws"] }]
 
-[tool.hatch.envs.test.overrides.matrix.creds]
+[tool.hatch.envs.hatch-test.overrides.matrix.creds]
 features = [{ value = "creds", if = ["creds"] }]
 
-[tool.hatch.envs.test.overrides.matrix.dto]
+[tool.hatch.envs.hatch-test.overrides.matrix.dto]
 features = [{ value = "dto", if = ["dto"] }]
 
-[tool.hatch.envs.test.overrides.matrix.monitoring]
+[tool.hatch.envs.hatch-test.overrides.matrix.monitoring]
 features = [{ value = "monitoring", if = ["monitoring"] }]
 
-[tool.hatch.envs.test.overrides.matrix.mq]
+[tool.hatch.envs.hatch-test.overrides.matrix.mq]
 features = [{ value = "mq", if = ["mq"] }]
 
 [project.scripts]

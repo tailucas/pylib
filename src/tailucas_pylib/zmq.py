@@ -44,16 +44,16 @@ def zmq_socket(socket_type: int, is_async: bool | None = False):
 
 
 def zmq_term():
-    log.info("Shutting down ZMQ context...")
+    log.debug("Shutting down ZMQ context...")
     zmq_context.term()
     global zmq_async_context
     if zmq_async_context:
-        log.info("Shutting down async ZMQ context...")
+        log.debug("Shutting down async ZMQ context...")
         try:
             zmq_async_context.term()
         except Exception:
             log.debug("Error closing async ZMQ context.", exc_info=True)
-    log.info("ZMQ shutdown complete.")
+    log.debug("ZMQ shutdown complete.")
 
 
 def try_close(socket):
@@ -68,7 +68,7 @@ def try_close(socket):
             log.debug(f"Closing {socket!r}...")
         socket.close()
     except ZMQError:
-        log.warning("Ignoring socket error when closing socket.", exc_info=True)
+        log.debug("Ignoring socket error when closing socket.", exc_info=True)
 
 
 class Closable:

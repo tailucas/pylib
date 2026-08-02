@@ -1,17 +1,18 @@
 import sys
-from os import linesep
 
 
 def err(msg, code=1):
-    sys.stderr.write(f"{msg}{linesep}")
+    print(msg, file=sys.stderr)
     exit(code)
 
 
 def outl(msg, code=None):
-    out(msg=f"{msg}{linesep}", code=code)
+    print(msg)
+    if code:
+        exit(int(code))
 
 
 def out(msg, code=None):
-    sys.stdout.write(msg)
+    print(msg, end="")
     if code:
         exit(int(code))

@@ -45,7 +45,7 @@ class Creds:
         self.service_client = None  # type: ignore
         self.op_vault: str | None = get_secret_or_env(OP_VAULT_VAR)
         if self.op_vault is None:
-            log.warning(f"Secret {OP_VAULT_VAR} is not set in environment or container secrets.")
+            log.debug(f"Secret {OP_VAULT_VAR} is not set in environment or container secrets.")
         op_connect_token: str | None = get_secret_or_env(OP_CONNECT_TOKEN_VAR)
         if creds_use_connect_client and self.op_connect_host and op_connect_token:
             from onepasswordconnectsdk.client import Client as ConnectClient
@@ -108,7 +108,7 @@ class Creds:
             if assertion_check:
                 raise AssertionError(message)
             else:
-                log.warning(message)
+                log.debug(message)
 
     def get_creds(self, creds_path) -> str:
         if self.connect_client:

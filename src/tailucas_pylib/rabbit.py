@@ -79,7 +79,7 @@ class MQConnection(AppThread):
                 ) from e
             try:
                 message_body = make_payload(data=event_payload)
-                log.info(
+                log.debug(
                     f"Sending {len(message_body)} bytes to exchange {self._mq_exchange_name} with routing {routing_key} to queue {self._mq_queue_name}."  # type: ignore
                 )
                 self._mq_channel.basic_publish(  # type: ignore
@@ -93,7 +93,7 @@ class MQConnection(AppThread):
             except StreamLostError as e:
                 # try again
                 if tries < PUBLISH_RETRIES:
-                    log.warning(f"Retrying on lost stream during publish: {e!s}")
+                    log.debug(f"Retrying on lost stream during publish: {e!s}")
                 else:
                     raise RuntimeWarning("Publish failure after retry.") from e
             except ConnectionClosedByBroker as e:
@@ -116,14 +116,14 @@ class MQConnection(AppThread):
     def _setup_connection(self):
         if self._mq_connection is None or self._mq_connection.is_closed:
             if self._mq_connection:
-                log.info("Recreating RabbitMQ connection...")
+                log.debug("Recreating RabbitMQ connection...")
             self._mq_connection = pika.BlockingConnection(parameters=self._pika_parameters)
 
     def _setup_channel(self):
         self._setup_connection()
         if self._mq_channel is None or self._mq_channel.is_closed:
             if self._mq_channel:
-                log.info("Recreating RabbitMQ channel...")
+                log.debug("Recreating RabbitMQ channel...")
             self._mq_channel = self._mq_connection.channel()  # type: ignore
             self._mq_channel.exchange_declare(
                 exchange=self._mq_exchange_name,
@@ -132,13 +132,13 @@ class MQConnection(AppThread):
             )
             mq_result = self._mq_channel.queue_declare("", exclusive=True)
             self._mq_queue_name = mq_result.method.queue
-            log.info(
+            log.debug(
                 f"Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}."
             )
 
     def _close_connection(self):
         if self._mq_connection and self._mq_connection.is_open:
-            log.info("Closing RabbitMQ connection...")
+            log.debug("Closing RabbitMQ connection...")
             try:
                 self._mq_connection.close()
             except Exception:
@@ -146,7 +146,7 @@ class MQConnection(AppThread):
 
     def _close_channel(self):
         if self._mq_channel and self._mq_channel.is_open:
-            log.info("Closing RabbitMQ channel...")
+            log.debug("Closing RabbitMQ channel...")
             try:
                 self._mq_channel.close()
             except Exception:
@@ -195,7 +195,7 @@ class ZMQListener(MQConnection):
             self.processor = zmq_socket
             try:
                 self._setup_channel()
-                log.info("Ready for RabbitMQ messages.")
+                log.debug("Ready for RabbitMQ messages.")
                 self._mq_channel.start_consuming()  # type: ignore
             except (
                 AMQPConnectionError,
@@ -205,19 +205,19 @@ class ZMQListener(MQConnection):
                 # handled error due to already shutting down
                 raise ResourceWarning(f"Consumer interrupted: {repr(e)}") from e
             finally:
-                log.info("RabbitMQ listener has finished.")
+                log.debug("RabbitMQ listener has finished.")
 
     def callback(self, ch, method, properties, body):
         topic = method.routing_key
         log.debug(f"[{topic}]: {len(body)} bytes.")
         topic_parts = topic.split(".")
         if len(topic_parts) < 3:
-            log.warning(
+            log.debug(
                 f"Ignoring non-routable message from topic [{topic}] due to unsufficient topic parts."
             )
             return
         if topic_parts[1] not in ["heartbeat", "leader"]:
-            log.info(f"Device event on topic [{topic}]")
+            log.debug(f"Device event on topic [{topic}]")
         device_event = None
         try:
             device_event = msgpack.unpackb(body)
@@ -279,7 +279,7 @@ class RabbitMQRelay(AppThread):
             raise ResourceWarning() from e
 
     def startup(self):
-        log.info(
+        log.debug(
             f"Using RabbitMQ server at {self._mq_config_server} with {self._mq_exchange_type} ({self._mq_device_topic}) exchange {self._mq_config_exchange}."
         )
 

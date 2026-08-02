@@ -41,7 +41,7 @@ if syslog_server and len(syslog_server.netloc) > 0:
             address=(syslog_server.hostname, syslog_server.port), socktype=protocol
         )
     else:
-        _syslog_warning = "Invalid SYSLOG_ADDRESS: hostname or port is missing."
+        _syslog_warning = f"Invalid SYSLOG_ADDRESS {syslog_address}: hostname or port is missing."
 
 # define the log format
 formatter = logging.Formatter("%(name)s %(threadName)s [%(levelname)s] %(message)s")
@@ -50,28 +50,22 @@ if log_handler:
     log_handler.setFormatter(formatter)
     log.addHandler(log_handler)
 else:
-    # Route DEBUG and INFO to stdout
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_handler.setFormatter(formatter)
-    # This filter ensures that only levels below WARNING are emitted to stdout, except DEBUG
-    stdout_handler.addFilter(
-        lambda record: record.levelno < logging.WARNING and record.levelno != logging.DEBUG
-    )
+    stdout_handler.addFilter(lambda record: record.levelno < logging.ERROR)
     log.addHandler(stdout_handler)
 
-    # Route WARNING and above to stderr, including DEBUG
+    # Route ERROR and above to stderr
     stderr_handler = logging.StreamHandler(stream=sys.stderr)
     stderr_handler.setFormatter(formatter)
-    stdout_handler.addFilter(
-        lambda record: record.levelno >= logging.WARNING or record.levelno == logging.DEBUG
-    )
+    stderr_handler.addFilter(lambda record: record.levelno >= logging.ERROR)
     log.addHandler(stderr_handler)
 
 
 if syslog_server:
     log.debug(f"Logging will be sent directly to remote address {syslog_address}")
 elif _syslog_warning:
-    log.warning(_syslog_warning)
+    log.debug(_syslog_warning)
 
 
 # use parent of this module's top-level __init__.py
@@ -83,7 +77,7 @@ if os.path.exists(WORK_DIR):
     # assert working directory for assumptions made (such as PyDrive)
     current_work_dir = os.getcwd()
     if current_work_dir != WORK_DIR:
-        log.warning(f"Changing working directory from {current_work_dir} to {WORK_DIR}")
+        log.debug(f"Changing working directory from {current_work_dir} to {WORK_DIR}")
         os.chdir(WORK_DIR)
 
 # locale settings
@@ -94,7 +88,7 @@ if locale_lc_all:
     try:
         locale.setlocale(locale.LC_ALL, locale_lc_all)
     except LocaleError as e:
-        log.warning(f"Cannot apply locale setting {local_env} value {locale_lc_all}: {e!s}")
+        log.debug(f"Cannot apply locale setting {local_env} value {locale_lc_all}: {e!s}")
 
 app_config: ConfigParser = ConfigParser()
 app_config.optionxform = str  # type: ignore
@@ -112,7 +106,7 @@ if os.path.exists(app_config_path) and os.path.getsize(app_config_path) > 0:
             device_name_base = "-".join(device_name_parts[0:2])
         DEVICE_NAME_BASE = device_name_base  # type: ignore
 if DEVICE_NAME is None:
-    log.warning(
+    log.debug(
         f'Setting DEVICE_NAME and DEVICE_NAME_BASE to "{APP_NAME}" due to missing configuration.'
     )
     DEVICE_NAME = APP_NAME

@@ -1,4 +1,4 @@
-.PHONY: all check build run dev lint
+.PHONY: all check build run dev lint test test-all
 
 DOCKER_URL := https://docs.docker.com/engine/install
 DOCKER_COMPOSE_URL := https://docs.docker.com/compose/install
@@ -28,3 +28,9 @@ lint:
 	uv run ruff check src/
 	uv run ruff format --check src/
 	uv run mypy src/tailucas_pylib/
+
+test:
+	uv run --group test pytest -v
+
+test-all:
+	uv run --all-groups hatch test --all

@@ -62,7 +62,7 @@ class exception_handler(ContextManager["exception_handler"]):
             # does not fill Sentry with exception regressions
             # or unhandled exceptions; used typically at startup
             if not threads.shutting_down:
-                log.warning(self.__class__.__name__, exc_info=True)
+                log.debug(self.__class__.__name__, exc_info=True)
                 if self._shutdown_on_error:
                     die(exception=exc_val)
             else:

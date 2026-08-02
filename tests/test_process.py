@@ -24,6 +24,6 @@ def test_exec_cmd_log(caplog):
     """Test exec_cmd_log calls exec_cmd and logs output."""
     from tailucas_pylib.process import exec_cmd_log
 
-    with caplog.at_level("INFO"):
+    with caplog.at_level("DEBUG"):
         exec_cmd_log(["echo", "log-test"])
     assert "log-test" in caplog.text

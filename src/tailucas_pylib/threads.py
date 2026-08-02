@@ -52,7 +52,7 @@ def bye():
         exit_message += f" Exception was {exit_cause!s}."
         exit_code = 1
     exit_message += f" Exiting with code {exit_code}."
-    log.info(exit_message)
+    log.debug(exit_message)
     # flush loggers
     logging.shutdown()
     # exit process
@@ -66,7 +66,7 @@ def _setup_cronitor():
         if cronitor_api_key is None:
             cronitor_api_key_creds_path = app_config.get("creds", "cronitor")
             if cronitor_api_key_creds_path is not None:
-                log.info(
+                log.debug(
                     f"Loading Cronitor monitor API key from credential path {cronitor_api_key_creds_path}..."
                 )
                 from .creds import Creds  # type: ignore
@@ -79,10 +79,10 @@ def _setup_cronitor():
 
             cronitor.api_key = cronitor_api_key
 
-            log.info(f"Loading Cronitor {cronitor_key}...")
+            log.debug(f"Loading Cronitor {cronitor_key}...")
             return cronitor.Monitor(key=cronitor_key)
         else:
-            log.warning(f"Cronitor {cronitor_key} is set but no Cronitor API key is configured.")
+            log.debug(f"Cronitor {cronitor_key} is set but no Cronitor API key is configured.")
     return None
 
 
@@ -122,7 +122,7 @@ def thread_nanny(signal_handler):
                     f"A thread has died. Expected threads are [{threads_tracked}], "
                     f"missing is [{thread_deficit}]."
                 )
-                log.warning(error_msg)
+                log.debug(error_msg)
                 die(exception=ResourceWarning(error_msg))
                 state = "fail"
             if monitor is not None:
@@ -136,7 +136,7 @@ def thread_nanny(signal_handler):
                         },
                     )
                 except Exception as e:
-                    log.warning(f"Problem sending cronitor ping: {e!s}")
+                    log.debug(f"Problem sending cronitor ping: {e!s}")
             # don't block on the long sleep
             interruptable_sleep.wait(60)
         else:
@@ -147,7 +147,7 @@ def thread_nanny(signal_handler):
                 shutting_down_time = now
             if now - shutting_down_time > shutting_down_grace_secs:
                 if log.level != logging.DEBUG:
-                    log.warning(
+                    log.debug(
                         f"Shutting-down duration has exceeded {shutting_down_grace_secs}s. Switching to debug logging..."
                     )
                     log.setLevel(logging.DEBUG)
@@ -160,7 +160,7 @@ def thread_nanny(signal_handler):
                     for s, loc in zmq_sockets.items():  # type: ignore
                         try:
                             if s and not s.closed:
-                                log.warning(f"Closing lingering socket {s!r} created at {loc}.")
+                                log.debug(f"Closing lingering socket {s!r} created at {loc}.")
                                 try_close(s)
                         except ZMQError:
                             log.debug("ZMQ error on closing socket.", exc_info=True)

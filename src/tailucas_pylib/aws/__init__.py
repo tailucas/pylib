@@ -35,7 +35,7 @@ def get_boto_session() -> Session:
 
     role_session_name = getenv("AWS_ROLE_ARN", f"{APP_NAME}-session")
     if not refresh_boto_session and _boto_session is not None:
-        log.info(
+        log.debug(
             f"Using existing role session {role_session_name} with expiry of {_boto_session_expiry}..."
         )
         return _boto_session
@@ -43,7 +43,7 @@ def get_boto_session() -> Session:
     assume_role_response = None
     try:
         if _sts_client is None:
-            log.info(
+            log.debug(
                 f"Creating AWS STS session using {_akid[:5]}...{_akid[-5:]} in region {_region}..."
             )
             sak = _creds.get_creds(f"AWS.{APP_NAME}/AWS_SECRET_ACCESS_KEY")
@@ -51,14 +51,14 @@ def get_boto_session() -> Session:
                 aws_access_key_id=_akid, aws_secret_access_key=sak, region_name=_region
             )
             _sts_client = temp_session.client("sts")
-        log.info(
+        log.debug(
             f"Assuming AWS role {_role_arn} in region {_region} for session {role_session_name}..."
         )
         assume_role_response = _sts_client.assume_role(
             RoleArn=_role_arn, RoleSessionName=role_session_name
         )
-    except ClientError as e:
-        log.error(f"Failed to assume role {_role_arn}: {e}")
+    except ClientError:
+        log.debug(f"Failed to assume role {_role_arn}", exc_info=True)
         raise
 
     if assume_role_response is None:
@@ -66,7 +66,7 @@ def get_boto_session() -> Session:
 
     credentials = assume_role_response["Credentials"]
     _boto_session_expiry = credentials["Expiration"]
-    log.info(f"Creating Boto session with expiration of {_boto_session_expiry}...")
+    log.debug(f"Creating Boto session with expiration of {_boto_session_expiry}...")
     _boto_session = Session(
         aws_access_key_id=credentials["AccessKeyId"],
         aws_secret_access_key=credentials["SecretAccessKey"],

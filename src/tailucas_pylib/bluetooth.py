@@ -16,7 +16,7 @@ def bluetooth_init():
         raise RuntimeError("No Bluetooth adaptors found using hcitool.")
     for line in hcitool[1:]:
         adapter = " ".join(line.split())
-        log.info(f"Bluetooth adaptor found: {adapter}")
+        log.debug(f"Bluetooth adaptor found: {adapter}")
 
 
 def l2ping(owner, device):
@@ -53,7 +53,7 @@ def ping_bluetooth_devices(owner_device_list):
             raise Exception(
                 f"Unsupported type {type(owner_device_list)} for parameters {owner_device_list}."
             )
-        log.info(f"DEBUG: l2ping using {owner_devices}.")
+        log.debug(f"DEBUG: l2ping using {owner_devices}.")
         for owner, device in owner_devices:
             sample_value = l2ping(owner, device)
             log.debug(f"ping response for {owner} @ {device}: {sample_value}")
