@@ -30,7 +30,7 @@ class Device(BaseModel):  # type: ignore[misc]
     storage_path: str | None = None
     storage_url: str | None = None
     timestamp: int | None = None
-    type_: Annotated[str, Field(alias="type")] | None = None
+    type_: Annotated[str | None, Field(alias="type")] = None
     uptime: int | None = None
 
     def __str__(self):
