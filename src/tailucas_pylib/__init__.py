@@ -41,6 +41,8 @@ if syslog_server and len(syslog_server.netloc) > 0:
         log_handler = logging.handlers.SysLogHandler(
             address=(syslog_server.hostname, syslog_server.port), socktype=protocol
         )
+        # only INFO to syslog
+        log_handler.addFilter(lambda record: record.levelno >= logging.INFO)
     else:
         _syslog_warning = f"Invalid SYSLOG_ADDRESS {syslog_address}: hostname or port is missing."
 

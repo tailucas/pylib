@@ -1587,7 +1587,7 @@ wheels = [
 
 [[package]]
 name = "tailucas-pylib"
-version = "0.7.6"
+version = "0.7.7"
 source = { editable = "." }
 dependencies = [
     { name = "python-dateutil" },
