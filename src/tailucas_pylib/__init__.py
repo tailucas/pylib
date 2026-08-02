@@ -10,6 +10,7 @@ from locale import Error as LocaleError
 from logging import Handler, Logger
 from os import getenv
 from pathlib import Path
+from pythonjsonlogger.json import JsonFormatter
 from urllib.parse import urlparse
 
 APP_NAME = getenv("APP_NAME", "test")
@@ -44,7 +45,17 @@ if syslog_server and len(syslog_server.netloc) > 0:
         _syslog_warning = f"Invalid SYSLOG_ADDRESS {syslog_address}: hostname or port is missing."
 
 # define the log format
-formatter = logging.Formatter("%(name)s %(threadName)s [%(levelname)s] %(message)s")
+formatter = JsonFormatter(
+    "{asctime}{name}{levelname}{message}{exc_info}{stack_info}",
+    style="{",
+    rename_fields={
+        "asctime": "timestamp",
+        "name": "logger",
+        "levelname": "level",
+    },
+    datefmt="%Y-%m-%dT%H:%M:%S%z",
+    json_default=str,  # coerce bytes/datetime/POJOs safely instead of crashing
+)
 
 if log_handler:
     log_handler.setFormatter(formatter)

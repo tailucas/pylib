@@ -1,10 +1,15 @@
 [project]
 name = "tailucas-pylib"
-version = "0.7.5"
+version = "0.7.6"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["python-dateutil>=2.9.0.post0", "pytz>=2025.2", "pyyaml>=6.0.2"]
+dependencies = [
+    "python-dateutil>=2.9.0.post0",
+    "python-json-logger>=4.1.0",
+    "pytz>=2025.2",
+    "pyyaml>=6.0.2",
+]
 
 [project.optional-dependencies]
 aws = ["boto3>=1.40.21", "onepassword-sdk>=0.3.1", "onepasswordconnectsdk>=1.5.1"]
