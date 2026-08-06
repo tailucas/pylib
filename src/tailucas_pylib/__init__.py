@@ -10,8 +10,9 @@ from locale import Error as LocaleError
 from logging import Handler, Logger
 from os import getenv
 from pathlib import Path
-from pythonjsonlogger.json import JsonFormatter
 from urllib.parse import urlparse
+
+from pythonjsonlogger.json import JsonFormatter
 
 APP_NAME = getenv("APP_NAME", "test")
 WORK_DIR = getenv("WORK_DIR", "/opt/app")

@@ -1,9 +1,9 @@
 [project]
 name = "tailucas-pylib"
-version = "0.7.7"
+version = "0.7.8"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "python-dateutil>=2.9.0.post0",
     "python-json-logger>=4.1.0",
@@ -109,7 +109,7 @@ yaml_interpol = "tailucas_pylib.tools.yaml_interpol:main"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
@@ -136,7 +136,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.14"
 strict = true
 ignore_missing_imports = true
 disallow_untyped_defs = false
