@@ -21,9 +21,13 @@ def test_exec_cmd_failure():
 
 
 def test_exec_cmd_log(caplog):
-    """Test exec_cmd_log calls exec_cmd and logs output."""
+    """Test exec_cmd_log calls exec_cmd and logs structured fields."""
     from tailucas_pylib.process import exec_cmd_log
 
     with caplog.at_level("DEBUG"):
         exec_cmd_log(["echo", "log-test"])
-    assert "log-test" in caplog.text
+    assert any(
+        getattr(record, "exit_code", None) == 0
+        and "log-test" in getattr(record, "stdout", "")
+        for record in caplog.records
+    )

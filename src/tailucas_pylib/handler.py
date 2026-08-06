@@ -35,12 +35,32 @@ class exception_handler(ContextManager["exception_handler"]):
         assert self._zmq_socket is not None
         if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
             log.debug(
-                f"Binding {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}"
+                "Binding ZMQ socket",
+                extra={
+                    "socket_type": self._socket_type,
+                    "zmq_url": self._zmq_url,
+                    "socket_types": {
+                        "push": zmq.PUSH,
+                        "pull": zmq.PULL,
+                        "req": zmq.REQ,
+                        "rep": zmq.REP,
+                    },
+                },
             )
             self._zmq_socket.bind(self._zmq_url)
         else:
             log.debug(
-                f"Connecting {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._zmq_url}"
+                "Connecting ZMQ socket",
+                extra={
+                    "socket_type": self._socket_type,
+                    "zmq_url": self._zmq_url,
+                    "socket_types": {
+                        "push": zmq.PUSH,
+                        "pull": zmq.PULL,
+                        "req": zmq.REQ,
+                        "rep": zmq.REP,
+                    },
+                },
             )
             self._zmq_socket.connect(self._zmq_url)
         return self._zmq_socket
@@ -52,7 +72,7 @@ class exception_handler(ContextManager["exception_handler"]):
             try_close(self._zmq_socket)
         if exc_type is None:
             return True
-        log.debug(f"Handling {exc_type.__name__} with flags...")
+        log.debug("Handling exception with flags", extra={"exception_type": exc_type.__name__})
         if issubclass(exc_type, ContextTerminated):
             log.debug(self.__class__.__name__, exc_info=True)
             # treat as non-critical

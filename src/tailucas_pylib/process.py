@@ -14,7 +14,15 @@ def exec_cmd(cmd):
 
 def exec_cmd_log(cmd):
     o, e, c = exec_cmd(cmd)
-    log.debug(f"{cmd} (exit {c}): {o}{e}")
+    log.debug(
+        "Command completed",
+        extra={
+            "cmd": cmd,
+            "exit_code": c,
+            "stdout": o.decode(errors="replace") if o else "",
+            "stderr": e.decode(errors="replace") if e else "",
+        },
+    )
 
 
 # noinspection PyUnusedLocal
@@ -25,7 +33,7 @@ class SignalHandler:
         signal.signal(signal.SIGHUP, self.hup)
 
     def hup(self, signum, frame):
-        log.debug(f"Signal {signum} received.")
+        log.debug("Signal received", extra={"signal": signum})
         self.last_signal = signum
         if log.getEffectiveLevel() == logging.INFO:
             log.setLevel(logging.DEBUG)
@@ -33,6 +41,6 @@ class SignalHandler:
             log.setLevel(logging.INFO)
 
     def terminate(self, signum, frame):
-        log.debug(f"Signal {signum} received.")
+        log.debug("Signal received", extra={"signal": signum})
         self.last_signal = signum
         die()

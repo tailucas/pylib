@@ -40,4 +40,7 @@ def post_count_metric(
             ],
         )
     except Exception as e:
-        log.debug(f"Problem posting metric [{metric_name}={count}]: {e!r}")
+        log.debug(
+            "Problem posting metric",
+            extra={"metric_name": metric_name, "count": count, "error": repr(e)},
+        )

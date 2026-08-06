@@ -28,6 +28,7 @@ except KeyError:
 log_handler: Handler = None  # type: ignore
 syslog_server = None
 _syslog_warning = None
+_syslog_warning_extra = None
 try:
     syslog_address = os.environ["SYSLOG_ADDRESS"]
     syslog_server = urlparse(syslog_address)
@@ -44,7 +45,8 @@ if syslog_server and len(syslog_server.netloc) > 0:
         # only INFO to syslog
         log_handler.addFilter(lambda record: record.levelno >= logging.INFO)
     else:
-        _syslog_warning = f"Invalid SYSLOG_ADDRESS {syslog_address}: hostname or port is missing."
+        _syslog_warning = "Invalid SYSLOG_ADDRESS: hostname or port is missing."
+        _syslog_warning_extra = {"syslog_address": syslog_address}
 
 # define the log format
 formatter = JsonFormatter(
@@ -76,38 +78,47 @@ else:
 
 
 if syslog_server:
-    log.debug(f"Logging will be sent directly to remote address {syslog_address}")
+    log.debug(
+        "Logging will be sent directly to remote address",
+        extra={"syslog_address": syslog_address},
+    )
 elif _syslog_warning:
-    log.debug(_syslog_warning)
+    log.debug(_syslog_warning, extra=_syslog_warning_extra)
 
 
 # use parent of this module's top-level __init__.py
 
 app_path = Path(os.path.abspath(os.path.dirname(__file__))).parent
-log.debug(f"Running from {app_path}")
+log.debug("Running from application path", extra={"app_path": str(app_path)})
 if os.path.exists(WORK_DIR):
-    log.debug(f"Using working directory {WORK_DIR}")
+    log.debug("Using working directory", extra={"work_dir": WORK_DIR})
     # assert working directory for assumptions made (such as PyDrive)
     current_work_dir = os.getcwd()
     if current_work_dir != WORK_DIR:
-        log.debug(f"Changing working directory from {current_work_dir} to {WORK_DIR}")
+        log.debug(
+            "Changing working directory",
+            extra={"current_work_dir": current_work_dir, "work_dir": WORK_DIR},
+        )
         os.chdir(WORK_DIR)
 
 # locale settings
 local_env = "LC_ALL"
 locale_lc_all = os.getenv(local_env)
 if locale_lc_all:
-    log.debug(f"Using locale LC_ALL, set to {locale_lc_all}.")
+    log.debug("Using locale LC_ALL", extra={"lc_all": locale_lc_all})
     try:
         locale.setlocale(locale.LC_ALL, locale_lc_all)
     except LocaleError as e:
-        log.debug(f"Cannot apply locale setting {local_env} value {locale_lc_all}: {e!s}")
+        log.debug(
+            "Cannot apply locale setting",
+            extra={"locale_env": local_env, "locale_value": locale_lc_all, "error": str(e)},
+        )
 
 app_config: ConfigParser = ConfigParser()
 app_config.optionxform = str  # type: ignore
 app_config_path = os.path.join(WORK_DIR, "app.conf")
 if os.path.exists(app_config_path) and os.path.getsize(app_config_path) > 0:
-    log.debug(f"Loading application configuration from {app_config_path}")
+    log.debug("Loading application configuration", extra={"app_config_path": app_config_path})
     app_config.read([app_config_path])
     if app_config.has_option("app", "device_name"):
         device_name = app_config.get("app", "device_name")
@@ -120,7 +131,8 @@ if os.path.exists(app_config_path) and os.path.getsize(app_config_path) > 0:
         DEVICE_NAME_BASE = device_name_base  # type: ignore
 if DEVICE_NAME is None:
     log.debug(
-        f'Setting DEVICE_NAME and DEVICE_NAME_BASE to "{APP_NAME}" due to missing configuration.'
+        "Setting DEVICE_NAME and DEVICE_NAME_BASE due to missing configuration",
+        extra={"app_name": APP_NAME},
     )
     DEVICE_NAME = APP_NAME
     DEVICE_NAME_BASE = APP_NAME

@@ -27,7 +27,13 @@ def zmq_socket(socket_type: int, is_async: bool | None = False):
         locations.append(f"{fi.function} in {fi.filename} @ line {fi.lineno}")
     location = ", ".join(locations)
     log.debug(
-        f"Creating {is_async=} {socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) socket for location {location}..."
+        "Creating ZMQ socket",
+        extra={
+            "is_async": is_async,
+            "socket_type": socket_type,
+            "socket_types": {"push": zmq.PUSH, "pull": zmq.PULL, "req": zmq.REQ, "rep": zmq.REP},
+            "location": location,
+        },
     )
     if is_async:
         global zmq_async_context
@@ -63,9 +69,9 @@ def try_close(socket):
         try:
             location = zmq_sockets[socket]
             if location:
-                log.debug(f"Closing {socket!r} created at {location}...")
+                log.debug("Closing socket", extra={"socket": repr(socket), "created_at": location})
         except KeyError:
-            log.debug(f"Closing {socket!r}...")
+            log.debug("Closing socket", extra={"socket": repr(socket)})
         socket.close()
     except ZMQError:
         log.debug("Ignoring socket error when closing socket.", exc_info=True)
@@ -96,12 +102,27 @@ class Closable:
             assert self._socket is not None
             if self._socket_type in [zmq.PULL, zmq.PUB, zmq.REP]:
                 log.debug(
-                    f"Binding {self._socket_type} ({zmq.PULL=}, {zmq.PUB=}, {zmq.REP=}) ZMQ socket to {self._socket_url}."
+                    "Binding ZMQ socket",
+                    extra={
+                        "socket_type": self._socket_type,
+                        "socket_url": self._socket_url,
+                        "socket_types": {"pull": zmq.PULL, "pub": zmq.PUB, "rep": zmq.REP},
+                    },
                 )
                 self._socket.bind(self._socket_url)
             else:
                 log.debug(
-                    f"Connecting {self._socket_type} ({zmq.PUSH=}, {zmq.PULL=}, {zmq.REQ=}, {zmq.REP=}) ZMQ socket to {self._socket_url}"
+                    "Connecting ZMQ socket",
+                    extra={
+                        "socket_type": self._socket_type,
+                        "socket_url": self._socket_url,
+                        "socket_types": {
+                            "push": zmq.PUSH,
+                            "pull": zmq.PULL,
+                            "req": zmq.REQ,
+                            "rep": zmq.REP,
+                        },
+                    },
                 )
                 self._socket.connect(self._socket_url)
         return self._socket

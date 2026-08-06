@@ -18,9 +18,12 @@ def get_secret_or_env(var_name: str) -> str | None:
     secret_file = path.join(CONTAINER_SECRETS_PATH, var_name.lower())
     if path.isfile(secret_file):
         with open(secret_file) as f:
-            log.debug(f"Reading secret for {var_name} from {secret_file}.")
+            log.debug(
+                "Reading secret from container secrets",
+                extra={"var_name": var_name, "secret_file": secret_file},
+            )
             return f.read()
-    log.debug(f"Reading secret for {var_name} from environment variable.")
+    log.debug("Reading secret from environment variable", extra={"var_name": var_name})
     return getenv(var_name)
 
 
@@ -45,7 +48,10 @@ class Creds:
         self.service_client = None  # type: ignore
         self.op_vault: str | None = get_secret_or_env(OP_VAULT_VAR)
         if self.op_vault is None:
-            log.debug(f"Secret {OP_VAULT_VAR} is not set in environment or container secrets.")
+            log.debug(
+                "Secret is not set in environment or container secrets",
+                extra={"var_name": OP_VAULT_VAR},
+            )
         op_connect_token: str | None = get_secret_or_env(OP_CONNECT_TOKEN_VAR)
         if creds_use_connect_client and self.op_connect_host and op_connect_token:
             from onepasswordconnectsdk.client import Client as ConnectClient
@@ -76,7 +82,13 @@ class Creds:
             vault_found = False
             for vault in creds_vaults:
                 log.debug(
-                    f"Credential vault on 1Password server {self.op_connect_host} {vault.name} ({vault.id}) contains {vault.items} credentials."
+                    "Credential vault on 1Password server",
+                    extra={
+                        "server": self.op_connect_host,
+                        "vault_name": vault.name,
+                        "vault_id": vault.id,
+                        "credential_count": vault.items,
+                    },
                 )
                 if self.op_vault == vault.id:
                     vault_found = True
@@ -93,7 +105,10 @@ class Creds:
             vault_found = False
             vaults: list[VaultOverview] = asyncio.run(self.service_client.vaults.list())
             for vault in vaults:
-                log.debug(f"Credential vault on 1Password service {vault.title} ({vault.id}).")
+                log.debug(
+                    "Credential vault on 1Password service",
+                    extra={"vault_title": vault.title, "vault_id": vault.id},
+                )
                 if self.op_vault == vault.id:
                     vault_found = True
             if len(vaults) == 1:
@@ -108,7 +123,17 @@ class Creds:
             if assertion_check:
                 raise AssertionError(message)
             else:
-                log.debug(message)
+                log.debug(
+                    "No 1Password client created",
+                    extra={
+                        "env_vars": [
+                            OP_CONNECT_TOKEN_VAR,
+                            OP_CONNECT_HOST_VAR,
+                            OP_SERVICE_ACCOUNT_TOKEN_VAR,
+                        ],
+                        "container_secrets_path": CONTAINER_SECRETS_PATH,
+                    },
+                )
 
     def get_creds(self, creds_path) -> str:
         if self.connect_client:

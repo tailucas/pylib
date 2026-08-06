@@ -1,6 +1,5 @@
 import logging
 
-import simplejson as json
 import umsgpack as msgpack
 
 from . import log
@@ -15,10 +14,7 @@ def make_payload(timestamp=None, data=None, pack=True):
         else:
             payload["data"] = data
     if log.level == logging.DEBUG:
-        try:
-            log.debug(json.dumps(payload))
-        except (TypeError, UnicodeDecodeError):
-            log.exception("Cannot JSON-encode payload for logging.")
+        log.debug("Payload created", extra={"payload": payload})
     if pack:
         return msgpack.packb(payload)
     return payload

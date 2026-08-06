@@ -31,7 +31,13 @@ class ZmqRelay(AppThread, Closable):
         # do not info on heartbeats
         if "device_info" not in data:  # type: ignore
             log.debug(
-                f"Relaying {len(data)} bytes from {self.socket_url} to {self._sink_zmq_url} ({len(payload)} bytes)"  # type: ignore
+                "Relaying message",
+                extra={
+                    "message_bytes": len(data),  # type: ignore
+                    "source_url": self.socket_url,
+                    "sink_url": self._sink_zmq_url,
+                    "payload_bytes": len(payload),
+                },
             )
         sink_socket.send(payload)
 

@@ -16,11 +16,11 @@ def bluetooth_init():
         raise RuntimeError("No Bluetooth adaptors found using hcitool.")
     for line in hcitool[1:]:
         adapter = " ".join(line.split())
-        log.debug(f"Bluetooth adaptor found: {adapter}")
+        log.debug("Bluetooth adaptor found", extra={"adapter": adapter})
 
 
 def l2ping(owner, device):
-    log.debug(f"l2ping {owner} @ {device}...")
+    log.debug("l2ping started", extra={"owner": owner, "device": device})
     out, err, rc = exec_cmd(["sudo", "/usr/bin/l2ping", "-t1", "-c1", device])
     l2pingo = None
     if out is not None:
@@ -28,10 +28,13 @@ def l2ping(owner, device):
     else:
         raise RuntimeError(f"Cannot perform l2ping of {owner} @ {device}: {err}")
     if rc == 0:
-        log.debug(f"l2ping output: {l2pingo}")
+        log.debug("l2ping completed", extra={"output": l2pingo})
         return l2pingo
     else:
-        log.debug(f"Non-zero exit {rc} for l2ping output: {l2pingo} {err}")
+        log.debug(
+            "l2ping exited non-zero",
+            extra={"exit_code": rc, "output": l2pingo, "error": err.decode(errors="replace")},
+        )
     return None
 
 
@@ -39,7 +42,7 @@ def ping_bluetooth_devices(owner_device_list):
     owner_devices = []
     ping_response = {}
     try:
-        log.debug(owner_device_list)
+        log.debug("Owner device list received", extra={"owner_device_list": owner_device_list})
         if isinstance(owner_device_list, str):
             owner_device_string = owner_device_list.split(",")
             for ods in owner_device_string:
@@ -53,10 +56,13 @@ def ping_bluetooth_devices(owner_device_list):
             raise Exception(
                 f"Unsupported type {type(owner_device_list)} for parameters {owner_device_list}."
             )
-        log.debug(f"DEBUG: l2ping using {owner_devices}.")
+        log.debug("l2ping using owner devices", extra={"owner_devices": owner_devices})
         for owner, device in owner_devices:
             sample_value = l2ping(owner, device)
-            log.debug(f"ping response for {owner} @ {device}: {sample_value}")
+            log.debug(
+                "ping response",
+                extra={"owner": owner, "device": device, "sample_value": sample_value},
+            )
             if sample_value:
                 ping_response[owner] = sample_value
     except Exception:

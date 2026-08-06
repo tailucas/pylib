@@ -21,5 +21,8 @@ def is_flag_enabled(flag_name: str) -> bool:
         _creds.validate_creds()  # type: ignore
     flag_value = _creds.get_creds(f"flags/{flag_name}/value").strip().lower()
     is_enabled = flag_value in ["true", "1", "yes"]
-    log.debug(f"Feature flag '{flag_name}' is set to '{flag_value}'. Enabled: {is_enabled}")
+    log.debug(
+        "Feature flag evaluated",
+        extra={"flag_name": flag_name, "flag_value": flag_value, "enabled": is_enabled},
+    )
     return is_enabled

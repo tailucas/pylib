@@ -14,34 +14,43 @@ def make_timestamp(
         timestamp = datetime.fromtimestamp(timestamp, tz=pytz.utc)
     elif isinstance(timestamp, str):
         try:
-            log.debug(f"Attempting to parse timestamp {timestamp}")
+            log.debug("Attempting to parse timestamp", extra={"timestamp": timestamp})
             timestamp = dateutil.parser.parse(timestamp)
-            log.debug(f"Parsed timestamp is {timestamp}")
+            log.debug("Parsed timestamp", extra={"timestamp": str(timestamp)})
         except ValueError:
             # try integer representation
             try:
                 timestamp = datetime.fromtimestamp(int(timestamp), tz=pytz.utc)  # type: ignore
-                log.debug(f"Parsed integer timestamp is {timestamp}")
+                log.debug("Parsed integer timestamp", extra={"timestamp": str(timestamp)})
             except ValueError:
-                log.exception(f"Unable to parse {timestamp}. Using 'now'.")
+                log.exception(
+                    "Unable to parse timestamp. Using 'now'.", extra={"timestamp": timestamp}
+                )
                 timestamp = None
     if timestamp is None:
         timestamp = datetime.now()
-        log.debug(f"Generated new timestamp {timestamp}...")
+        log.debug("Generated new timestamp", extra={"timestamp": str(timestamp)})
     if timestamp.tzinfo is None:  # type: ignore
         local_tz = tz.tzlocal()
         # we use the default specific to the physical locality of the devices
         timestamp = timestamp.replace(tzinfo=local_tz)  # type: ignore
         log.debug(
-            f"Applying local timezone {timestamp.tzname()} to timestamp {timestamp} because no TZ is set."  # type: ignore[union-attr]
+            "Applying local timezone to timestamp because no TZ is set",
+            extra={"timezone": timestamp.tzname(), "timestamp": str(timestamp)},  # type: ignore[union-attr]
         )
         # now adjust to requested TZ
         new_timestamp = timestamp.astimezone(tz=as_tz)  # type: ignore[union-attr]
         log.debug(
-            f"{timestamp} adjusted to {new_timestamp} ({timestamp.tzname()} to {as_tz})"  # type: ignore[union-attr]
+            "Timestamp adjusted to requested timezone",
+            extra={
+                "timestamp": str(timestamp),
+                "new_timestamp": str(new_timestamp),
+                "from_timezone": timestamp.tzname(),  # type: ignore[union-attr]
+                "to_timezone": str(as_tz),
+            },
         )
         timestamp = new_timestamp
-    log.debug(f"Final timestamp {timestamp}")
+    log.debug("Final timestamp", extra={"timestamp": str(timestamp)})
     return timestamp  # type: ignore
 
 
@@ -54,7 +63,7 @@ def make_iso_timestamp(
         .isoformat()
         .replace("+00:00", "Z")
     )
-    log.debug(f"ISO timestamp {iso_timestamp}")
+    log.debug("ISO timestamp", extra={"iso_timestamp": iso_timestamp})
     return iso_timestamp
 
 

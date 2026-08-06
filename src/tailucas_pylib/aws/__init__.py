@@ -36,7 +36,11 @@ def get_boto_session() -> Session:
     role_session_name = getenv("AWS_ROLE_ARN", f"{APP_NAME}-session")
     if not refresh_boto_session and _boto_session is not None:
         log.debug(
-            f"Using existing role session {role_session_name} with expiry of {_boto_session_expiry}..."
+            "Using existing role session",
+            extra={
+                "role_session_name": role_session_name,
+                "session_expiry": str(_boto_session_expiry),
+            },
         )
         return _boto_session
 
@@ -44,7 +48,8 @@ def get_boto_session() -> Session:
     try:
         if _sts_client is None:
             log.debug(
-                f"Creating AWS STS session using {_akid[:5]}...{_akid[-5:]} in region {_region}..."
+                "Creating AWS STS session",
+                extra={"access_key_hint": f"{_akid[:5]}...{_akid[-5:]}", "region": _region},
             )
             sak = _creds.get_creds(f"AWS.{APP_NAME}/AWS_SECRET_ACCESS_KEY")
             temp_session = Session(
@@ -52,13 +57,18 @@ def get_boto_session() -> Session:
             )
             _sts_client = temp_session.client("sts")
         log.debug(
-            f"Assuming AWS role {_role_arn} in region {_region} for session {role_session_name}..."
+            "Assuming AWS role",
+            extra={
+                "role_arn": _role_arn,
+                "region": _region,
+                "role_session_name": role_session_name,
+            },
         )
         assume_role_response = _sts_client.assume_role(
             RoleArn=_role_arn, RoleSessionName=role_session_name
         )
     except ClientError:
-        log.debug(f"Failed to assume role {_role_arn}", exc_info=True)
+        log.debug("Failed to assume role", extra={"role_arn": _role_arn}, exc_info=True)
         raise
 
     if assume_role_response is None:
@@ -66,7 +76,10 @@ def get_boto_session() -> Session:
 
     credentials = assume_role_response["Credentials"]
     _boto_session_expiry = credentials["Expiration"]
-    log.debug(f"Creating Boto session with expiration of {_boto_session_expiry}...")
+    log.debug(
+        "Creating Boto session with expiration",
+        extra={"session_expiry": str(_boto_session_expiry)},
+    )
     _boto_session = Session(
         aws_access_key_id=credentials["AccessKeyId"],
         aws_secret_access_key=credentials["SecretAccessKey"],

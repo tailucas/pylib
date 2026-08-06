@@ -80,7 +80,13 @@ class MQConnection(AppThread):
             try:
                 message_body = make_payload(data=event_payload)
                 log.debug(
-                    f"Sending {len(message_body)} bytes to exchange {self._mq_exchange_name} with routing {routing_key} to queue {self._mq_queue_name}."  # type: ignore
+                    "Sending message to exchange",
+                    extra={
+                        "message_bytes": len(message_body),
+                        "exchange_name": self._mq_exchange_name,
+                        "routing_key": routing_key,
+                        "queue_name": self._mq_queue_name,
+                    },
                 )
                 self._mq_channel.basic_publish(  # type: ignore
                     exchange=self._mq_exchange_name,
@@ -93,7 +99,7 @@ class MQConnection(AppThread):
             except StreamLostError as e:
                 # try again
                 if tries < PUBLISH_RETRIES:
-                    log.debug(f"Retrying on lost stream during publish: {e!s}")
+                    log.debug("Retrying on lost stream during publish", extra={"error": str(e)})
                 else:
                     raise RuntimeWarning("Publish failure after retry.") from e
             except ConnectionClosedByBroker as e:
@@ -101,12 +107,13 @@ class MQConnection(AppThread):
             finally:
                 if close_channel or not success:
                     log.debug(
-                        f"Closing potentially stale channel (successful attempt? {success})..."
+                        "Closing potentially stale channel", extra={"successful_attempt": success}
                     )
                     self._close_channel()
                     if tries > 1 and (close_connection or not success):
                         log.debug(
-                            f"Closing potentially stale connection (successful attempt? {success})..."
+                            "Closing potentially stale connection",
+                            extra={"successful_attempt": success},
                         )
                         self._close_connection()
                 tries += 1
@@ -133,7 +140,13 @@ class MQConnection(AppThread):
             mq_result = self._mq_channel.queue_declare("", exclusive=True)
             self._mq_queue_name = mq_result.method.queue
             log.debug(
-                f"Using RabbitMQ server(s) {self._mq_server_list} using {self._mq_exchange_type} exchange {self._mq_exchange_name} and queue {self._mq_queue_name}."
+                "Using RabbitMQ server(s)",
+                extra={
+                    "server_list": self._mq_server_list,
+                    "exchange_type": self._mq_exchange_type,
+                    "exchange_name": self._mq_exchange_name,
+                    "queue_name": self._mq_queue_name,
+                },
             )
 
     def _close_connection(self):
@@ -209,20 +222,21 @@ class ZMQListener(MQConnection):
 
     def callback(self, ch, method, properties, body):
         topic = method.routing_key
-        log.debug(f"[{topic}]: {len(body)} bytes.")
+        log.debug("Message received", extra={"topic": topic, "message_bytes": len(body)})
         topic_parts = topic.split(".")
         if len(topic_parts) < 3:
             log.debug(
-                f"Ignoring non-routable message from topic [{topic}] due to unsufficient topic parts."
+                "Ignoring non-routable message due to unsufficient topic parts",
+                extra={"topic": topic},
             )
             return
         if topic_parts[1] not in ["heartbeat", "leader"]:
-            log.debug(f"Device event on topic [{topic}]")
+            log.debug("Device event on topic", extra={"topic": topic})
         device_event = None
         try:
             device_event = msgpack.unpackb(body)
         except UnpackException:
-            log.exception(f"Bad message: {body}")
+            log.exception("Bad message", extra={"body": body})
             return
         try:
             self.processor.send_pyobj({topic_parts[2]: device_event})
@@ -280,7 +294,13 @@ class RabbitMQRelay(AppThread):
 
     def startup(self):
         log.debug(
-            f"Using RabbitMQ server at {self._mq_config_server} with {self._mq_exchange_type} ({self._mq_device_topic}) exchange {self._mq_config_exchange}."
+            "Using RabbitMQ server",
+            extra={
+                "server_address": self._mq_config_server,
+                "exchange_type": self._mq_exchange_type,
+                "device_topic": self._mq_device_topic,
+                "exchange_name": self._mq_config_exchange,
+            },
         )
 
     def run(self):
