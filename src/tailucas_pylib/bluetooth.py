@@ -1,7 +1,6 @@
-from sentry_sdk import capture_exception
-
 from . import log
 from .process import exec_cmd
+from .tracing import record_exception
 
 
 def bluetooth_init():
@@ -65,9 +64,9 @@ def ping_bluetooth_devices(owner_device_list):
             )
             if sample_value:
                 ping_response[owner] = sample_value
-    except Exception:
+    except Exception as e:
         log.exception("ping_bluetooth_devices")
-        capture_exception()
+        record_exception(e)
         raise
 
     if len(ping_response) > 0:

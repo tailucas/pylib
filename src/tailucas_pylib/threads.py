@@ -4,9 +4,9 @@ import sys
 import threading
 import time
 import traceback
-from os import getenv
 
-from . import DEVICE_NAME, app_config, log
+from . import app_config, log
+from .tracing import shutdown
 
 # threads to interrupt
 interruptable_sleep = threading.Event()
@@ -25,19 +25,8 @@ def die(exception=None):
     # enforce latch so as not to unset later due to __main__ shutdown
     if trigger_exception is None:
         trigger_exception = exception
-    try:
-        from sentry_sdk import get_client
-        from sentry_sdk.client import BaseClient as SentryClient
-
-        sentry_client: SentryClient = get_client()
-        if sentry_client:
-            log.debug("Flusing Sentry...")
-            sentry_client.flush(timeout=2.0)
-            log.debug("Shutting down Sentry...")
-            sentry_client.close(timeout=1.0)
-    except ImportError:
-        # sentry not installed, nothing to do
-        pass
+    log.debug("Flushing OpenTelemetry...")
+    shutdown()
     log.debug("Shutting down application...")
     shutting_down = True
     interruptable_sleep.set()
@@ -62,37 +51,6 @@ def bye():
     exit(code=exit_code)
 
 
-def _setup_cronitor():
-    cronitor_key = app_config.get("app", "cronitor_monitor_key")
-    if cronitor_key is not None:
-        cronitor_api_key = getenv("CRONITOR_API_KEY")
-        if cronitor_api_key is None:
-            cronitor_api_key_creds_path = app_config.get("creds", "cronitor")
-            if cronitor_api_key_creds_path is not None:
-                log.debug(
-                    "Loading Cronitor monitor API key from credential path",
-                    extra={"creds_path": cronitor_api_key_creds_path},
-                )
-                from .creds import Creds  # type: ignore
-
-                creds = Creds()  # type: ignore
-                creds.validate_creds()  # type: ignore
-                cronitor_api_key = creds.get_creds(cronitor_api_key_creds_path)
-        if cronitor_api_key is not None:
-            import cronitor
-
-            cronitor.api_key = cronitor_api_key
-
-            log.debug("Loading Cronitor monitor", extra={"cronitor_key": cronitor_key})
-            return cronitor.Monitor(key=cronitor_key)
-        else:
-            log.debug(
-                "Cronitor monitor is set but no Cronitor API key is configured.",
-                extra={"cronitor_key": cronitor_key},
-            )
-    return None
-
-
 # noinspection PyShadowingNames
 def thread_nanny(signal_handler):
     global interruptable_sleep
@@ -102,7 +60,6 @@ def thread_nanny(signal_handler):
         "app", "shutting_down_grace_secs", fallback=30
     )  # type: ignore
     shutting_down_time = None
-    monitor = _setup_cronitor()
     while True:
         if signal_handler.last_signal == signal.SIGTERM:
             shutting_down = True
@@ -126,7 +83,6 @@ def thread_nanny(signal_handler):
                         )
         if not shutting_down:
             thread_deficit = threads_tracked - threads_alive
-            state = "ok"
             if len(thread_deficit) > 0:
                 error_msg = (
                     f"A thread has died. Expected threads are [{threads_tracked}], "
@@ -140,19 +96,6 @@ def thread_nanny(signal_handler):
                     },
                 )
                 die(exception=ResourceWarning(error_msg))
-                state = "fail"
-            if monitor is not None:
-                try:
-                    monitor.ping(
-                        host=DEVICE_NAME,
-                        state=state,
-                        metrics={
-                            "count": len(threads_alive),
-                            "error_count": len(thread_deficit),
-                        },
-                    )
-                except Exception as e:
-                    log.debug("Problem sending cronitor ping", extra={"error": str(e)})
             # don't block on the long sleep
             interruptable_sleep.wait(60)
         else:

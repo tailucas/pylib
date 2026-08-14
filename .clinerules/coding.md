@@ -34,9 +34,9 @@ Heavy or situational dependencies are optional extras: `aws`, `creds`, `dto`,
   Import lazily inside the function or class that needs it:
 
   ```python
-  def _setup_cronitor():
+  def _setup_aws_session():
       ...
-      import cronitor  # optional 'monitoring' extra
+      import boto3  # optional 'aws' extra
   ```
 
 - Degrade gracefully when an extra is missing (`try/except ImportError`).

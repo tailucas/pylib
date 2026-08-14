@@ -21,8 +21,8 @@ The package is organized under `src/tailucas_pylib/` with the following key modu
 
 * **Application Framework:**
   - `app.py`: Thread base class with ZMQ relay (`ZmqRelay`) and worker (`ZmqWorker`) patterns for inter-thread communication via [ZeroMQ][zmq-url].
-  - `threads.py`: Thread nanny with shutdown tracking, graceful termination, Cronitor monitoring integration, and lingering socket cleanup.
-  - `handler.py`: Context manager (`exception_handler`) that handles ZMQ connectivity, `ContextTerminated`, `ResourceWarning`, and general exceptions with optional Sentry reporting and graceful shutdown.
+  - `threads.py`: Thread nanny with shutdown tracking, graceful termination, and lingering socket cleanup.
+  - `handler.py`: Context manager (`exception_handler`) that handles ZMQ connectivity, `ContextTerminated`, `ResourceWarning`, and general exceptions with optional OpenTelemetry exception tracing and graceful shutdown.
   - `process.py`: Signal handler (`SignalHandler`) with subprocess execution (`exec_cmd`) helpers.
 
 * **Communication:**
@@ -32,7 +32,7 @@ The package is organized under `src/tailucas_pylib/` with the following key modu
 * **Utilities:**
   - `data.py`: Builds MessagePack payloads with timestamp and optional data for IPC.
   - `datetime.py`: Timezone-aware timestamp creation, ISO formatting, and Unix timestamp conversion.
-  - `device.py`: Pydantic data model (`Device`) for device state with optional fields.
+  - `device.py`: Dataclass data model (`Device`) for device state with optional fields.
   - `bluetooth.py`: Bluetooth adaptor detection and device ping via `hcitool` / `l2ping`.
 
 * **AWS Integration (`aws/`):**
@@ -56,12 +56,10 @@ Technologies that help make this package useful:
 [![uv][uv-shield]][uv-url]
 [![Python][python-shield]][python-url]
 [![RabbitMQ][rabbit-shield]][rabbit-url]
-[![Sentry][sentry-shield]][sentry-url]
 [![ZeroMQ][zmq-shield]][zmq-url]
 
 Also:
 
-* [Cronitor][cronitor-url]
 * [MessagePack][msgpack-url]
 
 ![GitHub](https://img.shields.io/static/v1?style=for-the-badge&message=GitHub&color=181717&logo=GitHub&logoColor=FFFFFF&label=)
@@ -75,7 +73,7 @@ Core Technologies:
 - **RabbitMQ** - Message queuing
 - **MessagePack** - Binary serialization
 - **Pydantic** - Data validation and modeling
-- **Sentry** - Error tracking and monitoring
+- **OpenTelemetry** - Error tracking and monitoring
 
 AWS Integration:
 - **Boto3** - AWS SDK
@@ -84,7 +82,6 @@ AWS Integration:
 
 Development Tools:
 - **uv** - Dependency management
-- **Cronitor** - Cron job monitoring
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -96,7 +93,7 @@ Here is some detail about the intended use of this package.
 
 ### Prerequisites
 
-A [Python][python-url] project or runtime environment. Since this project is already initialized with [uv][vu-url] dependency management, I recommend that you continue to use it. Beyond the Python dependencies defined in the [configuration](pyproject.toml), the package init carries hardcoded dependencies on [Sentry][sentry-url] and [1Password][1p-url] in order to function. Unless you want these and are effectively extending my [base project][baseapp-url], you're likely better off forking this package and cutting out what you do not need.
+A [Python][python-url] project or runtime environment. Since this project is already initialized with [uv][vu-url] dependency management, I recommend that you continue to use it. Beyond the Python dependencies defined in the [configuration](pyproject.toml), the package init carries a hardcoded dependency on [1Password][1p-url] in order to function. Unless you want this and are effectively extending my [base project][baseapp-url], you're likely better off forking this package and cutting out what you do not need.
 
 ### Installation
 
@@ -125,7 +122,7 @@ uv run pytest
 
 ### Extras matrix
 
-Optional dependencies are organized as extras (`aws`, `creds`, `dto`, `monitoring`, `mq`). Using a [Hatch matrix](https://hatch.pypa.io/latest/config/environment/advanced/#matrix), the full test suite also runs against every combination of these extras: 32 environments, each installing the package with only that combination's dependencies.
+Optional dependencies are organized as extras (`aws`, `creds`, `monitoring`, `mq`). Using a [Hatch matrix](https://hatch.pypa.io/latest/config/environment/advanced/#matrix), the full test suite also runs against every combination of these extras: 32 environments, each installing the package with only that combination's dependencies.
 
 ```sh
 # list the 32 test environments
@@ -133,7 +130,7 @@ uv run hatch env show
 # run the whole matrix (stops at the first failing environment)
 uv run hatch run test:run
 # run a single combination
-uv run hatch run test.aws-no-creds-dto-no-monitoring-mq:run
+uv run hatch run test.aws-no-creds-no-monitoring-mq:run
 # remove all cached test environments
 uv run hatch env prune
 ```
@@ -179,7 +176,6 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 [aws-url]: https://aws.amazon.com/
 [aws-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=Amazon+AWS&color=232F3E&logo=Amazon+AWS&logoColor=FFFFFF&label=
 [botoflow-url]: https://github.com/boto/botoflow
-[cronitor-url]: https://cronitor.io/
 [msgpack-url]: https://msgpack.org/
 [uv-url]: https://docs.astral.sh/uv/
 [uv-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=uv&color=60A5FA&logo=uv&logoColor=FFFFFF&label=
@@ -187,7 +183,5 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 [python-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=Python&color=3776AB&logo=Python&logoColor=FFFFFF&label=
 [rabbit-url]: https://www.rabbitmq.com/
 [rabbit-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=RabbitMQ&color=FF6600&logo=RabbitMQ&logoColor=FFFFFF&label=
-[sentry-url]: https://sentry.io/
-[sentry-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=Sentry&color=362D59&logo=Sentry&logoColor=FFFFFF&label=
 [zmq-url]: https://zeromq.org/
 [zmq-shield]: https://img.shields.io/static/v1?style=for-the-badge&message=ZeroMQ&color=DF0000&logo=ZeroMQ&logoColor=FFFFFF&label=

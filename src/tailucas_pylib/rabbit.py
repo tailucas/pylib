@@ -6,22 +6,12 @@ from pika.exceptions import (
     ConnectionClosedByBroker,
     StreamLostError,
 )
-from sentry_sdk.integrations.logging import ignore_logger
 from umsgpack import UnpackException
 
 from . import log, threads
 from .app import AppThread
 from .data import make_payload
 from .handler import exception_handler
-
-# Reduce Sentry noise from pika loggers
-ignore_logger("pika.adapters.base_connection")
-ignore_logger("pika.adapters.blocking_connection")
-ignore_logger("pika.adapters.utils.connection_workflow")
-ignore_logger("pika.adapters.utils.io_services_utils")
-ignore_logger("pika.callback")
-ignore_logger("pika.channel")
-ignore_logger("pika.connection")
 
 
 BLOCKED_CONNECTION_TIMEOUT = 5

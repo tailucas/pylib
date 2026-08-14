@@ -1,11 +1,11 @@
 from contextlib import AbstractContextManager as ContextManager
 
 import zmq
-from sentry_sdk import capture_exception
 from zmq.error import ContextTerminated
 
 from . import log, threads
 from .threads import die
+from .tracing import record_exception
 from .zmq import try_close, zmq_socket
 
 
@@ -79,7 +79,7 @@ class exception_handler(ContextManager["exception_handler"]):
             return True
         elif issubclass(exc_type, ResourceWarning):
             # raised to indicate a fatal dependency error that
-            # does not fill Sentry with exception regressions
+            # does not fill the error tracker with exception regressions
             # or unhandled exceptions; used typically at startup
             if not threads.shutting_down:
                 log.debug(self.__class__.__name__, exc_info=True)
@@ -91,7 +91,7 @@ class exception_handler(ContextManager["exception_handler"]):
         elif issubclass(exc_type, Exception):
             if not threads.shutting_down:
                 log.exception(self.__class__.__name__)
-                capture_exception(error=(exc_type, exc_val, tb))
+                record_exception(exc_val)
                 if self._shutdown_on_error:
                     die(exception=exc_val)
             else:

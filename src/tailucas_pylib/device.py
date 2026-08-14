@@ -1,15 +1,14 @@
-from typing import Annotated
-
-from pydantic import BaseModel, Field
+from dataclasses import dataclass
 
 
-class Device(BaseModel):  # type: ignore[misc]
+@dataclass
+class Device:
+    device_key: str
+    device_type: str
     active: bool | None = None
     device_id: str | None = None
-    device_key: str
     device_label: str | None = None
     device_params: str | None = None
-    device_type: str
     event_detail: str | None = None
     group_name: str | None = None
     image: bytes | None = None
@@ -30,7 +29,7 @@ class Device(BaseModel):  # type: ignore[misc]
     storage_path: str | None = None
     storage_url: str | None = None
     timestamp: int | None = None
-    type_: Annotated[str | None, Field(alias="type")] = None
+    type_: str | None = None
     uptime: int | None = None
 
     def __str__(self):

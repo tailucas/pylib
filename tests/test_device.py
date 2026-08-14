@@ -1,8 +1,3 @@
-import pytest
-
-pytest.importorskip("pydantic", reason="requires the 'dto' extra")
-
-
 def test_device_required_fields_only():
     """Test Device creation with only required fields."""
     from tailucas_pylib.device import Device
