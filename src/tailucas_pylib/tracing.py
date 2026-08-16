@@ -1,3 +1,6 @@
+import contextlib
+
+
 def record_exception(exc: BaseException) -> None:
     """Record an exception on the current OpenTelemetry span.
 
@@ -26,15 +29,9 @@ def shutdown() -> None:
         from opentelemetry._logs import get_logger_provider
     except ImportError:
         return
-    try:
-        trace.get_tracer_provider().shutdown()
-    except Exception:
-        pass
-    try:
-        metrics.get_meter_provider().shutdown()
-    except Exception:
-        pass
-    try:
-        get_logger_provider().shutdown()
-    except Exception:
-        pass
+    with contextlib.suppress(Exception):
+        trace.get_tracer_provider().shutdown()  # type: ignore[attr-defined]
+    with contextlib.suppress(Exception):
+        metrics.get_meter_provider().shutdown()  # type: ignore[attr-defined]
+    with contextlib.suppress(Exception):
+        get_logger_provider().shutdown()  # type: ignore[attr-defined]

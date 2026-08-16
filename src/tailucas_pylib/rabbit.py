@@ -13,7 +13,6 @@ from .app import AppThread
 from .data import make_payload
 from .handler import exception_handler
 
-
 BLOCKED_CONNECTION_TIMEOUT = 5
 PUBLISH_RETRIES = 3
 

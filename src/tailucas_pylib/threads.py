@@ -5,6 +5,8 @@ import threading
 import time
 import traceback
 
+import sentry_sdk
+
 from . import app_config, log
 from .tracing import shutdown
 
@@ -25,8 +27,8 @@ def die(exception=None):
     # enforce latch so as not to unset later due to __main__ shutdown
     if trigger_exception is None:
         trigger_exception = exception
-    log.debug("Flushing OpenTelemetry...")
-    shutdown()
+    if exception:
+        sentry_sdk.capture_exception(exception)
     log.debug("Shutting down application...")
     shutting_down = True
     interruptable_sleep.set()
@@ -47,6 +49,8 @@ def bye():
     )
     # flush loggers
     logging.shutdown()
+    sentry_sdk.flush()
+    shutdown()
     # exit process
     exit(code=exit_code)
 

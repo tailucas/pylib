@@ -42,7 +42,7 @@ def zmq_socket(socket_type: int, is_async: bool | None = False):
             # FIXME: Exception in callback Socket._init_io_state.<locals>.<lambda>() on Context.term() within asyncio
             zmq_async_context = AsyncioContext.shadow(zmq_context.underlying)
             zmq_async_context.setsockopt(zmq.LINGER, 0)
-        socket = zmq_async_context.socket(socket_type)
+        socket: zmq.Socket[bytes] | zmq.asyncio.Socket = zmq_async_context.socket(socket_type)
     else:
         socket = zmq_context.socket(socket_type)
     zmq_sockets[socket] = location

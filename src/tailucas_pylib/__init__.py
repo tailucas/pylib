@@ -86,6 +86,13 @@ if syslog_server:
 elif _syslog_warning:
     log.debug(_syslog_warning, extra=_syslog_warning_extra)
 
+# Sentry
+
+if "SENTRY_DSN" in os.environ:
+    import sentry_sdk
+
+    sentry_sdk.init(send_default_pii=True)
+
 # OTEL
 
 if os.environ.get("OTEL_SDK_DISABLED", "").lower() != "true":
@@ -102,11 +109,11 @@ if os.environ.get("OTEL_SDK_DISABLED", "").lower() != "true":
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 
-    protocol = os.environ.get("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc").strip().lower()
+    otel_protocol = os.environ.get("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc").strip().lower()
     span_exporter: SpanExporter
     metric_exporter: MetricExporter
     log_exporter: LogRecordExporter
-    if protocol == "grpc":
+    if otel_protocol == "grpc":
         from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
             OTLPLogExporter as GrpcOTLPLogExporter,
         )
@@ -120,7 +127,7 @@ if os.environ.get("OTEL_SDK_DISABLED", "").lower() != "true":
         span_exporter = GrpcOTLPSpanExporter()
         metric_exporter = GrpcOTLPMetricExporter()
         log_exporter = GrpcOTLPLogExporter()
-    elif protocol == "http/protobuf":
+    elif otel_protocol == "http/protobuf":
         from opentelemetry.exporter.otlp.proto.http._log_exporter import (
             OTLPLogExporter as HttpOTLPLogExporter,
         )
@@ -136,12 +143,12 @@ if os.environ.get("OTEL_SDK_DISABLED", "").lower() != "true":
         log_exporter = HttpOTLPLogExporter()
     else:
         raise ValueError(
-            f"Unsupported OTEL_EXPORTER_OTLP_PROTOCOL {protocol!r}: "
+            f"Unsupported OTEL_EXPORTER_OTLP_PROTOCOL {otel_protocol!r}: "
             f"expected 'grpc' or 'http/protobuf'"
         )
     log.debug(
         "Configuring OpenTelemetry export",
-        extra={"protocol": protocol},
+        extra={"protocol": otel_protocol},
     )
     # service.name comes from OTEL_SERVICE_NAME via the SDK's resource detector;
     # an explicit attribute would override it (and an empty value would become

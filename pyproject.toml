@@ -1,6 +1,6 @@
 [project]
 name = "tailucas-pylib"
-version = "0.8.1"
+version = "0.8.2"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -9,6 +9,7 @@ dependencies = [
     "python-json-logger>=4.1.0",
     "pytz>=2025.2",
     "pyyaml>=6.0.2",
+    "sentry-sdk>=2.68.0",
 ]
 
 [project.optional-dependencies]
