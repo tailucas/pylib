@@ -12,7 +12,21 @@ from os import getenv
 from pathlib import Path
 from urllib.parse import urlparse
 
+import sentry_sdk
+from opentelemetry import metrics, trace
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, LogRecordExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    MetricExporter,
+    PeriodicExportingMetricReader,
+)
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 from pythonjsonlogger.json import JsonFormatter
+from sentry_sdk.integrations.logging import ignore_logger
 
 APP_NAME = getenv("APP_NAME", "test")
 WORK_DIR = getenv("WORK_DIR", "/opt/app")
@@ -88,92 +102,79 @@ elif _syslog_warning:
 
 # Sentry
 
-if "SENTRY_DSN" in os.environ:
-    import sentry_sdk
-
-    sentry_sdk.init(send_default_pii=True)
+sentry_sdk.init(send_default_pii=True)
 
 # OTEL
 
-if os.environ.get("OTEL_SDK_DISABLED", "").lower() != "true":
-    from opentelemetry import metrics, trace
-    from opentelemetry._logs import set_logger_provider
-    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, LogRecordExporter
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.metrics.export import (
-        MetricExporter,
-        PeriodicExportingMetricReader,
-    )
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
+ignore_logger("opentelemetry.exporter.otlp.proto.http._log_exporter")
+ignore_logger("opentelemetry.exporter.otlp.proto.http.metric_exporter")
+ignore_logger("opentelemetry.exporter.otlp.proto.http.trace_exporter")
 
-    otel_protocol = os.environ.get("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc").strip().lower()
-    span_exporter: SpanExporter
-    metric_exporter: MetricExporter
-    log_exporter: LogRecordExporter
-    if otel_protocol == "grpc":
-        from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
-            OTLPLogExporter as GrpcOTLPLogExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
-            OTLPMetricExporter as GrpcOTLPMetricExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-            OTLPSpanExporter as GrpcOTLPSpanExporter,
-        )
+otel_protocol = os.environ.get("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc").strip().lower()
+span_exporter: SpanExporter
+metric_exporter: MetricExporter
+log_exporter: LogRecordExporter
+if otel_protocol == "grpc":
+    from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+        OTLPLogExporter as GrpcOTLPLogExporter,
+    )
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+        OTLPMetricExporter as GrpcOTLPMetricExporter,
+    )
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+        OTLPSpanExporter as GrpcOTLPSpanExporter,
+    )
 
-        span_exporter = GrpcOTLPSpanExporter()
-        metric_exporter = GrpcOTLPMetricExporter()
-        log_exporter = GrpcOTLPLogExporter()
-    elif otel_protocol == "http/protobuf":
-        from opentelemetry.exporter.otlp.proto.http._log_exporter import (
-            OTLPLogExporter as HttpOTLPLogExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
-            OTLPMetricExporter as HttpOTLPMetricExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-            OTLPSpanExporter as HttpOTLPSpanExporter,
-        )
+    span_exporter = GrpcOTLPSpanExporter()
+    metric_exporter = GrpcOTLPMetricExporter()
+    log_exporter = GrpcOTLPLogExporter()
+elif otel_protocol == "http/protobuf":
+    from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+        OTLPLogExporter as HttpOTLPLogExporter,
+    )
+    from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+        OTLPMetricExporter as HttpOTLPMetricExporter,
+    )
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter as HttpOTLPSpanExporter,
+    )
 
-        span_exporter = HttpOTLPSpanExporter()
-        metric_exporter = HttpOTLPMetricExporter()
-        log_exporter = HttpOTLPLogExporter()
-    else:
-        raise ValueError(
-            f"Unsupported OTEL_EXPORTER_OTLP_PROTOCOL {otel_protocol!r}: "
-            f"expected 'grpc' or 'http/protobuf'"
-        )
-    log.debug(
-        "Configuring OpenTelemetry export",
-        extra={"protocol": otel_protocol},
+    span_exporter = HttpOTLPSpanExporter()
+    metric_exporter = HttpOTLPMetricExporter()
+    log_exporter = HttpOTLPLogExporter()
+else:
+    raise ValueError(
+        f"Unsupported OTEL_EXPORTER_OTLP_PROTOCOL {otel_protocol!r}: "
+        f"expected 'grpc' or 'http/protobuf'"
     )
-    # service.name comes from OTEL_SERVICE_NAME via the SDK's resource detector;
-    # an explicit attribute would override it (and an empty value would become
-    # "unknown_service"). OTEL_RESOURCE_ATTRIBUTES is honored the same way.
-    resource = Resource.create(
-        {
-            "service.instance.id": APP_NAME,
-        }
-    )
-    # traces
-    tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
-    trace.set_tracer_provider(tracer_provider)
-    # metrics
-    meter_provider = MeterProvider(
-        resource=resource,
-        metric_readers=[PeriodicExportingMetricReader(metric_exporter)],
-    )
-    metrics.set_meter_provider(meter_provider)
-    # logs
-    logger_provider = LoggerProvider(resource=resource)
-    logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
-    set_logger_provider(logger_provider)
-    log.addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
-    log.debug("Bridged logger into OpenTelemetry", extra={"logger": log.name})
+log.debug(
+    "Configuring OpenTelemetry export",
+    extra={"protocol": otel_protocol},
+)
+# service.name comes from OTEL_SERVICE_NAME via the SDK's resource detector;
+# an explicit attribute would override it (and an empty value would become
+# "unknown_service"). OTEL_RESOURCE_ATTRIBUTES is honored the same way.
+resource = Resource.create(
+    {
+        "service.instance.id": APP_NAME,
+    }
+)
+# traces
+tracer_provider = TracerProvider(resource=resource)
+tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
+trace.set_tracer_provider(tracer_provider)
+# metrics
+meter_provider = MeterProvider(
+    resource=resource,
+    metric_readers=[PeriodicExportingMetricReader(metric_exporter)],
+)
+metrics.set_meter_provider(meter_provider)
+# logs
+logger_provider = LoggerProvider(resource=resource)
+logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
+set_logger_provider(logger_provider)
+log.addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+log.debug("Bridged logger into OpenTelemetry", extra={"logger": log.name})
 
 # use parent of this module's top-level __init__.py
 
