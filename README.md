@@ -93,11 +93,50 @@ Here is some detail about the intended use of this package.
 
 ### Prerequisites
 
-A [Python][python-url] project or runtime environment. Since this project is already initialized with [uv][vu-url] dependency management, I recommend that you continue to use it. Beyond the Python dependencies defined in the [configuration](pyproject.toml), the package init carries a hardcoded dependency on [1Password][1p-url] in order to function. Unless you want this and are effectively extending my [base project][baseapp-url], you're likely better off forking this package and cutting out what you do not need.
+A [Python][python-url] project or runtime environment. Since this project is already initialized with [uv][uv-url] dependency management, I recommend that you continue to use it. Beyond the Python dependencies defined in the [configuration](pyproject.toml), the package init carries a hardcoded dependency on [1Password][1p-url] in order to function. Unless you want this and are effectively extending my [base project][baseapp-url], you're likely better off forking this package and cutting out what you do not need.
 
 ### Installation
 
 This package is published to the [Python Package index](https://pypi.org/project/tailucas-pylib/) from time to time.
+
+### Updating dependencies
+
+Dependency upgrades are driven entirely by [uv][uv-url]; [uv.lock](uv.lock) is the single source of truth for resolved versions. The full upgrade is four commands, also available as `make update`:
+
+```sh
+# upgrade every package in the lockfile (core deps, all extras, all groups)
+uv lock --upgrade
+
+# install everything the project defines from the new resolution
+uv sync --all-extras --all-groups
+
+# verify the lockfile and the environment match pyproject.toml
+uv lock --check
+uv sync --check --all-extras --all-groups
+
+# verify the package still builds with the pinned build backend
+uv build
+```
+
+Narrower and favourite-option variants of the resolution step (`uv lock`):
+
+| Goal | Command |
+| --- | --- |
+| Upgrade one package | `uv lock --upgrade-package boto3` |
+| Upgrade one dependency group (`lint`, `test`, `dev`) | `uv lock --upgrade-group test` |
+| Preview without writing | `uv lock --upgrade --dry-run` |
+| Ignore cached index data | `uv lock --upgrade --refresh` (or `--no-cache`) |
+| Allow pre-releases | `uv lock --upgrade --prerelease allow` (env: `UV_PRERELEASE=allow`) |
+| Prefer oldest resolvable versions (lower-bound audit only, `--dry-run`; oldest releases fail to build on 3.14) | `uv lock --upgrade --resolution lowest-direct --dry-run` |
+| Freeze to a release date (supply-chain safety) | `uv lock --upgrade --exclude-newer 2026-10-01` |
+| Upgrade uv itself | `uv self update` |
+
+Two things are outside `uv lock`'s reach:
+
+- **Version bounds.** `uv lock --upgrade` only selects versions satisfying the bounds in [pyproject.toml](pyproject.toml). Widen a bound in the same change when a newer release falls outside it (for example `boto3>=1.43.123`), otherwise that dependency silently stops moving.
+- **The build backend.** `uv_build` is pinned in `[build-system]`, is not recorded in `uv.lock`, and is resolved only at build time. Bump it by hand to the current uv release line and re-verify `uv build` plus the publish path (`uvx --from build pyproject-build --outdir dist .`).
+
+Then bump the patch `version` in [pyproject.toml](pyproject.toml) (repo convention for dependency-only changes; a breaking change needs a minor bump) and run the gate from [Testing](#testing) — `make lint test` covers the lint gates and the core suite.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

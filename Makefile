@@ -1,4 +1,4 @@
-.PHONY: all check build run dev lint test test-all
+.PHONY: all check build run dev lint test test-all update
 
 DOCKER_URL := https://docs.docker.com/engine/install
 DOCKER_COMPOSE_URL := https://docs.docker.com/compose/install
@@ -34,3 +34,9 @@ test:
 
 test-all:
 	uv run --all-groups hatch test --all
+
+update:
+	uv lock --upgrade
+	uv sync --all-extras --all-groups
+	uv lock --check
+	uv build

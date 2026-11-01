@@ -27,8 +27,8 @@ conservatism and backward compatibility are the default posture.
 
 ## 2. Optional Dependencies (Extras)
 
-Heavy or situational dependencies are optional extras: `aws`, `creds`, `dto`,
-`monitoring`, `mq`.
+Heavy or situational dependencies are optional extras: `aws`, `creds`,
+`monitoring`, `mq`. Dependency upgrades follow `dependencies.md`.
 
 - NEVER add an unconditional top-level import of an optional dependency.
   Import lazily inside the function or class that needs it:
@@ -76,7 +76,7 @@ Heavy or situational dependencies are optional extras: `aws`, `creds`, `dto`,
 - `make test` runs `uv run --group test pytest -v`; the full matrix is
   `make test-all` (hatch across all extra combinations).
 - Verify at least: `uv run --group test pytest` (core) and
-  `uv run --group test --extra aws --extra creds --extra dto --extra monitoring --extra mq pytest`
+  `uv run --group test --extra aws --extra creds --extra monitoring --extra mq pytest`
   (all extras) before considering a change done.
 - Tests that assert on log output must follow the structured-logging testing
   rules in `logging.md` (assert static messages or `extra` fields, never
@@ -88,3 +88,7 @@ Heavy or situational dependencies are optional extras: `aws`, `creds`, `dto`,
 - Keep the README module inventory in sync when adding/removing modules.
 - Bump `version` in `pyproject.toml` for any published change; downstream apps
   use `>=` bounds, so breaking changes require a minor bump and a note.
+- Dependency upgrades are a documented, one-prompt procedure: `uv lock
+  --upgrade`, `uv sync --all-extras --all-groups`, `uv lock --check`, `uv
+  build` (all four via `make update`). See `dependencies.md` for the options,
+  the bound/build-backend guardrails and the validation gate.
